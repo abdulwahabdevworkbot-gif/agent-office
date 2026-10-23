@@ -36,6 +36,20 @@
 
 غرف العمل والاجتماعات تزيد وتنقص حسب الضغط.
 
+## الأقسام
+
+لما يكبر المشروع، مصمم الوكلاء يقترح أقسام (مثلاً التسويق):
+
+- كل قسم له تبويب وغرف خاصة، وموظفينه بصف أفقي.
+- رمز القسم قبل اسم الوكيل: `MKT · Content Writer`.
+- مدير قسم (Director) بخبرة ١٠ سنوات وأكثر، وتحته مجموعات لكل وحدة مدير (Manager).
+- كل مجموعة فيها سينيور وجونيور ومتدربين.
+
+المسميات من الأصغر للأكبر:
+Intern ← Developer / Analyst ← Senior ← Consultant ← Senior Consultant ← Manager ← Director
+
+![قسم التسويق](docs/images/department.webp)
+
 <table><tr>
 <td><img src="docs/images/meeting-room.webp" alt="غرفة الاجتماعات"></td>
 <td><img src="docs/images/idle-room.webp" alt="غرفة الخاملين"></td>
@@ -97,6 +111,17 @@ It fits any project: software, a store, marketing, research, content.
 | Idle room | No activity for 3 days |
 
 Work and meeting rooms grow and shrink with the load.
+
+## Departments
+
+When the project grows, the Agent Designer proposes departments (e.g. Marketing):
+
+- Each department has its own tab and rooms, with its staff in one horizontal row.
+- The department code comes before the agent's name: `MKT · Content Writer`.
+- A Director (10+ years) leads the department, with a Manager for each group.
+- Each group mixes seniors, juniors and interns.
+
+Positions, lowest to highest: Intern → Developer / Analyst → Senior → Consultant → Senior Consultant → Manager → Director.
 
 ## Tabs
 

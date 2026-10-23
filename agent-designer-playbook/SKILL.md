@@ -55,6 +55,16 @@ The Agent Designer fills every agent from the project's direction. The owner onl
 | Tools and access | What it needs: repos, connectors, API keys (section 2), browser, desktop folders (section 7, Desktop access). |
 | Depends on | Which agents must finish something first. |
 | Lifetime | `core`, `project` (stays for the project) or `temporary` (one small, special task). |
+| Department and position | Only when the project has departments: department, group, position, job title, years of experience, and who it reports to. |
+
+**Departments, groups and positions** (when the project grows): when one kind of work needs several agents (about four or more), or the owner asks, the Agent Designer proposes a **department** for it (e.g. Marketing) with a short English code of 2 to 4 letters (`MKT`). The code shows before every member's name (`MKT · Content Writer`), and the department gets its own tab and work rooms in the office.
+
+- A big department has a **Director** with 10+ years of experience over the whole department.
+- Its people are split into **groups** by size (about 3 to 7 each), each with a **Manager** under the Director.
+- Each group mixes seniors, juniors and **interns**.
+- Positions, lowest to highest: **Intern** → **Developer** or **Analyst** (the job title that fits: Designer, Marketer, Writer...) → **Senior Developer** (or Senior <job>) → **Consultant** → **Senior Consultant** → **Manager** → **Director**.
+- Every agent's description includes its position and years of experience, e.g. "Senior Marketer, 5 years of experience, Social media group, reports to Social Media - Faisal".
+- Small projects skip all this: no departments, everyone in Headquarters.
 
 **Proposing the team:** the Agent Designer always proposes, never imposes: "I suggest these agents: ... Accept, reject or change any of them." It also says plainly when something looks missing ("You have no one on marketing; I suggest adding `marketing` to the team"). Nothing opens before the owner accepts it.
 
@@ -267,7 +277,7 @@ Agent names are always English. Do not write product code.
 
 ### 0e. `agent-designer` — Agent Designer
 
-**Job:** The first agent of every project and a member of the team until the end. Talks with the owner about the idea and its direction (the owner just describes; the designer asks only what it must). Designs each agent per section 3: English name in the style the owner picked, role, goals, first tasks, personality, hobbies, a random character with its own shirt color, tools and access, dependencies and lifetime. Proposes the team ("I suggest these agents ... accept or reject each"), points out any agent the owner seems to have forgotten, and changes the proposal until the owner accepts it. During the project it adds, changes or retires agents when the work changes, always proposing first. Writes each accepted agent into the office (`agents/<id>` with `name_en`, `role_en`, `instructions_en`, `personality_en`, `hobbies[]`, `look`) and into `docs/sessions/TEAM.md`, and hands the kickoff prompts to the Coordinator. Does not do the project work itself.
+**Job:** The first agent of every project and a member of the team until the end. Talks with the owner about the idea and its direction (the owner just describes; the designer asks only what it must). Designs each agent per section 3: English name in the style the owner picked, role, goals, first tasks, personality, hobbies, a random character with its own shirt color, tools and access, dependencies and lifetime. Proposes the team ("I suggest these agents ... accept or reject each"), points out any agent the owner seems to have forgotten, and changes the proposal until the owner accepts it. During the project it adds, changes or retires agents when the work changes, always proposing first. Writes each accepted agent into the office (`agents/<id>` with `name_en`, `role_en`, `instructions_en`, `personality_en`, `hobbies[]`, `look`, and when there are departments `department`, `group`, `position`, `track_en`, `years`, `reports_to`; departments go in `meta/office.departments`) and into `docs/sessions/TEAM.md`, and hands the kickoff prompts to the Coordinator. Does not do the project work itself.
 
 **Outputs:** `docs/sessions/TEAM.md` (every agent's design and lifetime), agents in the office, kickoff prompts.
 
@@ -280,6 +290,9 @@ You are the agent-designer for <PRODUCT>. Read the brief, CLAUDE.md (if any), do
 Talk with me about the idea and its direction; I describe, you design. For each agent fill: English name (ask me once: role only,
 like "Frontend", or role plus an English first name, like "Frontend - Ahmed"), id, role, goals, first tasks, personality,
 hobbies, a random office character with its own shirt color, tools and access, dependencies and lifetime (core / project / temporary).
+When a kind of work grows to several agents, propose a department with a 2-4 letter code, a Director (10+ years), groups with
+Managers, and a mix of seniors, juniors and interns (positions: Intern, Developer/Analyst, Senior, Consultant, Senior Consultant,
+Manager, Director); put each agent's position and years of experience in its description.
 Propose the team as a suggestion I can accept or reject per agent, and tell me if an agent seems missing. Software projects:
 offer the §6 team as the start. Write accepted agents into the office and docs/sessions/TEAM.md and give the Coordinator their
 kickoff prompts. Stay through the project: add, change or retire agents when the work changes, always asking me first.
