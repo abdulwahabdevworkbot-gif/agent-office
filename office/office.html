@@ -324,6 +324,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .sum-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);align-self:center;margin-left:6px}
 .blk-why{display:block;font-size:12px;line-height:1.35;color:var(--bad);margin-top:3px}.blk-why.need{color:var(--warn);font-weight:600}
 .since[hidden]{display:none}
+.minutes{display:grid;gap:8px}.mn-row{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}.mn-row.up{border-style:dashed}.mn-row .linkish{justify-self:start;font-weight:600}.mn-out{font-weight:600;color:var(--ok)}.mn-dec{margin:2px 0 0 18px;padding:0}
 .hcard{position:fixed;z-index:1000;display:grid;gap:5px;width:max-content;max-width:280px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;pointer-events:none}.hcard[hidden]{display:none}
 .hc-top{display:flex;gap:8px;align-items:center}.hc-top .note{font-size:12px}.hc-hint{font-size:11.5px;color:var(--muted)}.hcard .chip{justify-self:start}.ib-need{grid-column:2;font-size:12.5px;font-weight:600;color:var(--warn);overflow-wrap:anywhere}
 .since{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:13px}
@@ -1854,7 +1855,18 @@ function openTask(id){
   const ts = sessions.filter(x => x.task === t.id), op = openSessionFor(t.id);
   if (op) { const d2 = el("div","ask"); const b2 = el("button","btn","Go to the open session"); b2.type = "button"; b2.onclick = () => { $("taskDlg").close(); openSession(op.id); }; d2.append(el("div","lbl","Question open"), el("div", null, op.title_en || ""), b2); body.append(d2); }
   else askForm(t, body);
-  if (ts.filter(x => x.state !== "open").length) { const d3 = el("div"); d3.append(el("div","lbl","Solved sessions")); ts.filter(x => x.state !== "open").forEach(x => { const l = el("button","linkish", `${x.title_en || x.id} (${fmt(x.closed_at)})`); l.type = "button"; l.style.display = "block"; l.onclick = () => { $("taskDlg").close(); openSession(x.id); }; d3.append(l); }); body.append(d3); }
+  /* minutes (council round 3, C4): every meeting and session on this task, with its outcome and the decisions made in it */
+  const later = ts.filter(x => x.state === "scheduled"), past = ts.filter(isDone).sort((x, y) => String(y.closed_at || "").localeCompare(String(x.closed_at || "")));
+  if (later.length || past.length) { const d3 = el("div","minutes"); d3.append(el("div","lbl","Meetings and minutes"));
+    later.forEach(x => { const r = el("div","mn-row up"); const l = el("button","linkish", x.title_en || x.id); l.type = "button"; l.onclick = () => { $("taskDlg").close(); openSession(x.id); };
+      r.append(l, el("span","note", `Coming up ${x.at ? fmtWhen(Date.parse(x.at)) : ""} · ${(x.members || []).length} people`)); d3.append(r); });
+    past.forEach(x => { const r = el("div","mn-row"); const l = el("button","linkish", x.title_en || x.id); l.type = "button"; l.onclick = () => { $("taskDlg").close(); openSession(x.id); };
+      r.append(l, el("span","note", `${isMeeting(x) ? "Meeting" : "Session"} · ${fmt(x.closed_at)} · ${(x.members || []).length} people`));
+      if (x.resolution_en) r.append(el("div","mn-out", "Outcome: " + x.resolution_en));
+      const ag = Array.isArray(x.agenda) ? x.agenda : [], dn = new Set(x.agenda_done || []); if (ag.length) r.append(el("div","note", `Agenda: ${ag.filter((_, i) => dn.has(i)).length} of ${ag.length} points covered`));
+      const ds = msgs.filter(m => m.session === x.id && m.kind === "decision"); if (ds.length) { const ul = el("ul","mn-dec"); ds.forEach(m => ul.append(el("li", null, m.text_en || m.text || ""))); r.append(el("div","note","Decisions:"), ul); }
+      d3.append(r); });
+    body.append(d3); }
   const related = msgs.filter(m => m.task === t.id).length;
   const row = el("div","row"); row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap";
   const sb = el("button","btn-lite","Show on board"); sb.type = "button"; sb.onclick = () => go("#board/" + encodeURIComponent(t.id)); row.append(sb);
