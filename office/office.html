@@ -323,7 +323,9 @@ h2{font-weight:700;font-size:19px;margin:0}
 .inbox-head .row-wrap{margin-left:auto}
 .sum-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);align-self:center;margin-left:6px}
 .blk-why{display:block;font-size:12px;line-height:1.35;color:var(--bad);margin-top:3px}.blk-why.need{color:var(--warn);font-weight:600}
-.since[hidden]{display:none}.ib-need{grid-column:2;font-size:12.5px;font-weight:600;color:var(--warn);overflow-wrap:anywhere}
+.since[hidden]{display:none}
+.hcard{position:fixed;z-index:1000;display:grid;gap:5px;width:max-content;max-width:280px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;pointer-events:none}.hcard[hidden]{display:none}
+.hc-top{display:flex;gap:8px;align-items:center}.hc-top .note{font-size:12px}.hc-hint{font-size:11.5px;color:var(--muted)}.hcard .chip{justify-self:start}.ib-need{grid-column:2;font-size:12.5px;font-weight:600;color:var(--warn);overflow-wrap:anywhere}
 .since{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:13px}
 .since b{margin-right:4px}
 .since .chip.go{cursor:pointer}
@@ -1318,6 +1320,30 @@ function dress(r, o){
   r.tag.textContent = o.label;
   r.b.setAttribute("aria-label", o.label + (o.stateText ? ": " + o.stateText : "") + (o.meet ? " (in the meeting room)" : ""));
 }
+// Hover card (council round 3, C2): who this is, what they do now and what is next, without opening the page.
+const hc = el("div","hcard"); hc.hidden = true; hc.setAttribute("role","tooltip"); document.body.append(hc);
+function hoverCard(id){
+  const a = agentById(id), now = Date.now(), l = (sched.byAgent[id] || []).filter(x => !x.done && x.e > now);
+  const lab = x => x.kind === "meet" ? `${x.sess.title_en || "Meeting"}` : `${x.t.id} · ${x.t.title_en || ""}`;
+  const cur = l.find(x => x.s <= now), nx = l.find(x => x.s > now);
+  const top = el("div","hc-top"), nm = el("div"); nm.append(el("b", null, nameOf(id)), el("div","note", id === "owner" ? "You" : [titleOf(a || {}), roleOf(a || {})].filter(Boolean).join(" · ")));
+  top.append(avatar(id, 34), nm); const rows = [top];
+  if (a) { const dz = idleSince(a); rows.push(dz ? el("div","note", "Idle since " + idleDate(dz)) : stateChip(a.state)); }
+  if (a?.state === "blocked") { const bi = blockInfo(a, l.find(x => x.kind === "task")?.t); if (bi.why) rows.push(el("div","blk-why", bi.why)); if (bi.needs) rows.push(el("div","blk-why need", "Needs from you: " + bi.needs)); }
+  else if (a?.doing_en) rows.push(el("div", null, a.doing_en));
+  if (cur) rows.push(el("div","note", "Now: " + lab(cur) + " · until " + fmtHM(cur.e)));
+  if (nx) rows.push(el("div","note", "Next: " + fmtWhen(nx.s) + " · " + lab(nx)));
+  const late = l.filter(x => x.kind === "task" && sched.byTask[x.t.id]?.lateBy).length; if (late) rows.push(el("div","t-warn", `${late} task${late === 1 ? "" : "s"} running late`));
+  if (id !== "owner") rows.push(el("div","hc-hint", "Click for their page"));
+  hc.replaceChildren(...rows);
+}
+document.addEventListener("pointerover", e => { const b = e.target.closest?.(".ag"); if (!b || e.pointerType === "touch") return;
+  const id = [...figs].find(([, r]) => r.b === b)?.[0]; if (!id) return;
+  hoverCard(id); hc.hidden = false; const r = b.getBoundingClientRect(), w = hc.offsetWidth, h = hc.offsetHeight;
+  hc.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+  hc.style.top = (r.top - h - 8 > 8 ? r.top - h - 8 : Math.min(innerHeight - h - 8, r.bottom + 8)) + "px"; });
+document.addEventListener("pointerout", e => { if (e.target.closest?.(".ag") && !e.relatedTarget?.closest?.(".ag")) hc.hidden = true; });
+addEventListener("scroll", () => { hc.hidden = true; }, {passive:true});
 let lastGroups = [];
 function drawScene(){
   buildRooms(); setRoomBg();
