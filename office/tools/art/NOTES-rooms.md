@@ -4,7 +4,7 @@ Rooms, furniture and (later) fx. Rebuild with one command from the repo root:
 
     python3 office/tools/art/build_rooms.py
 
-Files: `isokit.py` (SVG helpers, iso frame, shaded boxes), `rooms.py` (three rooms, day and night),
+Files: `isokit.py` (SVG helpers, iso frame, shaded boxes), `rooms.py` (four room backgrounds, day and night),
 `furniture.py` (all furniture sprites), `build_rooms.py` (renders with render.cjs and saves WebP).
 
 ## Look
@@ -23,6 +23,20 @@ Files: `isokit.py` (SVG helpers, iso frame, shaded boxes), `rooms.py` (three roo
 - Night: the same drawing under a NIGHT_TINT multiply at 38 % (a color matrix, so that lit city windows and glows
   stay out of it), with dark windows, a few lit city windows and warm sconce glows. The furniture and people have
   no night version, so the night is kept moderate to keep them from looking pasted on.
+
+## Work rooms (second pass)
+
+- `office-day/night`: three oat rugs with sage borders under the desk clusters, three pendant lamps (cords fade
+  out above the walls; warm cones at night), a credenza under the task board, a richer task board, a door with a
+  frosted strip and kick plate, a doormat, framed prints and softer window light patches.
+- `office-boss-day/night` (new, the manager's office): walnut panels on the right wall, a mint rug under the
+  desks, a sofa with pillows and a coffee table at the far right wall corner (u .10-.34, v < .16, away from the
+  seats), a credenza, three prints and one pendant over the desks. The page must load it for boss rooms.
+- Desks: monitor with a gradient screen, code or a chart and a soft glow, keyboard, cable tray and T-legs.
+  The four sprites differ: lf = code, coral mug, headphones; lr = notebook, tiny plant; rf (mirror of lf
+  variant 1) = chart, teal mug, photo, sticky note; rr (mirror of lr variant 1) = desk lamp, books, lavender mug.
+- Chairs got armrests and a seat panel. The coffee station is an oak cabinet with an espresso machine and grinder;
+  the monstera has slit leaves and a pot with a saucer. Canvas sizes and footprints are unchanged.
 
 ## Geometry
 

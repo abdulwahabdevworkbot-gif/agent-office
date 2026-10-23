@@ -898,7 +898,7 @@ const N_TABLES = HUDDLE.tables.length, tableSlots = ti => [0,1,2,3].map(k => ti 
 const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 18; };
 function setRoomBg(){
   const n = isNight() ? "night" : "day";
-  Object.entries(ROOMS).forEach(([k, r]) => { const b = typeOf(k); if (b === "boss" || b === "main") r.style.backgroundImage = `url(${A}rooms/office-${n}.webp)`; if (b === "meet" || b === "huddle") r.style.backgroundImage = `url(${A}rooms/meet-${n}.webp)`; });
+  Object.entries(ROOMS).forEach(([k, r]) => { const b = typeOf(k); if (b === "boss") r.style.backgroundImage = `url(${A}rooms/office-boss-${n}.webp)`; if (b === "main") r.style.backgroundImage = `url(${A}rooms/office-${n}.webp)`; if (b === "meet" || b === "huddle") r.style.backgroundImage = `url(${A}rooms/meet-${n}.webp)`; });
   ROOMS.game.style.backgroundImage = `url(${A}rooms/game-${n}.webp)`;
   ROOMS.idle.style.backgroundImage = `url(${A}rooms/office-${n}.webp)`;
   const d = new Date(); $("clock").textContent = (isNight() ? "NIGHT " : "DAY ") + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");

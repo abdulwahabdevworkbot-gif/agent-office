@@ -178,12 +178,40 @@ def chair(svg, F, uc, vc, facing, s=.03, col=None):
         svg.line(p0, p1, shade(base, 1.2), lw=2 * k)
 
     behind = du < 0 or dv < 0
+
+    def arms(near):
+        """Armrests on the two sides across the facing direction; near=True draws the one closer to the viewer."""
+        for sg in (-1, 1):
+            if du:
+                au, av = uc, vc + sg * s * .98
+                far = sg < 0
+            else:
+                au, av = uc + sg * s * .98, vc
+                far = sg < 0
+            if far == near:
+                continue
+            p0, p1 = F(au, av, SEAT - 3), F(au, av, SEAT + 15)
+            svg.line(p0, p1, shade(base, OUTLINE), lw=3.2 * k)
+            svg.line(p0, p1, shade(base, 1.3), lw=1.7 * k)
+            if du:
+                pad = [(au - s * .55, av - .004), (au + s * .55, av - .004), (au + s * .55, av + .004), (au - s * .55, av + .004)]
+            else:
+                pad = [(au - .004, av - s * .55), (au + .004, av - s * .55), (au + .004, av + s * .55), (au - .004, av + s * .55)]
+            box(svg, F, min(p[0] for p in pad), max(p[0] for p in pad), min(p[1] for p in pad), max(p[1] for p in pad),
+                SEAT + 14, SEAT + 18, shade(base, 1.35), lw=.8 * k)
+
     if not behind:
         back()
-    seat = rounded_rect_uv(uc - s, uc + s, vc - s, vc + s, s * .3)
-    extrude(svg, F, seat, SEAT - 7, SEAT, col, top=shade(col, 1.06))
+    arms(False)
+    seat = rounded_rect_uv(uc - s, uc + s, vc - s, vc + s, s * .32)
+    extrude(svg, F, seat, SEAT - 8, SEAT, col, top=shade(col, 1.07))
+    inner = rounded_rect_uv(uc - s * .72, uc + s * .72, vc - s * .72, vc + s * .72, s * .3)
+    svg.poly([F(u, v, SEAT + .3) for u, v in inner], shade(col, 1.14), stroke=False)
+    svg.pline([F(uc - s * .8, vc - s * .95, SEAT + .5), F(uc + s * .6, vc - s * .95, SEAT + .5)], shade(col, HILITE),
+              lw=1.2 * k)
     if behind:
         back()
+    arms(True)
 
 
 def mchair(i):
@@ -271,38 +299,67 @@ def desk_frame(name, back_top):
     return Frame(k, back_top[0] - bx, back_top[1] - by, linear_at=(.5, .5)), k
 
 
-def monitor(svg, F, u, v0, v1, h0, facing_us=True, k=1.0):
-    """A wide monitor on a stand, standing along v (panel in the plane u = const)."""
+def monitor(svg, F, u, v0, v1, h0, facing_us=True, k=1.0, show="code"):
+    """A wide monitor on a round foot, panel in the plane u = const. show: 'code' or 'graph' on the screen."""
     vm = (v0 + v1) / 2
-    hs = h0 + 10
-    stand = PAL["metal"]
-    # foot and neck
-    svg.poly([F(u - .012, vm - .014, h0 + .5), F(u + .006, vm - .014, h0 + .5), F(u + .006, vm + .014, h0 + .5),
-              F(u - .012, vm + .014, h0 + .5)], shade(stand, 1.05))
-    box(svg, F, u - .005, u, vm - .004, vm + .004, h0, hs + 8, stand)
+    hs = h0 + 11
+    stand = mix(PAL["metal"], PAL["paper"], .2)
+    x, y = F(u - .002, vm, h0 + .5)
+    svg.ellipse(x, y, 11 * k, 4.6 * k, shade(stand, 1.05))
+    box(svg, F, u - .006, u - .001, vm - .004, vm + .004, h0, hs + 10, stand)
     pu = u + .002
     th = .006
-    frame_c = PAL["dark"]
-    top = hs + 42
+    fc = PAL["dark"]
+    top = hs + 44
     if facing_us:
-        box(svg, F, pu - th, pu, v0, v1, hs, top, frame_c, side=shade(frame_c, 1.05))
-        svg.poly([F(pu, v0 + .006, hs + 4), F(pu, v1 - .006, hs + 4), F(pu, v1 - .006, top - 4),
-                  F(pu, v0 + .006, top - 4)], PAL["screen"], stroke=False)
-        # calm code lines on the screen
-        rnd = random.Random(int(v0 * 1000))
-        cols = [PAL["screen_glow"], PAL["sage"], PAL["mustard"], PAL["rose"], PAL["lavender"]]
-        hh = top - 10
-        while hh > hs + 9:
-            a = v1 - .012 - rnd.uniform(0, .02)
-            ln = rnd.uniform(.025, (v1 - v0) * .6)
-            svg.line(F(pu, a, hh), F(pu, max(v0 + .012, a - ln), hh), cols[rnd.randrange(5)], lw=2.2 * k, op=.9)
-            hh -= 6.5
-        svg.poly([F(pu, v1 - .012, top - 6), F(pu, v1 - .03, top - 6), F(pu, v1 - .055, hs + 6),
-                  F(pu, v1 - .037, hs + 6)], "#ffffff", stroke=False, op=.10)
+        box(svg, F, pu - th, pu, v0, v1, hs, top, fc, side=shade(fc, 1.1))
+        scr = [F(pu, v0 + .006, hs + 4), F(pu, v1 - .006, hs + 4), F(pu, v1 - .006, top - 4), F(pu, v0 + .006, top - 4)]
+        a, b = F(pu, vm, top - 4), F(pu, vm, hs + 4)
+        g = svg.linear(a[0], a[1], b[0], b[1], [(0, mix(PAL["screen"], PAL["navy"], .3), 1), (1, PAL["screen"], 1)])
+        svg.poly(scr, g, stroke=False)
+        if show == "code":
+            rnd = random.Random(int(v0 * 1000))
+            cols = [PAL["screen_glow"], PAL["sage"], PAL["mustard"], PAL["rose"], PAL["lavender"]]
+            hh, ind = top - 10, 0
+            while hh > hs + 9:
+                ind = max(0, min(2, ind + rnd.choice([-1, 0, 0, 1])))
+                a0 = v1 - .012 - ind * .008
+                ln = rnd.uniform(.02, (v1 - v0) * .5)
+                c = cols[rnd.randrange(5)]
+                svg.line(F(pu, a0, hh), F(pu, max(v0 + .012, a0 - ln), hh), c, lw=1.7 * k, op=.95)
+                if rnd.random() < .5:
+                    a1 = a0 - ln - .006
+                    if a1 > v0 + .02:
+                        svg.line(F(pu, a1, hh), F(pu, max(v0 + .012, a1 - .015), hh), cols[0], lw=1.7 * k, op=.6)
+                hh -= 5.2
+            # side panel of a file tree
+            svg.line(F(pu, v1 - .006 - .0005, top - 5), F(pu, v1 - .0065, hs + 5), shade(PAL["screen"], 1.5), lw=.8 * k)
+        else:
+            # a soft area chart with a line, and a donut
+            base, span = hs + 8, (top - hs - 18)
+            vals = [.25, .4, .35, .6, .5, .75, .7]
+            n = len(vals)
+            vv = [v1 - .012 - i * ((v1 - v0) * .55) / (n - 1) for i in range(n)]
+            area = [F(pu, vv[0], base)] + [F(pu, vv[i], base + span * vals[i]) for i in range(n)] + [F(pu, vv[-1], base)]
+            svg.poly(area, PAL["sky_accent"], stroke=False, op=.45)
+            svg.pline([F(pu, vv[i], base + span * vals[i]) for i in range(n)], PAL["screen_glow"], lw=1.8 * k)
+            cx, cy = F(pu, v0 + .028, (top + hs) / 2)
+            svg.ellipse(cx, cy, 6.5 * k, 8 * k, PAL["mustard"], stroke=False)
+            svg.path(f"M{f(cx)} {f(cy)}L{f(cx)} {f(cy - 8 * k)}A{f(6.5 * k)} {f(8 * k)} 0 0 1 {f(cx + 6.5 * k)} {f(cy)}Z",
+                     PAL["rose"], stroke=False)
+            svg.ellipse(cx, cy, 3 * k, 3.7 * k, PAL["screen"], stroke=False)
+        svg.poly([F(pu, v1 - .012, top - 6), F(pu, v1 - .026, top - 6), F(pu, v1 - .05, hs + 6),
+                  F(pu, v1 - .036, hs + 6)], "#ffffff", stroke=False, op=.08)
+        # soft screen light on the desk in front
+        gx, gy = F(pu + .02, vm, h0)
+        svg.ellipse(gx, gy, 34 * k, 9 * k, svg.radial(PAL["screen_glow"], .22, 0), stroke=False)
+        svg.ellipse(*F(pu - th / 2, vm, hs + 1.5), 2 * k, 1 * k, PAL["sage"], stroke=False)
     else:
-        box(svg, F, pu - th, pu, v0, v1, hs, top, shade(frame_c, 1.25))
+        box(svg, F, pu - th, pu, v0, v1, hs, top, shade(fc, 1.3), side=shade(fc, 1.38))
         svg.poly([F(pu, vm - .03, hs + 10), F(pu, vm + .03, hs + 10), F(pu, vm + .03, top - 12),
-                  F(pu, vm - .03, top - 12)], shade(frame_c, 1.12), lw=.8 * k)
+                  F(pu, vm - .03, top - 12)], shade(fc, 1.18), lw=.8 * k)
+        for j in range(3):
+            svg.line(F(pu, vm - .02, top - 16 - j * 4), F(pu, vm + .02, top - 16 - j * 4), shade(fc, 1.05), lw=k)
 
 
 def mug(svg, F, u, v, h, col, k):
@@ -326,47 +383,113 @@ def tiny_plant(svg, F, u, v, h, k, seed=4):
                     extra=f'transform="rotate({f(math.degrees(a))} {f(lx)} {f(ly)})"')
 
 
-def desk(kind):
-    """kind 'lf': screens toward the viewer (user on the +u side); 'lr': screens away (user on the -u side)."""
+def keyboard(svg, F, u0, u1, v0, v1, h, k):
+    kb = mix(PAL["metal"], PAL["paper"], .55)
+    box(svg, F, u0, u1, v0, v1, h, h + 1.6, kb)
+    rows = 3
+    for j in range(rows):
+        uu = u0 + (u1 - u0) * (j + .5) / rows
+        n = 8
+        for i in range(n):
+            a = v0 + .003 + (v1 - v0 - .006) * i / n
+            b = a + (v1 - v0 - .006) / n * .7
+            svg.line(F(uu, a, h + 1.7), F(uu, b, h + 1.7), shade(kb, .78), lw=1.3 * k)
+
+
+def headphones(svg, F, u, v, h, k):
+    x, y = F(u, v, h)
+    c = PAL["navy"]
+    svg.path(f"M{f(x - 9 * k)} {f(y - 1 * k)}Q{f(x)} {f(y - 14 * k)} {f(x + 9 * k)} {f(y - 1 * k)}", "none",
+             stroke=shade(c, OUTLINE), lw=3.4 * k)
+    svg.path(f"M{f(x - 9 * k)} {f(y - 1 * k)}Q{f(x)} {f(y - 14 * k)} {f(x + 9 * k)} {f(y - 1 * k)}", "none", stroke=c,
+             lw=2 * k)
+    for dx in (-9, 9):
+        svg.ellipse(x + dx * k, y, 3.4 * k, 2.4 * k, mix(c, PAL["coral"], .3))
+
+
+def photo(svg, F, u, v, h, k):
+    """A small standing photo frame facing +u."""
+    svg.poly([F(u, v - .012, h), F(u, v + .012, h), F(u - .004, v + .012, h + 15), F(u - .004, v - .012, h + 15)],
+             PAL["wood"])
+    svg.poly([F(u - .0005, v - .008, h + 3), F(u - .0005, v + .008, h + 3), F(u - .0035, v + .008, h + 12),
+              F(u - .0035, v - .008, h + 12)], mix(PAL["sky"], PAL["sage"], .4), stroke=False)
+
+
+def desk_lamp(svg, F, u, v, h, k):
+    x, y = F(u, v, h)
+    c = PAL["mustard"]
+    svg.ellipse(x, y, 5 * k, 2.2 * k, PAL["dark"])
+    svg.pline([(x, y - 1 * k), (x - 4 * k, y - 16 * k), (x + 6 * k, y - 24 * k)], PAL["dark"], lw=1.8 * k)
+    svg.path(f"M{f(x + 2 * k)} {f(y - 27 * k)}L{f(x + 12 * k)} {f(y - 25 * k)}L{f(x + 13 * k)} {f(y - 17 * k)}Z", c)
+
+
+def books(svg, F, u, v, h, k):
+    for j, c in enumerate([PAL["coral"], PAL["sky_accent"], PAL["mustard"]]):
+        hh = h + j * 3.2
+        svg.poly([F(u - .016, v - .02, hh), F(u + .012, v - .02, hh), F(u + .012, v + .012, hh),
+                  F(u - .016, v + .012, hh)], c)
+        box(svg, F, u - .016, u + .012, v - .02, v + .012, hh, hh + 3, c, top=c)
+
+
+def desk(kind, variant=0):
+    """kind 'lf': screens toward the viewer (user on the +u side); 'lr': screens away (user on the -u side).
+    variant changes the monitor content and the personal things, so the four desk files differ."""
     name = "desk-" + kind
     back_top = {"lf": (162, 76), "lr": (162, 60)}[kind]
     F, k = desk_frame(name, back_top)
     svg = sprite_svg(name, k)
     Lu, Lv, ht = DESK["Lu"], DESK["Lv"], DESK["ht"]
-    # soft shadow on the floor under the desk
-    shadow(svg, F, [(.004, .01), (Lu + .02, .01), (Lu + .02, Lv + .012), (.004, Lv + .012)], .12, n=1)
+    shadow(svg, F, rounded_rect_uv(.0, Lu + .018, .004, Lv + .012, .02), .13, n=1)
     leg = mix(PAL["metal"], PAL["paper"], .25)
-    # T-legs under both short ends: foot bar along u, column, then a crossbar under the top
     au = .036
+    # cable tray under the back of the top, with a cable down the near leg
+    tray = mix(PAL["dark"], PAL["metal"], .45)
     for vb in (.011, Lv - .011):
-        box(svg, F, -.004, Lu + .004, vb - .0055, vb + .0055, 0, 6, leg)
-        box(svg, F, au - .006, au + .006, vb - .0055, vb + .0055, 6, ht - 6, leg)
+        box(svg, F, -.004, Lu + .004, vb - .0055, vb + .0055, 0, 5, leg)
+        x, y = F(-.002, vb, 0)
+        x2, y2 = F(Lu + .002, vb, 0)
+        for (xx, yy) in ((x, y), (x2, y2)):
+            svg.ellipse(xx, yy, 2 * k, 1 * k, PAL["dark"], stroke=False)
+        box(svg, F, au - .006, au + .006, vb - .0055, vb + .0055, 5, ht - 6, leg,
+            side=shade(leg, RIGHT_FACE), front=shade(leg, .78))
+        box(svg, F, au - .0045, au + .0045, vb - .004, vb + .004, ht - 34, ht - 31, shade(leg, 1.1))
+    tu = .012 if kind == "lf" else Lu - .02
+    box(svg, F, tu - .006, tu + .006, .02, Lv - .02, ht - 15, ht - 7, tray)
+    a, b = F(tu, Lv - .03, ht - 11), F(au + .001, Lv - .012, 30)
+    svg.path(f"M{f(a[0])} {f(a[1])}Q{f(a[0] + 2 * k)} {f((a[1] + b[1]) / 2)} {f(b[0])} {f(b[1])}", "none",
+             stroke=PAL["dark"], lw=1.6 * k)
     box(svg, F, au - .004, au + .004, .016, Lv - .016, ht - 12, ht - 6, shade(leg, .9))
-    # desktop: white top with a light oak edge
     top = PAL["desk"]
     box(svg, F, 0, Lu, 0, Lv, ht - 6, ht, mix(PAL["wood"], PAL["paper"], .35), top=top)
     svg.pline([F(.006, .008, ht), F(.006, Lv - .008, ht)], shade(top, HILITE), lw=1.4 * k)
     if kind == "lf":
-        monitor(svg, F, .016, .035, .15, ht, True, k)
-        # keyboard and mouse in front of the screen, a mug on the left
-        svg.poly([F(.042, .055, ht + .5), F(.058, .055, ht + .5), F(.058, .118, ht + .5), F(.042, .118, ht + .5)],
-                 mix(PAL["metal"], PAL["paper"], .5))
-        for j in range(3):
-            uu = .046 + j * .004
-            svg.line(F(uu, .06, ht + 1), F(uu, .113, ht + 1), shade(PAL["metal"], .9), lw=.9 * k, op=.8)
-        x, y = F(.05, .036, ht)
-        svg.ellipse(x, y - 1.5 * k, 3.2 * k, 2 * k, PAL["paper"], lw=.9 * k)
-        mug(svg, F, .045, .155, ht, PAL["coral"], k)
+        monitor(svg, F, .016, .035, .15, ht, True, k, "code" if variant == 0 else "graph")
+        keyboard(svg, F, .042, .057, .055, .118, ht, k)
+        x, y = F(.05, .034, ht)
+        svg.ellipse(x, y - 1.5 * k, 3.2 * k, 2.2 * k, PAL["paper"], lw=.9 * k)
+        svg.ellipse(x - .6 * k, y - 2.3 * k, 1.4 * k, .8 * k, "#ffffff", stroke=False)
+        if variant == 0:
+            mug(svg, F, .046, .155, ht, PAL["coral"], k)
+            headphones(svg, F, .062, .012, ht, k)
+        else:
+            mug(svg, F, .05, .158, ht, PAL["teal"], k)
+            photo(svg, F, .03, .162, ht, k)
+            svg.poly([F(.06, .02, ht + .5), F(.072, .02, ht + .5), F(.072, .034, ht + .5), F(.06, .034, ht + .5)],
+                     PAL["mustard"])
     else:
-        # keyboard and a notebook on the user's side (-u), a small plant at the end, monitor seen from the back
-        svg.poly([F(.016, .062, ht + .5), F(.032, .062, ht + .5), F(.032, .125, ht + .5), F(.016, .125, ht + .5)],
-                 mix(PAL["metal"], PAL["paper"], .5))
-        svg.poly([F(.014, .135, ht + .5), F(.04, .135, ht + .5), F(.04, .165, ht + .5), F(.014, .165, ht + .5)],
-                 PAL["sky_accent"])
-        svg.poly([F(.017, .139, ht + 1), F(.037, .139, ht + 1), F(.037, .161, ht + 1), F(.017, .161, ht + 1)],
-                 PAL["paper"], stroke=False)
-        monitor(svg, F, .058, .04, .155, ht, False, k)
-        tiny_plant(svg, F, .06, .022, ht, k)
+        keyboard(svg, F, .016, .031, .062, .125, ht, k)
+        if variant == 0:
+            svg.poly([F(.014, .135, ht + .5), F(.04, .135, ht + .5), F(.04, .165, ht + .5), F(.014, .165, ht + .5)],
+                     PAL["sky_accent"])
+            svg.poly([F(.017, .139, ht + 1), F(.037, .139, ht + 1), F(.037, .161, ht + 1), F(.017, .161, ht + 1)],
+                     PAL["paper"], stroke=False)
+            monitor(svg, F, .058, .04, .155, ht, False, k)
+            tiny_plant(svg, F, .06, .022, ht, k)
+        else:
+            desk_lamp(svg, F, .014, .022, ht, k)
+            books(svg, F, .03, .15, ht, k)
+            monitor(svg, F, .058, .04, .155, ht, False, k)
+            mug(svg, F, .066, .163, ht, PAL["lavender"], k)
     return svg
 
 
@@ -390,41 +513,69 @@ def item_frame(name, foot_uv, foot_canvas, kind=None):
 
 
 def coffee():
-    """A small coffee sideboard with an espresso machine and two cups (footprint as the old machine)."""
+    """A coffee sideboard: oak cabinet with two doors, an espresso machine with a cup under the spout,
+    a grinder, a stack of cups and a little plant (footprint as the old machine)."""
     a = .038
     F, k = item_frame("coffee", (a, a), (88, 201))
     svg = sprite_svg("coffee", k)
-    shadow(svg, F, [(0, 0), (a + .01, 0), (a + .01, a + .01), (0, a + .01)], .14, n=1)
-    wd = mix(PAL["wood"], PAL["paper"], .2)
-    box(svg, F, 0, a, 0, a, 0, 44, wd, top=PAL["desk"])
-    t, wdt = F.plane_u(a, a, 0)
+    shadow(svg, F, rounded_rect_uv(0, a + .01, 0, a + .01, .006), .15, n=1)
+    wd = mix(PAL["wood"], PAL["paper"], .22)
+    box(svg, F, .002, a - .002, .002, a - .002, 0, 3, PAL["wood_dark"])
+    box(svg, F, 0, a, 0, a, 3, 44, wd, top=mix(PAL["desk"], wd, .2))
+    for (pl, ln) in (("u", F.plane_u(a, a, 0)), ("v", F.plane_v(a, 0, a))):
+        t, wdt = ln
+        svg.group(f'transform="{t}"')
+        face = shade(wd, RIGHT_FACE if pl == "u" else LEFT_FACE)
+        if pl == "u":
+            for j in (0, 1):
+                x0 = 3 * k + j * (wdt - 6 * k) / 2 + j * 1.5 * k
+                svg.rect(x0, -40 * S * k, (wdt - 6 * k) / 2 - 1.5 * k, 33 * S * k, shade(face, 1.05), rx=1.5 * k, lw=.9 * k)
+                hx = x0 + ((wdt - 6 * k) / 2 - 1.5 * k) * (.82 if j == 0 else .18)
+                svg.rect(hx - 1 * k, -30 * S * k, 2 * k, 9 * S * k, PAL["frame"], stroke=False)
+        else:
+            svg.rect(3 * k, -40 * S * k, wdt - 6 * k, 12 * S * k, shade(face, 1.05), rx=1.5 * k, lw=.9 * k)
+            svg.rect(wdt / 2 - 5 * k, -35 * S * k, 10 * k, 2 * k, PAL["frame"], stroke=False)
+        svg.end()
+    # espresso machine
+    m0, m1, v0, v1 = .004, .026, .004, .028
+    body = mix(PAL["metal"], PAL["paper"], .25)
+    box(svg, F, m0, m1, v0, v1, 44, 70, body, top=shade(body, 1.06))
+    box(svg, F, m0, m1, v0, v1, 70, 73, PAL["coral"])
+    t, wdt = F.plane_u(m1, v1, v0)
     svg.group(f'transform="{t}"')
-    for y0, y1 in ((6, 23), (25, 40)):
-        svg.rect(4 * k, -y1 * S * k, wdt - 8 * k, (y1 - y0) * S * k, shade(wd, RIGHT_FACE * 1.04), rx=1.5 * k,
-                 lw=.9 * k)
-        svg.rect(wdt / 2 - 4 * k, -(y0 + y1) / 2 * S * k - 1 * k, 8 * k, 2 * k, PAL["frame"], stroke=False)
+    svg.rect(wdt * .15, -67 * S * k, wdt * .7, 5 * S * k, PAL["dark"], rx=1 * k, lw=.7 * k)
+    svg.ellipse(wdt * .3, -64.5 * S * k, 1.3 * k, 1.3 * k, PAL["screen_glow"], stroke=False)
+    svg.ellipse(wdt * .7, -64.5 * S * k, 1.3 * k, 1.3 * k, PAL["mustard"], stroke=False)
+    svg.rect(wdt * .1, -50 * S * k, wdt * .8, 3 * S * k, PAL["dark"], stroke=False, op=.5)
     svg.end()
-    # machine
-    m0, m1 = .006, .03
-    box(svg, F, m0, m1, m0, m1, 44, 72, PAL["metal"], top=shade(PAL["metal"], 1.08))
-    box(svg, F, m0, m1, m0, m1, 72, 74, PAL["dark"])
-    t, wdt = F.plane_u(m1, m1, m0)
-    svg.group(f'transform="{t}"')
-    svg.rect(wdt * .2, -67 * S * k, wdt * .6, 6 * S * k, PAL["dark"], rx=1 * k, lw=.8 * k)
-    svg.ellipse(wdt * .78, -62 * S * k, 1.6 * k, 1.6 * k, PAL["coral"], stroke=False)
-    svg.end()
-    # cups
-    for (u, v, c) in [(.034, .012, PAL["paper"]), (.034, .032, PAL["sage"])]:
-        x, y = F(u, v, 44)
-        svg.path(f"M{f(x - 3.4 * k)} {f(y - 6 * k)}L{f(x + 3.4 * k)} {f(y - 6 * k)}L{f(x + 2.8 * k)} {f(y)}"
-                 f"L{f(x - 2.8 * k)} {f(y)}Z", c, lw=1 * k)
-        svg.ellipse(x, y - 6 * k, 3.4 * k, 1.2 * k, PAL["wood_dark"], lw=.6 * k)
-    # steam
-    x, y = F(.018, .018, 76)
-    for dx in (-3, 3):
+    box(svg, F, m1, m1 + .006, .011, .021, 56, 59, PAL["dark"])           # group head / portafilter
+    box(svg, F, m1 - .002, m1 + .008, .006, .026, 44, 46, PAL["dark"])    # drip tray
+    x, y = F(m1 + .003, .016, 46)
+    svg.path(f"M{f(x - 3 * k)} {f(y - 6 * k)}L{f(x + 3 * k)} {f(y - 6 * k)}L{f(x + 2.4 * k)} {f(y)}L{f(x - 2.4 * k)} {f(y)}Z",
+             PAL["paper"], lw=.9 * k)
+    svg.line((x, y - 13 * k), (x, y - 7 * k), PAL["wood_dark"], lw=1.2 * k, op=.8)
+    # grinder
+    gx, gy = F(.012, .034, 44)
+    svg.path(rr_path(gx - 3.5 * k, gy - 16 * k, gx + 3.5 * k, gy, 1.2 * k), PAL["dark"], lw=.9 * k)
+    svg.path(f"M{f(gx - 4.5 * k)} {f(gy - 24 * k)}L{f(gx + 4.5 * k)} {f(gy - 24 * k)}L{f(gx + 2.5 * k)} {f(gy - 16 * k)}"
+             f"L{f(gx - 2.5 * k)} {f(gy - 16 * k)}Z", mix(PAL["glass"], PAL["wood_dark"], .45), lw=.9 * k)
+    # cups stack and a plant
+    cx, cy = F(.034, .008, 44)
+    for j in range(3):
+        yy = cy - j * 3 * k
+        svg.path(f"M{f(cx - 3.2 * k)} {f(yy - 4 * k)}L{f(cx + 3.2 * k)} {f(yy - 4 * k)}L{f(cx + 2.6 * k)} {f(yy)}"
+                 f"L{f(cx - 2.6 * k)} {f(yy)}Z", PAL["paper"] if j % 2 == 0 else PAL["sage"], lw=.8 * k)
+    tiny_plant(svg, F, .033, .033, 44, k * .8, seed=9)
+    x, y = F(.015, .016, 75)
+    for dx in (-2.5, 2.5):
         svg.path(f"M{f(x + dx * k)} {f(y)}q{f(-3 * k)} {f(-5 * k)} 0 {f(-10 * k)}t0 {f(-10 * k)}", "none",
-                 stroke=PAL["paper"], lw=1.6 * k, op=.8)
+                 stroke=PAL["paper"], lw=1.5 * k, op=.75)
     return svg
+
+
+def rr_path(x0, y0, x1, y1, r):
+    return (f"M{f(x0 + r)} {f(y0)}H{f(x1 - r)}Q{f(x1)} {f(y0)} {f(x1)} {f(y0 + r)}V{f(y1 - r)}Q{f(x1)} {f(y1)} "
+            f"{f(x1 - r)} {f(y1)}H{f(x0 + r)}Q{f(x0)} {f(y1)} {f(x0)} {f(y1 - r)}V{f(y0 + r)}Q{f(x0)} {f(y0)} {f(x0 + r)} {f(y0)}Z")
 
 
 def filing():
@@ -515,14 +666,22 @@ def whiteboard():
 
 
 def pot(svg, cx, by, rt, rb, hh, col, k):
-    """Round pot in screen space: bottom center (cx, by), top radius rt, bottom radius rb, height hh."""
+    """Round pot in screen space with a rim band and a saucer: bottom center (cx, by)."""
     ry = .42
+    sc = shade(col, .9)
+    svg.ellipse(cx, by - rb * ry * .6, rb * 1.18, rb * ry * 1.05, sc)
     svg.path(f"M{f(cx - rt)} {f(by - hh)}L{f(cx - rb)} {f(by - rb * ry)}A{f(rb)} {f(rb * ry)} 0 0 0 {f(cx + rb)} "
              f"{f(by - rb * ry)}L{f(cx + rt)} {f(by - hh)}Z", col)
-    svg.path(f"M{f(cx + rt * .25)} {f(by - hh + rt * ry)}L{f(cx + rb * .25)} {f(by)}A{f(rb)} {f(rb * ry)} 0 0 0 "
-             f"{f(cx + rb)} {f(by - rb * ry)}L{f(cx + rt)} {f(by - hh)}Z", shade(col, RIGHT_FACE), stroke=False)
-    svg.ellipse(cx, by - hh, rt, rt * ry, shade(col, HILITE), lw=1.0 * k)
-    svg.ellipse(cx, by - hh + 1 * k, rt * .82, rt * ry * .78, PAL["wood_dark"], stroke=False)
+    svg.path(f"M{f(cx + rt * .3)} {f(by - hh + rt * ry)}L{f(cx + rb * .3)} {f(by - rb * ry * .05)}A{f(rb)} {f(rb * ry)} "
+             f"0 0 0 {f(cx + rb)} {f(by - rb * ry)}L{f(cx + rt)} {f(by - hh)}Z", shade(col, RIGHT_FACE), stroke=False)
+    band = hh * .2
+    rb2 = rt + (rb - rt) * .2
+    svg.path(f"M{f(cx - rt * 1.04)} {f(by - hh)}L{f(cx - rb2 * 1.04)} {f(by - hh + band)}A{f(rb2 * 1.04)} "
+             f"{f(rb2 * ry)} 0 0 0 {f(cx + rb2 * 1.04)} {f(by - hh + band)}L{f(cx + rt * 1.04)} {f(by - hh)}Z",
+             shade(col, 1.06))
+    svg.line((cx - rt * .55, by - hh * .7), (cx - rb * .6, by - hh * .2), shade(col, HILITE), lw=2 * k / 2.5, op=.8)
+    svg.ellipse(cx, by - hh, rt * 1.04, rt * ry, shade(col, HILITE))
+    svg.ellipse(cx, by - hh + 1, rt * .86, rt * ry * .78, PAL["wood_dark"], stroke=False)
 
 
 def plant_svg(name, foot):
@@ -572,32 +731,59 @@ def money():
     return svg
 
 
+def monstera_leaf(svg, x, y, r, rot, col, k, seed):
+    """A split monstera leaf centred at (x, y), radius r, rotated; holes and slits come from its outline."""
+    rnd = random.Random(seed)
+    pts_ = []
+    n = 72
+    slits = [-.95, -.42, .12, .62]                    # right side, radians from the leaf's horizontal
+    slits = [(t + rnd.uniform(-.06, .06)) for t in slits]
+    slits = slits + [math.pi - t for t in slits]
+    def rim(t):
+        rad = r * (1 - .10 * max(0, math.sin(t)))
+        if math.sin(t) > .97:                         # heart notch at the stem end
+            rad *= .62
+        return rad
+    def put(t, rad):
+        pts_.append((math.cos(t) * rad * .82, math.sin(t) * rad * 1.02))
+    for i in range(n + 1):
+        t = -math.pi / 2 + 2 * math.pi * i / n
+        for c in slits:
+            if abs(((t - c + math.pi) % (2 * math.pi)) - math.pi) < math.pi / n:
+                dep = .5 + rnd.uniform(-.06, .06)
+                put(c - .085, rim(c - .085))
+                put(c - .03, r * dep)
+                put(c + .03, r * dep)
+                put(c + .085, rim(c + .085))
+                break
+        else:
+            put(t, rim(t))
+    # notch at the stem end
+    d = "M" + " L".join(f"{f(px)} {f(py)}" for px, py in pts_) + "Z"
+    svg.group(f'transform="translate({f(x)} {f(y)}) rotate({f(rot)})"')
+    svg.path(d, col, lw=1.0 * k)
+    half = [pt for pt in pts_ if pt[0] <= 0]
+    svg.path("M0 " + f(-r) + " L" + " L".join(f"{f(px)} {f(py)}" for px, py in half) + "Z",
+             shade(col, .9), stroke=False)
+    svg.line((0, r * .85), (0, -r * .9), shade(col, .75), lw=1.1 * k / 2.15)
+    svg.end()
+
+
 def monstera():
     svg, k, cx, by = plant_svg("monstera", (75, 216))
     q = 1.3
     pot(svg, cx, by, 21 * q, 16 * q, 36 * q, PAL["paper"], k)
     top = by - 36 * q
-    rnd = random.Random(8)
-    specs = [(-28, 95, 1.0), (14, 110, 1.05), (36, 78, .95), (-42, 62, .9), (40, 42, .8), (-8, 60, .85)]
-    for dx, up, sc in specs:
+    specs = [(-30, 100, 1.0, -30), (14, 112, 1.05, 18), (40, 82, .95, 50), (-44, 66, .92, -62), (-4, 74, .92, -6),
+             (32, 50, .85, 72), (-26, 42, .8, -82), (8, 46, .75, 10)]
+    for dx, up, sc, rot in specs:
         lx, ly = cx + dx * q, top - up * q
-        svg.path(f"M{f(cx + dx * .1 * q)} {f(top)}Q{f(cx + dx * .3 * q)} {f(top - up * .6 * q)} {f(lx)} {f(ly)}",
-                 "none", stroke=PAL["leaf_dark"], lw=2.2 * q)
-    for dx, up, sc in sorted(specs, key=lambda s_: -s_[1]):
+        svg.path(f"M{f(cx + dx * .08 * q)} {f(top)}Q{f(cx + dx * .25 * q)} {f(top - up * .6 * q)} {f(lx)} "
+                 f"{f(ly + 14 * q * sc)}", "none", stroke=PAL["leaf_dark"], lw=2.2 * q)
+    for i, (dx, up, sc, rot) in enumerate(sorted(specs, key=lambda s_: -s_[1])):
         lx, ly = cx + dx * q, top - up * q
-        r = 22 * q * sc
-        rot = math.degrees(math.atan2(-up, dx)) + 90
-        col = PAL["leaf"] if dx < 0 else shade(PAL["leaf"], .9)
-        # a heart-shaped leaf with three notches each side
-        d = (f"M0 {f(r * .9)}C{f(-r * 1.2)} {f(r * .6)} {f(-r * 1.1)} {f(-r * .9)} 0 {f(-r * .55)}"
-             f"C{f(r * 1.1)} {f(-r * .9)} {f(r * 1.2)} {f(r * .6)} 0 {f(r * .9)}Z")
-        svg.group(f'transform="translate({f(lx)} {f(ly)}) rotate({f(rot + 180)})"')
-        svg.path(d, col, lw=1.1 * k)
-        for j in (-.35, .05, .45):
-            for sgn in (-1, 1):
-                svg.line((sgn * r * .95, r * j), (sgn * r * .35, r * j + r * .06), PAL["paper"], lw=2.2 * q)
-        svg.line((0, r * .85), (0, -r * .45), shade(col, .8), lw=1.1 * q)
-        svg.end()
+        col = PAL["leaf_dark"] if i < 2 else (PAL["leaf"] if i % 2 else shade(PAL["leaf"], 1.08))
+        monstera_leaf(svg, lx, ly, 22 * q * sc, rot, col, k, i + 3)
     return svg
 
 
@@ -635,8 +821,8 @@ SPRITES = {
     **{f"chair-{fc}": (lambda fc=fc: desk_chair(fc)) for fc in FACE},
     "desk-lf": lambda: desk("lf"),
     "desk-lr": lambda: desk("lr"),
-    "desk-rf": lambda: mirrored(lambda: desk("lf"), "desk-rf"),
-    "desk-rr": lambda: mirrored(lambda: desk("lr"), "desk-rr"),
+    "desk-rf": lambda: mirrored(lambda: desk("lf", 1), "desk-rf"),
+    "desk-rr": lambda: mirrored(lambda: desk("lr", 1), "desk-rr"),
     "coffee": coffee, "filing": filing, "printer": printer, "whiteboard": whiteboard,
     "money": money, "monstera": monstera, "snake": snake,
 }

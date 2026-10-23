@@ -96,12 +96,14 @@ def sun_patches(svg, panes, clip_id, col=None, op=.6):
     du, dv = SUN
     col = col or PAL["sun"]
     svg.group(f'clip-path="url(#{clip_id})"')
+    svg.group(f'filter="{svg.blur(2.2)}"')
     for v0, v1, h0, h1 in panes:
         uv = [(h0 * du, v0 + h0 * dv), (h1 * du, v0 + h1 * dv), (h1 * du, v1 + h1 * dv), (h0 * du, v1 + h0 * dv)]
         vm = (v0 + v1) / 2
         a, b = F(h0 * du, vm + h0 * dv), F(h1 * du, vm + h1 * dv)
         g = svg.linear(a[0], a[1], b[0], b[1], [(0, col, op), (1, col, op * .35)])
         svg.poly(floor_poly(F, uv, n=8), g, stroke=False)
+    svg.end()
     svg.end()
 
 def walls(svg):
@@ -269,23 +271,36 @@ def lit_windows(svg, lit, cid):
 
 
 # ------------------------------------------------------------------------------------------------ wall items
-def door_right(svg, u0, u1, h=190, leaf=None):
-    """Door on the right wall: protruding frame, painted leaf with a round window and a handle."""
+def door_right(svg, u0, u1, h=190, leaf=None, glass=True):
+    """Door on the right wall: protruding casing, a painted leaf with a frosted glass strip, a lever handle
+    and a little kick plate; a doormat in front of it."""
     leaf = leaf or PAL["sage"]
     fr = PAL["frame"]
     d = .010
-    # leaf (in the wall plane)
     right_g(svg)
     X0, X1 = xr(u0), xr(u1)
+    svg.path(rr(X0 - 2, hy(h + 2), X1 + 2, hy(0), 0), shade(PAL["wall"], .82), stroke=False)   # reveal
     svg.path(rr(X0, hy(h), X1, hy(0), 0), leaf, lw=1.6)
-    svg.path(rr(X0 + 6, hy(h - 12), X1 - 6, hy(h * .58), 2), shade(leaf, 1.08), lw=1.2)
-    svg.path(rr(X0 + 6, hy(h * .5), X1 - 6, hy(14), 2), shade(leaf, 1.08), lw=1.2)
-    svg.ellipse(X1 - 9, hy(h * .47), 2.6, 2.6, PAL["mustard"], lw=1.2)
+    w = X1 - X0
+    if glass:
+        svg.path(rr(X0 + w * .22, hy(h - 16), X1 - w * .22, hy(h * .52), 2), mix(PAL["glass"], PAL["paper"], .35),
+                 stroke=shade(leaf, .6), lw=1.2)
+        svg.path(f"M{f(X0 + w * .3)} {f(hy(h * .58))}L{f(X0 + w * .5)} {f(hy(h - 22))}", "none", stroke="#ffffff",
+                 lw=2, op=.7)
+    svg.path(rr(X0 + 6, hy(h * .44), X1 - 6, hy(16), 2), shade(leaf, 1.1), lw=1.1)
+    svg.path(rr(X0 + 3, hy(12), X1 - 3, hy(2), 1), shade(PAL["metal"], 1.05), lw=1)
+    svg.path(rr(X1 - 13, hy(h * .5) - 1.6, X1 - 4, hy(h * .5) + 1.6, 1.4), PAL["mustard"], lw=1.1)
+    svg.ellipse(X1 - 5, hy(h * .5), 2.2, 2.2, PAL["mustard"], lw=1)
     svg.end()
-    # frame: two jambs and a head, protruding a little
-    box(svg, F, u0 - .012, u0, 0, d, 0, h + 9, fr, lw=1.4)
-    box(svg, F, u1, u1 + .012, 0, d, 0, h + 9, fr, lw=1.4)
-    box(svg, F, u0 - .012, u1 + .012, 0, d, h, h + 9, fr, lw=1.4)
+    box(svg, F, u0 - .014, u0, 0, d, 0, h + 10, fr, lw=1.4)
+    box(svg, F, u1, u1 + .014, 0, d, 0, h + 10, fr, lw=1.4)
+    box(svg, F, u0 - .016, u1 + .016, 0, d + .002, h, h + 12, fr, lw=1.4)
+    # doormat
+    mat = mix(PAL["coral"], PAL["wood"], .45)
+    svg.poly(floor_poly(F, [(u0 - .005, .014), (u1 + .005, .014), (u1 + .005, .06), (u0 - .005, .06)], n=1), mat,
+             lw=1.3)
+    svg.poly(floor_poly(F, [(u0 + .003, .02), (u1 - .003, .02), (u1 - .003, .054), (u0 + .003, .054)], n=1), "none",
+             stroke=shade(mat, 1.2), lw=1.1)
 
 
 def door_left(svg, v0, v1, h=190, leaf=None):
@@ -306,34 +321,48 @@ def door_left(svg, v0, v1, h=190, leaf=None):
 
 
 def task_board(svg, u0, u1, h0, h1, seed=5):
-    """A kanban board: frame, three columns with colored header tabs and sticky notes (no text)."""
+    """A kanban board: wood frame, three columns with colored header tabs and sticky notes (no text),
+    a pinned photo and a tiny calendar, and a marker ledge."""
     d = .008
     box(svg, F, u0, u1, 0, d, h0, h1, PAL["wood"], lw=1.4, faces="tu")
     t, _ = F.plane_v(d)
     svg.group(f'transform="{t}"')
     X0, X1 = xr(u0), xr(u1)
-    svg.path(rr(X0, hy(h1), X1, hy(h0), 2), PAL["wood"], lw=1.6)
-    svg.path(rr(X0 + 4, hy(h1 - 5), X1 - 4, hy(h0 + 5), 1), PAL["paper"], lw=1.2)
+    svg.path(rr(X0, hy(h1), X1, hy(h0), 2.5), PAL["wood"], lw=1.6)
+    svg.path(rr(X0 + 4.5, hy(h1 - 5), X1 - 4.5, hy(h0 + 5), 1.5), PAL["paper"], lw=1.2)
     rnd = random.Random(seed)
     cols = [PAL["sky_accent"], PAL["mustard"], PAL["sage"]]
-    notes = [PAL["mustard"], PAL["rose"], PAL["sky_accent"], PAL["sage"], PAL["lavender"]]
-    cw = (X1 - X0 - 8) / 3
+    notes = [PAL["mustard"], PAL["rose"], PAL["sky_accent"], PAL["sage"], PAL["lavender"], mix(PAL["coral"], PAL["paper"], .3)]
+    cw = (X1 - X0 - 9) / 3
     for c in range(3):
-        cx0 = X0 + 4 + c * cw
+        cx0 = X0 + 4.5 + c * cw
         if c:
-            svg.line((cx0, hy(h1 - 8)), (cx0, hy(h0 + 8)), shade(PAL["paper"], .82), lw=1.2)
-        svg.path(rr(cx0 + 5, hy(h1 - 9), cx0 + cw - 5, hy(h1 - 18), 2), cols[c], lw=1.1)
-        n = [4, 3, 2][c]
+            svg.line((cx0, hy(h1 - 9)), (cx0, hy(h0 + 9)), shade(PAL["paper"], .85), lw=1.1)
+        svg.path(rr(cx0 + 5, hy(h1 - 9), cx0 + cw - 5, hy(h1 - 17), 3), cols[c], lw=1)
+        svg.ellipse(cx0 + 9, hy(h1 - 13), 1.4, 1.4, PAL["paper"], stroke=False)
+        n = [5, 3, 2][c]
         for k in range(n):
             r, q = divmod(k, 2)
-            nx = cx0 + 6 + q * (cw - 12) / 2 + rnd.uniform(-1, 1)
-            ny = hy(h1 - 24 - r * 25) + rnd.uniform(-1, 1)
+            nw = (cw - 13) / 2
+            nx = cx0 + 5.5 + q * (nw + 2) + rnd.uniform(-.8, .8)
+            ny = hy(h1 - 22 - r * 24) + rnd.uniform(-.8, .8)
             col = notes[rnd.randrange(len(notes))]
-            svg.path(rr(nx, ny, nx + (cw - 12) / 2 - 3, ny + 15, 1), col, lw=1.1)
-            svg.line((nx + 3, ny + 5), (nx + (cw - 12) / 2 - 7, ny + 5), shade(col, .7), lw=1, op=.6)
-    # marker tray
+            svg.path(rr(nx, ny, nx + nw, ny + 14, 1), col, lw=1)
+            svg.path(f"M{f(nx + nw - 4)} {f(ny + 14)}L{f(nx + nw)} {f(ny + 10)}V{f(ny + 14)}Z", shade(col, .85),
+                     stroke=False)
+            for j in (4.5, 8):
+                svg.line((nx + 2.5, ny + j), (nx + nw - 3 - (j > 5) * 3, ny + j), shade(col, .62), lw=.9, op=.55)
+            svg.ellipse(nx + nw / 2, ny + 1, 1.3, 1.3, PAL["coral"], stroke=False)
+    # a polaroid pinned in the done column
+    px, py = X1 - 4.5 - cw + 8, hy(h0 + 34)
+    svg.path(rr(px, py, px + 14, py + 16, .5), "#ffffff", lw=1)
+    svg.path(rr(px + 2, py + 2, px + 12, py + 11, 0), mix(PAL["sky"], PAL["sage"], .4), stroke=False)
+    svg.ellipse(px + 9, py + 5, 1.6, 1.6, PAL["mustard"], stroke=False)
     svg.end()
-    box(svg, F, u0 + .03, u1 - .03, 0, .02, h0 - 4, h0, PAL["frame"], lw=1.2)
+    box(svg, F, u0 + .02, u1 - .02, 0, .022, h0 - 4, h0, PAL["frame"], lw=1.2)
+    for j, c in enumerate([PAL["coral"], PAL["teal"], PAL["navy"]]):
+        a, b = F(u0 + .04 + j * .022, .012, h0 + .5), F(u0 + .055 + j * .022, .012, h0 + .5)
+        svg.line(a, b, c, lw=2.4)
 
 
 def clock(svg, u, h, r=12):
@@ -534,37 +563,198 @@ class Night:
             self.svg.end()
 
 
-def office(night):
+def rug_zone(svg, u0, u1, v0, v1, col, border, r=.03):
+    """A soft woven rug: rounded floor rectangle, a border band and a fine inner line."""
+    svg.poly(rounded_floor_rect(u0, u1, v0, v1, r), shade(col, .93), lw=1.4)
+    svg.poly(rounded_floor_rect(u0 + .012, u1 - .012, v0 + .012, v1 - .012, r * .7), col, stroke=False)
+    svg.poly(rounded_floor_rect(u0 + .022, u1 - .022, v0 + .022, v1 - .022, r * .5), "none", stroke=border, lw=1.2,
+             op=.8)
+
+
+def pendant(svg, u, v, h=212, col=None, sc=1.35):
+    """A pendant lamp hanging on a cord from above the room; returns the bulb point for night glows."""
+    col = col or PAL["mustard"]
+    x, y = F(u, v, h)
+    q = sc
+    top_ = F(u, v, max(HW * 1.25, h + 90))[1]          # the cord fades out above the wall tops
+    cord = shade(PAL["dark"], 1.2)
+    g = svg.linear(x, top_, x, top_ + (y - top_) * .55, [(0, cord, 0), (1, cord, 1)])
+    svg.line((x, top_), (x, y - 13 * q), g, lw=1.4)
+    svg.path(f"M{f(x - 2.8)} {f(y - 15 * q)}h5.6v{f(3 * q)}h-5.6Z", PAL["dark"], lw=1)
+    svg.path(f"M{f(x - 16 * q)} {f(y + 2 * q)}C{f(x - 15 * q)} {f(y - 12 * q)} {f(x - 6 * q)} {f(y - 13 * q)} {f(x)} "
+             f"{f(y - 13 * q)}C{f(x + 6 * q)} {f(y - 13 * q)} {f(x + 15 * q)} {f(y - 12 * q)} {f(x + 16 * q)} {f(y + 2 * q)}Z",
+             col, lw=1.5)
+    svg.path(f"M{f(x + 4 * q)} {f(y - 12.6 * q)}C{f(x + 10 * q)} {f(y - 11 * q)} {f(x + 15 * q)} {f(y - 8 * q)} "
+             f"{f(x + 16 * q)} {f(y + 2 * q)}L{f(x + 7 * q)} {f(y + 2 * q)}Z", shade(col, RIGHT_FACE), stroke=False)
+    svg.path(f"M{f(x - 11 * q)} {f(y - 6 * q)}C{f(x - 8 * q)} {f(y - 10 * q)} {f(x - 4 * q)} {f(y - 11 * q)} "
+             f"{f(x - 1 * q)} {f(y - 11 * q)}", "none", stroke=shade(col, HILITE), lw=1.8)
+    svg.ellipse(x, y + 2 * q, 16 * q, 3.6 * q, shade(col, .7), lw=1.2)
+    svg.ellipse(x, y + 2.6 * q, 6 * q, 2 * q, "#fff6dc", stroke=False)
+    return (x, y + 4 * q)
+
+def light_cone(svg, c, u, v, op=.22):
+    """Warm light under a pendant at night: a soft cone and a pool on the floor."""
+    fx, fy = F(u, v)
+    g = svg.linear(c[0], c[1], c[0], fy, [(0, NIGHT_GLOW, op), (1, NIGHT_GLOW, 0)])
+    svg.poly([(c[0] - 13, c[1]), (c[0] + 13, c[1]), (fx + 60, fy), (fx - 60, fy)], g, stroke=False)
+    floor_glow(svg, u, v, .11, .11, op + .1)
+    glow(svg, c, 36, 28, .55)
+
+
+def credenza(svg, u0, u1, h=56, dv=.045, seed=3):
+    """A low wood sideboard against the right wall with doors, and a few calm things on top."""
+    wd = mix(PAL["wood"], PAL["paper"], .25)
+    box(svg, F, u0, u1, 0, dv, 4, h, wd, top=mix(wd, PAL["paper"], .25), lw=1.4)
+    for uu in (u0 + .012, u1 - .012):
+        box(svg, F, uu - .004, uu + .004, dv - .01, dv - .002, 0, 4, PAL["wood_dark"], lw=1)
+    right_g(svg, dv)
+    n = 3
+    for k in range(n):
+        x0 = xr(u0 + (u1 - u0) * k / n) + 3
+        x1 = xr(u0 + (u1 - u0) * (k + 1) / n) - 3
+        svg.path(rr(x0, hy(h - 6), x1, hy(10), 2), shade(wd, LEFT_FACE * 1.08), lw=1.1)
+        svg.path(rr((x0 + x1) / 2 - 5, hy(h - 14) - 1.2, (x0 + x1) / 2 + 5, hy(h - 14) + 1.2, 1), PAL["frame"],
+                 stroke=False)
+    svg.end()
+    # books, a small lamp-free plant and a box on top
+    right_g(svg, dv * .5)
+    x = xr(u0 + .015)
+    for j, (c, hh) in enumerate([(PAL["sky_accent"], 24), (PAL["coral"], 21), (PAL["mustard"], 26), (PAL["sage"], 22)]):
+        svg.path(rr(x + j * 5.6, hy(h) - hh, x + j * 5.6 + 5, hy(h), .8), c, lw=1)
+    svg.path(rr(x + 24, hy(h) - 25, x + 29, hy(h), .8), PAL["lavender"], lw=1,
+             extra=f'transform="rotate(14 {f(x + 29)} {f(hy(h))})"')
+    svg.end()
+    x, y = F(u1 - .03, dv * .5, h)
+    svg.path(f"M{f(x - 7)} {f(y - 11)}L{f(x + 7)} {f(y - 11)}L{f(x + 5.5)} {f(y)}L{f(x - 5.5)} {f(y)}Z", PAL["paper"],
+             lw=1.2)
+    leaf_cluster(svg, x, y - 13, 10, 8, seed + 11)
+    box(svg, F, u0 + .1, u0 + .135, .01, .035, h, h + 9, PAL["teal"], lw=1.1)
+
+
+def sofa(svg, u0, u1, v0=.004, dv=.075, col=None):
+    """A soft two-seat sofa against the right wall, facing into the room (+v), with two cushions."""
+    col = col or mix(PAL["sage"], PAL["navy"], .25)
+    shadow(svg, [(u0, v0), (u1 + .01, v0), (u1 + .01, v0 + dv + .01), (u0, v0 + dv + .01)], .14)
+    for uu in (u0 + .01, u1 - .01):
+        box(svg, F, uu - .004, uu + .004, v0 + dv - .012, v0 + dv - .004, 0, 8, PAL["wood_dark"], lw=1)
+    box(svg, F, u0, u1, v0, v0 + .028, 8, 92, col, top=shade(col, 1.08), lw=1.5)          # back
+    box(svg, F, u0 + .012, u1 - .012, v0 + .02, v0 + dv, 8, 40, col, top=shade(col, 1.1), lw=1.5)   # seat
+    for a, b in ((u0, u0 + .016), (u1 - .016, u1)):                                      # arms
+        box(svg, F, a, b, v0, v0 + dv, 8, 60, shade(col, .96), top=shade(col, 1.12), lw=1.5)
+    um = (u0 + u1) / 2
+    svg.line(F(um, v0 + .024, 40), F(um, v0 + dv, 40), shade(col, .8), lw=1.2)
+    for uc, c in ((u0 + (u1 - u0) * .3, PAL["mustard"]), (u0 + (u1 - u0) * .7, mix(PAL["coral"], PAL["paper"], .2))):
+        vv = v0 + .032
+        c4 = [F(uc - .036, vv, 42), F(uc + .036, vv, 42), F(uc + .034, vv - .004, 74), F(uc - .034, vv - .004, 74)]
+        mids = [((c4[i][0] + c4[(i + 1) % 4][0]) / 2, (c4[i][1] + c4[(i + 1) % 4][1]) / 2) for i in range(4)]
+        cx_, cy_ = sum(p_[0] for p_ in c4) / 4, sum(p_[1] for p_ in c4) / 4
+        d = f"M{f(mids[3][0])} {f(mids[3][1])}"
+        for i in range(4):     # pillow: corners pulled in, edges bulging out
+            px_, py_ = c4[i]; nx_, ny_ = mids[i]
+            d += f"Q{f(px_ + (cx_ - px_) * .12)} {f(py_ + (cy_ - py_) * .12)} {f(nx_ + (nx_ - cx_) * .04)} {f(ny_ + (ny_ - cy_) * .04)}"
+        svg.path(d + "Z", c, lw=1.2)
+        svg.line(F(uc - .02, vv, 66), F(uc + .012, vv, 68), shade(c, HILITE), lw=1.5)
+        svg.line(F(uc - .005, vv, 46), F(uc + .02, vv, 50), shade(c, .82), lw=1.2)
+
+
+def coffee_table(svg, u0, u1, v0, v1, h=30):
+    shadow(svg, [(u0, v0), (u1 + .008, v0), (u1 + .008, v1 + .008), (u0, v1 + .008)], .13)
+    for (u, v) in [(u0 + .008, v1 - .008), (u1 - .008, v1 - .008), (u1 - .008, v0 + .008)]:
+        box(svg, F, u - .004, u + .004, v - .004, v + .004, 0, h - 4, PAL["wood_dark"], lw=1)
+    top = mix(PAL["wood"], PAL["paper"], .3)
+    box(svg, F, u0, u1, v0, v1, h - 4, h, top, lw=1.4)
+    x, y = F((u0 + u1) / 2 + .01, (v0 + v1) / 2, h)
+    svg.ellipse(x, y - 2, 6, 2.6, PAL["paper"], lw=1)
+    svg.poly([F(u0 + .01, v0 + .008, h + .5), F(u0 + .035, v0 + .008, h + .5), F(u0 + .035, v0 + .03, h + .5),
+              F(u0 + .01, v0 + .03, h + .5)], PAL["sky_accent"], lw=1)
+
+
+def wood_wall(svg, h1=HW):
+    """Warm walnut panels over the whole right wall (manager's office)."""
+    wd = mix(PAL["wood"], PAL["wood_dark"], .45)
+    svg.poly([F(0, 0, 0), F(1, 0, 0), F(1, 0, h1), F(0, 0, h1)], wd, lw=LW)
+    right_g(svg)
+    n = 14
+    for k in range(1, n):
+        x = xr(k / n)
+        svg.line((x, hy(h1 - 2)), (x, hy(2)), shade(wd, .82), lw=1.4)
+        svg.line((x + 1.6, hy(h1 - 2)), (x + 1.6, hy(2)), shade(wd, 1.12), lw=1, op=.7)
+    svg.end()
+
+
+def office(night, boss=False):
+    """The main office (and, with boss=True, the manager's office: a walnut wall and a sofa corner)."""
     svg = Svg(RW, RH, lw=LW, bg=PAL["backdrop"])
     nt = Night(svg, night)
     shell(svg, PAL["floor"], mix(PAL["floor"], PAL["wood_dark"], .45), night)
     planks(svg, PAL["floor"], PAL["floor_line"])
     fc = floor_clip(svg)
+    if boss:
+        rug_zone(svg, .2, .66, .2, .7, mix(PAL["rug"], PAL["floor"], .35), PAL["sage"], .04)
+    else:   # one soft rug under each desk cluster (main office layout)
+        oat = mix(PAL["floor"], PAL["paper"], .45)
+        rug_zone(svg, .015, .39, .17, .48, oat, PAL["sage"])
+        rug_zone(svg, .11, .48, .6, .95, oat, PAL["sage"])
+        rug_zone(svg, .55, .935, .25, .77, oat, PAL["sage"])
     walls(svg)
+    if boss:
+        wood_wall(svg)
     bays = [(.035, .305, 2), (.345, .615, 2), (.655, .925, 2)]
     sun, lit, wc = windows_left(svg, night, bays)
     if not night:
         sun_patches(svg, sun, fc)
-    baseboards(svg, (mix(PAL["wall"], PAL["sage"], .2), 92))
+    if boss:
+        baseboards(svg)
+    else:
+        baseboards(svg, (mix(PAL["wall"], PAL["sage"], .2), 92))
     for v, k in [(.12, 0), (.5, 1), (.56, 0), (.84, 1)]:
         sill_plant(svg, v, k)
-    task_board(svg, .07, .31, 128, 232)
-    door_right(svg, .40, .51)
-    coat_hooks(svg, .545, .615, 150)
-    clock(svg, .595, 240)
-    plant_shelf(svg, .64, .90, 178, [("pothos", .68), ("books", .77), ("succulent", .85)])
-    plant_shelf(svg, .67, .87, 232, [("vase", .72), ("cactus", .82)], seed=2)
-    s1 = sconce(svg, u=.355, h=190)
-    s2 = sconce(svg, u=.955, h=190)
-    caps(svg)
+    left_g(svg)       # a tall narrow print on the solid end of the window wall
+    X0, X1 = xl(.995) + 4, xl(.93) - 4
+    svg.path(rr(X0, hy(232), X1, hy(110), 1.5), PAL["wood"], lw=1.4)
+    svg.path(rr(X0 + 4, hy(226), X1 - 4, hy(116), 0), PAL["paper"], lw=1)
+    svg.ellipse((X0 + X1) / 2, hy(190), 6, 6, PAL["coral"], stroke=False, op=.85)
+    svg.path(f"M{f(X0 + 5)} {f(hy(130))}Q{f((X0 + X1) / 2)} {f(hy(170))} {f(X1 - 5)} {f(hy(140))}V{f(hy(118))}"
+             f"H{f(X0 + 5)}Z", PAL["sage"], stroke=False)
+    svg.end()
+    lamps = []
+    if boss:
+        frame_art(svg, .06, .2, 150, 240)
+        frame_art(svg, .23, .33, 170, 240, kind="dots")
+        door_right(svg, .40, .51, leaf=mix(PAL["paper"], PAL["wall"], .5))
+        clock(svg, .595, 240)
+        credenza(svg, .63, .73, seed=7)
+        frame_art(svg, .76, .96, 150, 250)
+        sofa(svg, .1, .34)
+        coffee_table(svg, .15, .29, .1, .155)
+        s1 = sconce(svg, u=.355, h=190)
+        s2 = sconce(svg, u=.97, h=190)
+        caps(svg)
+        lamps.append((pendant(svg, .5, .46, 300, PAL["mustard"], sc=1.6), .5, .46))
+    else:
+        credenza(svg, .065, .315)
+        task_board(svg, .07, .31, 128, 232)
+        door_right(svg, .40, .51)
+        coat_hooks(svg, .545, .615, 150)
+        clock(svg, .595, 240)
+        plant_shelf(svg, .64, .90, 178, [("pothos", .68), ("books", .77), ("succulent", .85)])
+        plant_shelf(svg, .67, .87, 232, [("vase", .72), ("cactus", .82)], seed=2)
+        frame_art(svg, .915, .985, 215, 272, kind="dots")
+        s1 = sconce(svg, u=.355, h=190)
+        s2 = sconce(svg, u=.955, h=175)
+        caps(svg)
+        for (u, v, c) in [(.2, .32, PAL["mustard"]), (.3, .78, PAL["sage"]), (.74, .5, PAL["mustard"])]:
+            lamps.append((pendant(svg, u, v, 212, c), u, v))
     nt.close()
     if night:
         lit_windows(svg, lit, wc)
-        for c, u in [(s1, .355), (s2, .955)]:
-            glow(svg, c, 70, 60, .5)
-            floor_glow(svg, u, .09, .12, .10, .28)
+        for c, u in [(s1, .355), (s2, .97 if boss else .955)]:
+            glow(svg, c, 60, 52, .45)
+        for c, u, v in lamps:
+            light_cone(svg, c, u, v)
         glow(svg, F(.455, .02, 6), 34, 8, .45)
     return svg
+
 
 def meeting(night):
     svg = Svg(RW, RH, lw=LW, bg=PAL["backdrop"])
@@ -910,7 +1100,7 @@ def big_plant(svg, u, v):
                     extra=f'transform="rotate({f(math.degrees(a))} {f(lx)} {f(ly)})"')
 
 
-ROOMS = {"office": office, "meet": meeting, "game": lounge}
+ROOMS = {"office": office, "office-boss": lambda n: office(n, boss=True), "meet": meeting, "game": lounge}
 
 
 def build(svg_dir):
