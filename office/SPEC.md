@@ -69,3 +69,22 @@ The owner's requirements for the office page. Keep all of them when publishing o
 - `meta/office`: `product_en`, `versions[]` (`id` like `v1`, `name_en` like "First version", `goal_en`), listed in order; a version used by a task but not listed still shows.
 - `tasks/<ID>` also carries `phase` (`planning` / `prototype` / `staging` / `production`). Without it the page guesses from the owner session (coordinator, reviewer, context-keeper, business-analyst and office-manager → planning; mock-api and the prototype sessions → prototype; the rest → staging; nothing guesses production); the analyst should always set it.
 
+## Department status bar
+
+The owner's rule: under the department tabs (Headquarters too), the bar shows:
+
+- The Gregorian date and the time, updated every 30 seconds.
+- Counts of that department's tasks:
+  - Due today (`due` is today);
+  - Done today;
+  - Late (open, `due` before today);
+  - In progress, In review, Blocked and To do.
+
+Clicking a count lists its tasks. Each row has:
+
+- the owner agent: avatar, name linking to `#agent/<id>`, and position;
+- the task: its id linking to the board (`#board/<id>`), title, state, due date and summary.
+
+The rooms point at those agents with a bouncing marker. Clicking the count again or pressing Escape closes the list.
+
+New task fields: `due` (`YYYY-MM-DD`, or `due_at` ISO) and `done_at` (ISO; `updated_at` is the fallback). A task belongs to the department of its `session` agent.
