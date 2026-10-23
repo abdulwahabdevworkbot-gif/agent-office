@@ -58,11 +58,11 @@ h2{font-weight:700;font-size:19px;margin:0}
 .chrome .clock{border:1px solid #2c3546;border-radius:4px;padding:1px 8px;color:#f0c75e;letter-spacing:.12em}
 .rooms{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;padding:10px}
 .rooms .rbreak{flex-basis:100%;height:0;margin:-5px 0}
-.rooms .room{flex:0 0 auto;width:calc((100% - 10px) * var(--rw,.5));transition:transform .25s ease,box-shadow .25s ease,width .6s ease}
+.rooms .room{flex:0 0 auto;width:calc((100% - 10px) * .5);transition:transform .25s ease,box-shadow .25s ease,width .6s ease}
 @media (prefers-reduced-motion:reduce){.rooms .room{transition:none}}
 .room{position:relative;aspect-ratio:1200/896;background:#0f1420 center/contain no-repeat;border-radius:6px;overflow:hidden;container-type:inline-size;transition:transform .25s ease,box-shadow .25s ease;outline:none}
 @media (hover:hover) and (min-width:821px){
-  .rooms .room:hover,.rooms .room:focus-visible{transform:scale(1.5);z-index:300;box-shadow:0 18px 50px rgba(0,0,0,.6)}
+  .rooms .room:hover,.rooms .room:focus-visible{transform:scale(1.3);z-index:300;box-shadow:0 18px 50px rgba(0,0,0,.6)}
   #room-boss{transform-origin:left top}[id^=room-main]{transform-origin:right top}#room-meet{transform-origin:left center}[id^=room-huddle]{transform-origin:right center}#room-game{transform-origin:left bottom}#room-idle{transform-origin:right bottom}
 }
 .room:focus-visible{box-shadow:0 0 0 3px #7cc4ff}
@@ -269,6 +269,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag-field textarea,.ag-field input{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:vertical;min-width:0}
 .ag-hobbies{display:flex;flex-wrap:wrap;gap:6px}.ag-hob{gap:6px}
 .ag-x{all:unset;cursor:pointer;font-weight:700;color:var(--muted);padding:0 2px}.ag-x:hover{color:var(--bad)}.ag-x:focus-visible{outline:2px solid var(--accent)}
+.rs-wrap{overflow-x:auto}.rs{border-collapse:collapse;min-width:520px;width:100%}.rs th,.rs td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);font-size:14px}.rs th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-top:0}.rs input{width:5.5em;font:inherit;padding:3px 6px}.rs select{font:inherit}
 .ag-save{justify-content:flex-start;position:sticky;bottom:0;z-index:2;background:var(--panel);border-top:1px solid var(--line);padding:10px 0 2px;margin-top:4px}
 .ag-wh{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}.ag-wh h3{margin-right:auto}
 .ag-list{display:grid;gap:4px;max-height:280px;overflow:auto}
@@ -470,6 +471,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <button role="tab" id="tab-board" aria-controls="panel-board" aria-selected="false" tabindex="-1">Task board<span class="count" id="taskCount"></span></button>
     <button role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" tabindex="-1">Reviews<span class="count" id="revCount"></span></button>
     <button role="tab" id="tab-team" aria-controls="panel-team" aria-selected="false" tabindex="-1">Team</button>
+    <button role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1">Settings</button>
   </div>
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
@@ -480,7 +482,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <div class="stats-pop" id="statsPop" hidden></div>
       <div class="rooms" id="roomsHQ">
         <div class="room" id="room-boss" tabindex="0" aria-label="Manager's office"><span class="label">Manager's office<small>You and your assistant</small></span></div>
-        <div class="room" id="room-main" tabindex="0" aria-label="Main office"><span class="label">Main office<small>Working</small></span></div>
+        <div class="room" id="room-main" tabindex="0" aria-label="Open office"><span class="label">Open office<small>Working</small></span></div>
         <i class="rbreak" aria-hidden="true"></i>
         <div class="room" id="room-meet" tabindex="0" aria-label="Meeting room"><span class="label">Meeting room<small>Free</small></span></div>
         <div class="room" id="room-huddle" tabindex="0" aria-label="Huddle room"><span class="label">Huddle room<small>Free</small></span></div>
@@ -570,6 +572,15 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     </div>
   </section>
 
+  <section role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" class="stack" hidden>
+    <div class="panel">
+      <h2>Room sizes</h2>
+      <p class="note">For each room: the most people it holds, and how full it gets before an exact copy opens for the next person. When fewer people need the room, the extra copy closes again.</p>
+      <div class="rs-wrap"><table class="rs" id="roomRules"></table></div>
+      <div class="row-wrap"><button class="btn" type="button" id="rsSave">Save</button><button class="btn-lite" type="button" id="rsReset">Back to defaults</button><span class="note" id="rsNote"></span></div>
+    </div>
+  </section>
+
   <section role="tabpanel" id="panel-board" aria-labelledby="tab-board" class="stack" hidden>
     <div class="board-head">
       <h2>Tasks by stage and agent</h2>
@@ -612,7 +623,7 @@ const fmt = iso => { try { return new Date(iso).toLocaleString("en-GB", {day:"nu
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- tabs ---------- */
-const TABS = ["office","roadmap","chat","board","reviews","team"];
+const TABS = ["office","roadmap","chat","board","reviews","team","settings"];
 const TAB_NAME = {office:"Office", roadmap:"Roadmap", chat:"Chat", board:"Task board"};
 let curTab = null, restoring = false;
 const navBack = [];
@@ -706,9 +717,9 @@ const ASSISTANT = "office-manager";
 const FACINGS = ["front-left","front-right","rear-left","rear-right"];
 /* rooms are the owner's own pictures, cut from the reference sheets, with the furniture drawn in (assets/rooms).
    Seats: y is the line where a seated body disappears behind a desk edge or a chair back. Standing spots: y is the feet. */
-const ROOM_BG = {boss:"boss", main:"main-b", meet:"meet-10", huddle:"huddle", game:"game", idle:"idle"};   // main-a has fewer desks; seats are set for main-b
+const ROOM_BG = {boss:"boss", main:"main-open", meet:"meet-10", huddle:"huddle", game:"game", idle:"idle"};   // main-a has fewer desks; seats are set for main-b
 /* main office (the owner's rule): S-shaped benches, and the manager's glass office in the corner */
-const S_MAIN = [{"x": 24, "y": 77, "f": "front-left", "seat": true}, {"x": 35, "y": 71, "f": "front-left", "seat": true}, {"x": 44, "y": 64, "f": "front-left", "seat": true}, {"x": 52, "y": 61, "f": "front-left", "seat": true}, {"x": 60, "y": 69, "f": "front-left", "seat": true}, {"x": 68, "y": 68, "f": "front-left", "seat": true}, {"x": 75, "y": 62, "f": "front-left", "seat": true}, {"x": 72, "y": 43, "f": "front-left", "seat": true}, {"x": 84, "y": 58, "f": "front-left"}, {"x": 62, "y": 80, "f": "front-left"}, {"x": 46, "y": 86, "f": "front-left"}, {"x": 16, "y": 72, "f": "front-left"}, {"x": 12, "y": 66, "f": "front-left"}, {"x": 36, "y": 86, "f": "front-left"}, {"x": 80, "y": 62, "f": "front-left"}, {"x": 30, "y": 82, "f": "front-left"}];
+const S_MAIN = [{"x": 30, "y": 48, "f": "front-left", "seat": true}, {"x": 38, "y": 44, "f": "front-left", "seat": true}, {"x": 47, "y": 39, "f": "front-left", "seat": true}, {"x": 57, "y": 45, "f": "front-left", "seat": true}, {"x": 64, "y": 52, "f": "front-left", "seat": true}, {"x": 21, "y": 67, "f": "front-left", "seat": true}, {"x": 31, "y": 70, "f": "front-left", "seat": true}, {"x": 72, "y": 52, "f": "front-left", "seat": true}, {"x": 50, "y": 62, "f": "front-left"}, {"x": 52, "y": 72, "f": "front-left"}, {"x": 42, "y": 78, "f": "front-left"}, {"x": 70, "y": 57, "f": "front-left"}, {"x": 88, "y": 54, "f": "front-left"}, {"x": 12, "y": 62, "f": "front-left"}, {"x": 25, "y": 76, "f": "front-left"}, {"x": 62, "y": 66, "f": "front-left"}, {"x": 54, "y": 38, "f": "front-left"}];
 const MGR_SEAT = 7;
 const S_BOSS_OWNER = {"x": 47, "y": 43, "f": "front-left"}, S_BOSS_ASSIST = {"x": 27, "y": 63, "f": "front-left"};
 const S_BOSS_VISIT = [{"x": 40, "y": 74, "f": "front-left"}, {"x": 54, "y": 72, "f": "front-left"}, {"x": 62, "y": 64, "f": "front-left"}, {"x": 32, "y": 80, "f": "front-left"}, {"x": 46, "y": 84, "f": "front-left"}, {"x": 70, "y": 60, "f": "front-left"}];
@@ -780,10 +791,16 @@ const baseOf = room => String(room).replace(/-\d+$/, "");
 const typeOf = room => baseOf(room).split("@")[0];            // "main@mkt-2" -> "main"
 const deptOfRoom = room => baseOf(room).split("@")[1] || "";   // "main@mkt-2" -> "mkt"
 const roomKey = (base, n) => n > 1 ? `${base}-${n}` : base;
-const ROOM_NAME = {main:"Main office", huddle:"Huddle room", game:"Games & lounge", idle:"Idle room"};   // as the first copies are titled in the page
+const ROOM_NAME = {main:"Open office", huddle:"Huddle room", game:"Games & lounge", idle:"Idle room"};   // as the first copies are titled in the page
 /* the lounge and the idle room repeat too: one more copy once the people there reach 80% of a room's places */
 const MULTI = ["game", "idle"], FULL_AT = .8;
-const roomCap = type => Math.max(1, Math.floor(SLOTS[type].length * FULL_AT));
+/* room sizes (the owner's rule, Settings tab): the most people a room holds and how full it gets (%) before an exact copy opens.
+   Saved in meta/office.rooms; a copy closes again once fewer people need it */
+const RULE_ROOMS = [["main","Open office (desks)"],["game","Games & lounge"],["idle","Idle room"]];
+const spotsOf = t => t === "main" ? DESKS.length : SLOTS[t].length;
+const ruleOf = t => { const r = ((typeof metaOffice !== "undefined" && metaOffice && metaOffice.rooms) || {})[t] || {}, n = spotsOf(t);
+  return {max:Math.min(n, Math.max(1, Math.round(+r.max) || n)), at:Math.min(100, Math.max(10, Math.round(+r.at) || (t === "main" ? 100 : FULL_AT * 100)))}; };
+const roomCap = type => { const r = ruleOf(type); return Math.max(1, Math.floor(r.max * r.at / 100)); };
 /* meeting room picture by the size of the meeting: the smallest room that fits everyone.
    Each picture has its own seats (MEET_SETS). */
 const MEET_BG = [[10,"meet-10"],[20,"meet-20"],[30,"meet-30"]];
@@ -935,7 +952,8 @@ const idleSince = a => { if (!a || NEVER_IDLE.has(a.id) || a.state === "waiting"
 const DOOR = MEET.door;
 /* walking (the owner's rule): nobody walks over a table or furniture. Each room picture has its floor and the furniture on it as
    polygons in % of the room; a path goes around them on a 100 x 100 grid, then the last step goes into the seat */
-const NAV = {"main-b":{"floor":[[1,64],[52,31],[99,53],[52,90],[37,90]],"block":[[[19,57],[42,44],[56,40],[72,52],[72,62],[63,66],[55,58],[48,56],[40,60],[29,74],[19,70]],[[55,20],[70,13],[88,30],[88,50],[83,49],[56,33]],[[70,70],[92,60],[95,63],[95,68],[74,82],[70,78]],[[8,53],[50,32],[50,38],[10,59]],[[2,56],[9,56],[9,63],[2,63]]]},
+const NAV = {"main-open":{"floor":[[1,60],[52,22],[99,52],[57,85],[31,85]],"block":[[[18,58],[45,42],[49,42],[62,52],[62,58],[57,58],[51,50],[46,53],[45,56],[45,65],[39,65],[36,61],[26,69],[18,63]],[[7,50],[44,30],[44,36],[9,56]],[[1,49],[7,49],[7,60],[1,60]],[[51,30],[56,26],[62,30],[62,36],[57,37],[51,33]],[[55,21],[67,25],[67,31],[55,27]],[[66,40],[73,36],[82,43],[82,49],[77,51],[66,45]],[[73,33],[94,44],[94,51],[73,40]],[[58,73],[80,61],[81,66],[61,80],[58,79]]]},
+  "main-b":{"floor":[[1,64],[52,31],[99,53],[52,90],[37,90]],"block":[[[19,57],[42,44],[56,40],[72,52],[72,62],[63,66],[55,58],[48,56],[40,60],[29,74],[19,70]],[[55,20],[70,13],[88,30],[88,50],[83,49],[56,33]],[[70,70],[92,60],[95,63],[95,68],[74,82],[70,78]],[[8,53],[50,32],[50,38],[10,59]],[[2,56],[9,56],[9,63],[2,63]]]},
   "boss":{"floor":[[1,58],[50,24],[99,63],[52,92],[45,92]],"block":[[[33,54],[54,42],[67,47],[67,55],[45,68],[34,62]],[[55,30],[73,38],[73,43],[55,35]],[[72,36],[81,36],[81,48],[72,48]],[[82,48],[94,48],[94,60],[82,60]],[[1,45],[19,56],[19,70],[1,60]],[[18,50],[47,35],[47,40],[20,55]]]},
   "huddle":{"floor":[[1,60],[54,30],[99,60],[52,90]],"block":[[[33,47],[44,41],[52,44],[52,50],[41,56],[33,52]],[[62,56],[72,50],[82,57],[82,68],[73,72],[62,64]],[[29,66],[40,59],[50,64],[50,78],[40,82],[29,75]],[[8,52],[47,32],[47,37],[10,58]],[[64,40],[66,36],[87,46],[87,55],[80,56]],[[53,30],[65,30],[65,43],[53,43]]]},
   "meet-10":{"floor":[[1,57],[50,30],[99,57],[56,90],[38,90]],"block":[[[25,60],[56,40],[68,47],[68,52],[38,72],[26,66]],[[8,52],[42,35],[42,40],[10,58]],[[61,38],[63,35],[86,46],[86,56],[80,57]],[[47,30],[58,30],[58,36],[47,36]]]},
@@ -1056,15 +1074,16 @@ function plan(){
   /* every department has its own work rooms; one more room for every 10 people at its desks */
   const atDesk = {};
   agents.filter(a => !place.has(a.id) && a.id !== ASSISTANT && !idleSince(a) && (a.state === "working" || a.state === "blocked")).forEach(a => { const b = deskBase(a); atDesk[b] = (atDesk[b] || 0) + 1; });
-  const nMainOf = {}; ["main", ...depts().map(d => "main@" + d.id)].forEach(b => { nMainOf[b] = Math.max(1, Math.ceil((atDesk[b] || 0) / DESKS.length)); for (let k = 1; k <= nMainOf[b]; k++) ensureRoom(roomKey(b, k)); });
+  const nMainOf = {}; ["main", ...depts().map(d => "main@" + d.id)].forEach(b => { nMainOf[b] = Math.max(1, Math.ceil((atDesk[b] || 0) / roomCap("main"))); for (let k = 1; k <= nMainOf[b]; k++) ensureRoom(roomKey(b, k)); });
   const mainsOf = room => { const b = baseOf(room); return Array.from({length:nMainOf[b] || 1}, (_, k) => roomKey(b, k + 1)); };
   /* the lounge and the idle room: enough copies that none is fuller than 80%, with the people spread evenly over them */
   const nMulti = {}, quota = {};
   MULTI.forEach(b => { const n = wants.filter(w => w[1] === b).length; nMulti[b] = Math.max(1, Math.ceil(n / roomCap(b))); const q = Math.ceil(n / nMulti[b]);
     for (let k = 1; k <= nMulti[b]; k++) { ensureRoom(roomKey(b, k)); quota[roomKey(b, k)] = q; } });
   const copiesOf = room => typeOf(room) === "main" ? mainsOf(room) : MULTI.includes(room) ? Array.from({length:nMulti[room]}, (_, k) => roomKey(room, k + 1)) : [room];
-  const roomy = rm => !(rm in quota) || used[rm].size < quota[rm];
-  const free = (room, list) => { const l = list || slotsOf(room).map((_, i) => i).filter(i => typeOf(room) !== "main" || (i !== MGR_SEAT && ((nMainOf[baseOf(room)] || 1) === 1 || i < DESKS.length))); const i = l.find(k => !used[room].has(k)); return i ?? -1; };
+  const roomy = rm => typeOf(rm) === "main" ? (nMainOf[baseOf(rm)] || 1) === 1 || [...used[rm]].filter(i => i !== MGR_SEAT).length < roomCap("main")
+    : !(rm in quota) || used[rm].size < quota[rm];
+  const free = (room, list) => { const l = list || slotsOf(room).map((_, i) => i).filter(i => typeOf(room) !== "main" || (i !== MGR_SEAT && ((nMainOf[baseOf(room)] || 1) === 1 || (i < DESKS.length && used[room].size < roomCap("main") + (used[room].has(MGR_SEAT) ? 1 : 0))))); const i = l.find(k => !used[room].has(k)); return i ?? -1; };
   const pending = [];
   /* the manager's glass office: the department's Director (or its top Manager), and the Coordinator at headquarters */
   const leadOf = base => { const d = deptOfRoom(base); if (!d) return "coordinator"; const dp = deptById(d), st = agents.filter(a => deptOf(a.id) === d);
@@ -1181,7 +1200,7 @@ function drawScene(){
   });
   pruneRooms(out); sizeRooms(out);
   /* people still walking out keep a closing room open; look again once they have left */
-  if (!pruneLater) pruneLater = setTimeout(() => { pruneLater = 0; const o = new Map(); figs.forEach((r, id) => { if (r.plan) o.set(id, r.plan); }); pruneRooms(o); sizeRooms(o); }, 6000);
+  if (!pruneLater) pruneLater = setInterval(() => { const o = new Map(); figs.forEach((r, id) => { if (r.plan) o.set(id, r.plan); }); pruneRooms(o); sizeRooms(o); }, 5000);
   const big = groups.filter(g => g.where === "meet");
   const roomLabel = (room, list, empty) => { const sm = ROOMS[room].querySelector(".label small"); sm.replaceChildren();   // each title isolated, so Arabic and English don't mix up
     if (!list.length) { sm.textContent = empty; return; }
@@ -2372,7 +2391,23 @@ function enterSends(ta, send){
   ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); send(); } });
 }
 enterSends($("text"), () => $("compose").requestSubmit());
-function renderAll(){ if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+function renderSettings(){
+  const t = $("roomRules"); if (!t || t.contains(document.activeElement)) return;
+  t.replaceChildren(); const hd = el("tr"); ["Room","Most people","Open a copy when","Spots in the picture"].forEach(x => hd.append(el("th", null, x))); t.append(hd);
+  RULE_ROOMS.forEach(([k, name]) => { const r = ruleOf(k), tr = el("tr"); tr.dataset.k = k;
+    const mx = el("input"); mx.type = "number"; mx.min = "1"; mx.max = String(spotsOf(k)); mx.value = r.max; mx.setAttribute("aria-label", name + ": most people");
+    const at = el("select"); at.setAttribute("aria-label", name + ": open a copy when"); [50,60,70,80,90,100].forEach(v => { const o = el("option", null, v + "% full"); o.value = v; if (v === r.at) o.selected = true; at.append(o); });
+    if (![50,60,70,80,90,100].includes(r.at)) { const o = el("option", null, r.at + "% full"); o.value = r.at; o.selected = true; at.append(o); }
+    const c1 = el("td"), c2 = el("td"); c1.append(mx); c2.append(at);
+    tr.append(el("td", null, name), c1, c2, el("td","note", String(spotsOf(k)))); t.append(tr); });
+}
+$("rsSave").onclick = async () => { const rooms = {};
+  document.querySelectorAll("#roomRules tr[data-k]").forEach(tr => { rooms[tr.dataset.k] = {max:+tr.querySelector("input").value, at:+tr.querySelector("select").value}; });
+  $("rsNote").textContent = "Saving…";
+  try { await db.doc("meta/office").update({rooms}); $("rsNote").textContent = "Saved. Rooms open and close by the new sizes."; } catch (err) { $("rsNote").textContent = writeError(err); } };
+$("rsReset").onclick = async () => { $("rsNote").textContent = "Saving…";
+  try { await db.doc("meta/office").update({rooms:{}}); document.activeElement.blur(); renderSettings(); $("rsNote").textContent = "Back to the defaults."; } catch (err) { $("rsNote").textContent = writeError(err); } };
+function renderAll(){ renderSettings(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);
