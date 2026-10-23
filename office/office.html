@@ -210,8 +210,13 @@ h2{font-weight:700;font-size:19px;margin:0}
 .arch summary::before{content:"▸";font-size:12px;color:var(--muted);width:12px}.arch[open] summary::before{content:"▾"}
 .arch summary:hover{background:var(--bg)}.arch summary:focus{outline:none}.arch summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* chat */
-.chat-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:18px;align-items:start}
-@media (max-width:900px){.chat-layout{grid-template-columns:minmax(0,1fr)}}
+.chat-layout{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr) minmax(300px,420px);gap:18px;align-items:start}
+.talk-side{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.talk-side h2{margin:0;font-size:16px}.talk-side .hint{margin:0}
+.talk-side .room{width:100%}
+.talk-side .room .ag{cursor:pointer}
+@media (max-width:1200px){.chat-layout{grid-template-columns:minmax(220px,300px) minmax(0,1fr)}.talk-side{grid-column:1;grid-row:2}.chat-layout>.chat{grid-column:2;grid-row:1 / span 2}}
+@media (max-width:900px){.chat-layout{grid-template-columns:minmax(0,1fr)}.talk-side,.chat-layout>.chat{grid-column:1;grid-row:auto}}
 .conv-side{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px;min-width:0}
 .conv-side h2{margin:0}
 .conv-list{display:grid;gap:4px;max-height:calc(100vh - 360px);min-height:120px;overflow:auto}
@@ -457,6 +462,11 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
           </div>
         </form>
       </div>
+      <aside class="talk-side" id="talkSide" aria-label="Where this conversation sits">
+        <h2 id="talkTitle">Meeting room</h2>
+        <div class="room" id="talkRoom" aria-label="The room of this conversation"><span class="label">Meeting room<small></small></span></div>
+        <p class="hint" id="talkHint"></p>
+      </aside>
     </div>
   </section>
 
@@ -911,6 +921,7 @@ function drawScene(){
     if (!list.length) { sm.textContent = empty; return; }
     list.forEach(([pre, t], i) => { if (i) sm.append(" · "); if (pre) sm.append(pre); sm.append(el("bdi", null, t)); }); };
   roomLabel("meet", big.map(g => ["", g.label]), "Free");
+  renderTalkRoom();
   roomsOf("huddle").forEach(k => roomLabel(k, groups.filter(g => g.where === k).map(g => [`Table ${g.table + 1}: `, g.label]), `${N_TABLES} free tables`));
   roomsOf("main").slice(1).forEach(k => { ROOMS[k].querySelector(".label small").textContent = "Working"; });
   const nIdle = [...out.values()].filter(p => p.room === "idle").length;
@@ -1534,6 +1545,43 @@ function writeError(err){
 }
 
 /* ---------- discussion ---------- */
+/* the owner's rule: the open conversation's room sits beside its chat, with its members seated at the table */
+let talkBuilt = false;
+function renderTalkRoom(){
+  const room = $("talkRoom"); if (!room) return;
+  if (!talkBuilt) { talkBuilt = true;
+    boxSprite(room, "table", MEET.table); for (let i = 0; i < 8; i++) boxSprite(room, "mchair-" + i, MEET["mchair-" + i]);
+    furnish(room, [["monstera",88,66,6.2,660],["whiteboard",27,44,8.1,440]]); }
+  room.style.backgroundImage = `url(${A}rooms/meet-${isNight() ? "night" : "day"}.webp)`;
+  room.querySelectorAll(".ag,.tag").forEach(x => x.remove());
+  const s = chatSess && sessions.find(x => x.id === chatSess);
+  let ids = [], title = "", key = "";
+  if (s) { ids = (s.members || []).filter(m => m === "owner" || agentById(m)); title = s.title_en || convKind(s); key = "s:" + s.id; }
+  else if (chatPair) { ids = chatPair.split("|"); title = ids.map(nameOf).join(" & "); key = "p:" + chatPair; if (msgs.some(m => m.pair === chatPair && m.from === "owner")) ids.unshift("owner"); }
+  const g = lastGroups.find(x => x.key === key);
+  const where = !key ? "" : !g || s?.state === "closed" ? (s?.state === "closed" ? "Closed: everyone went back to work" : "Not in a room right now")
+    : g.where === "meet" ? "In the meeting room" : `${ROOM_NAME.huddle}${g.where.includes("-") ? " " + g.where.split("-").pop() : ""} · Table ${g.table + 1}`;
+  $("talkTitle").textContent = key ? "Room" : "Rooms";
+  room.querySelector(".label").firstChild.textContent = key ? (g?.where && g.where !== "meet" ? "Huddle table" : "Meeting room") : "Meeting room";
+  room.querySelector(".label small").textContent = title;
+  const top = navBack[navBack.length - 1], back = top && top.tab !== "chat" ? ` Click outside the chat to go back to ${TAB_NAME[top.tab]}.` : "";
+  $("talkHint").textContent = (key ? where + (ids.length ? ` · ${ids.length} ${ids.length === 1 ? "person" : "people"}.` : ".") : "Pick a conversation to see who sits with it.") + back;
+  ids.sort((a, b) => (b === "owner") - (a === "owner")).slice(0, MEET.seats.length).forEach((id, i) => {
+    const sp = MEET.seats[i], b = el("button", "ag seated"); b.type = "button";
+    const img = el("img", "body"); img.alt = ""; img.src = charUrl(id, sp.f); b.append(img);
+    b.style.cssText = `left:${sp.x}%;top:${sp.y + SEAT_CUT * CH_H}%;height:${CH_H}%;z-index:${sp.z}`;
+    b.setAttribute("aria-label", nameOf(id)); if (id !== "owner") b.onclick = () => selectAgent(id);
+    const tag = el("span", "tag", nameOf(id)); tag.style.cssText = `left:${sp.x}%;top:${sp.y}%`;
+    room.append(b, tag);
+  });
+}
+/* the owner's rule: when a link brought you to the chat, a click outside the chat and its room takes you back */
+let downTab = null; document.addEventListener("pointerdown", () => { downTab = curTab; }, true);
+document.addEventListener("click", e => {
+  const top = navBack[navBack.length - 1];
+  if (curTab !== "chat" || downTab !== "chat" || !top || top.tab === "chat" || document.querySelector("dialog[open]") || e.target.closest(".conv-side,.chat,.talk-side,dialog,.nav-back,button,a,input,select,textarea,label")) return;
+  goBack();
+});
 function renderMsgs(){
   const box = $("msgs"); const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
   box.replaceChildren();
@@ -1544,6 +1592,7 @@ function renderMsgs(){
   feed.forEach(m => box.append(msgRow(m)));
   const ty = typingRow(); if (ty) box.append(ty);
   if (atBottom || chatJump || ty) box.scrollTop = box.scrollHeight; chatJump = false;
+  renderTalkRoom();
 }
 /* the owner's rule: in an Arabic reply every English run (a word, a name, a task id) sits on its own line,
    with the Arabic before it and after it on their own lines, so right-to-left text never jumbles */

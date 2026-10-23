@@ -1,40 +1,40 @@
 <div dir="rtl">
 
-# مكتب الوكلاء (Agent Office)
+# مكتب الوكلاء
 
-سكل لـ Claude يبدأ معك أي مشروع أو فكرة بفريق من الوكلاء الأذكياء، ومعه صفحة مكتب تشوف فيها الفريق يشتغل قدامك.
+سكل لـ Claude يبني لك فريق وكلاء لأي فكرة، ويعطيك مكتب تشوفهم فيه يشتغلون.
 
 ![المكتب](docs/images/office.webp)
 
-## وش هدف السكل؟
+## وش يسوي؟
 
-تعطيه فكرتك بكلامك، وهو يبني لك فريق يشتغل عليها. ما يهم نوع المشروع: برنامج، متجر، حملة تسويق، بحث، محتوى، أو أي شغل ثاني.
+توصف فكرتك، وهو يمشي معك بهالترتيب:
 
-١. **يجهّز بيئة خاصة للمشروع:** يعرض عليك البيئات اللي عندك، وينصحك بوحدة جديدة لكل مشروع عشان المفاتيح والإعدادات ما تختلط. ولما يحتاج موقع خارجي يقول لك تضيف مفتاح الـ API في البيئة بدل ما تسوي الخطوات بيدك كل مرة، ولو ما تعرف يساعدك تطلعه من كروم.
-٢. **مصمم الوكلاء يصمم الفريق معك:** أول وكيل في كل مشروع. أنت توصف وش تبي، وهو يقترح الوكلاء: دور كل واحد وأهدافه ومهامه الأولى وشخصيته وهواياته وشكله. ولو نسيت وكيل مهم ينبهك. ما ينفتح أي وكيل إلا بعد موافقتك، ويبقى المصمم معك طول المشروع يضيف ويعدل.
-٣. **المنسق يدير الشغل:** يفتح الوكلاء، ويتابع المهام، ويدير الاجتماعات، ويرجع لك في القرارات الحساسة (فلوس، حذف، البيئة الفعلية، أمان).
-٤. **كل شي قدامك في المكتب:** مين يشتغل، مين ينتظرك، وش المهام، ووش يتكلمون فيه.
+1. **البيئة:** يجهّز بيئة خاصة للمشروع، ومفاتيح الـ API تنحط فيها.
+2. **الفريق:** مصمم الوكلاء يقترح الفريق، وأنت توافق أو ترفض.
+3. **الشغل:** المنسق يوزع المهام ويدير الاجتماعات.
+4. **المتابعة:** كل شي تشوفه في المكتب.
+
+يناسب أي مشروع: برنامج، متجر، تسويق، بحث، محتوى.
 
 ## قواعد ثابتة
 
-- أسماء الوكلاء **دايماً بالإنقليزي**، وتختار الأسلوب: بالدور بس (`Frontend`) أو الدور مع اسم (`Frontend - Ahmed`).
-- قبل ما يستخدم سطح المكتب حقك يستأذن ويسألك وش المجلدات المسموحة، وقت الحاجة بس.
-- ينصحك بمتصفح مخصص لـ Claude مع إضافة Claude لما يحتاج أوامر بالمتصفح.
-- الخدمات والاستضافات اقتراحات مو إجبار، ويدوّر لك على الأفضل وقت التصميم.
-- المفاتيح والأسرار ما تنكتب في الشات ولا في الكود أبداً.
+- أسماء الوكلاء بالإنقليزي دايماً.
+- ما يلمس جهازك إلا بإذنك، وبالمجلدات اللي تحددها.
+- القرارات الحساسة (فلوس، حذف، أمان) ترجع لك.
+- الخدمات المقترحة اختيارية، مو إجبارية.
 
-## غرف المكتب
+## الغرف
 
 | الغرفة | مين فيها |
 |---|---|
-| مكتب المدير | أنت ومساعدك (مدير المكتب)، والوكلاء اللي ينتظرونك يجون عندك |
-| المكتب الرئيسي | الوكلاء اللي يشتغلون على مكاتبهم |
-| غرفة الاجتماعات | أول اجتماع أو محادثة مفتوحة |
-| غرفة الطاولات الصغيرة | المحادثات اللي تبدأ والغرفة الكبيرة مشغولة |
-| الألعاب والاستراحة | اللي خلصوا أو ما بدأوا |
-| غرفة الخاملين | أي وكيل له أكثر من ٣ أيام بدون نشاط، يقعد على كرسي بدون حركة وفوقه "Idle since" والتاريخ، ويرجع لحاله أول ما ينعطى شغل |
+| مكتب المدير | أنت ومساعدك |
+| المكتب الرئيسي | اللي يشتغلون |
+| الاجتماعات والطاولات | اللي يتناقشون |
+| الاستراحة | اللي خلصوا |
+| الخاملين | ٣ أيام بدون نشاط |
 
-غرف العمل والاجتماعات تزيد وتنقص حسب الضغط: كل ١٠ وكلاء يشتغلون ينفتح مكتب جديد، وكل ٤ محادثات زيادة تنفتح غرفة طاولات جديدة، ولما يخف الشغل تتسكر الغرف الزايدة.
+غرف العمل والاجتماعات تزيد وتنقص حسب الضغط.
 
 <table><tr>
 <td><img src="docs/images/meeting-room.webp" alt="غرفة الاجتماعات"></td>
@@ -43,20 +43,22 @@
 
 ## التبويبات
 
-- **Office:** الغرف والفريق.
-- **Roadmap:** النسخ (v1، v2...) ومراحل كل نسخة وين وصلت (للمشاريع البرمجية).
-- **Chat:** كل محادثة بين الوكلاء لها شات خاص، والاجتماعات، والأرشيف.
-- **Task board:** لوحة كانبان للمهام حسب الوكيل والمرحلة والميزة.
+| التبويب | وش فيه |
+|---|---|
+| Office | الغرف والفريق |
+| Roadmap | النسخ ومراحلها |
+| Chat | المحادثات وغرفتها بجنبها |
+| Task board | لوحة المهام |
+
+![الشات وغرفته](docs/images/chat.webp)
 
 ![لوحة المهام](docs/images/task-board.webp)
 
-![خارطة الطريق](docs/images/roadmap.webp)
+## التركيب
 
-## طريقة التركيب
-
-١. حمّل مجلد `agent-designer-playbook` وارفعه في Claude من الإعدادات (Settings > Capabilities > Skills)، أو انسخه إلى `~/.claude/skills/`.
-٢. احفظ رابط هذا الريبو في ذاكرة مشروعك على إنه "office template repo".
-٣. قول لـ Claude: "ابدأ هالفكرة مع مصمم الوكلاء" واكتب فكرتك.
+1. ارفع مجلد `agent-designer-playbook` في Claude من Settings > Capabilities > Skills.
+2. احفظ رابط هذا الريبو في ذاكرة مشروعك.
+3. قول لـ Claude: "ابدأ فكرتي مع مصمم الوكلاء".
 
 </div>
 
@@ -64,50 +66,54 @@
 
 # Agent Office
 
-A Claude skill that starts any project or idea with a team of AI agents, plus an office page where you watch that team work.
+A Claude skill that builds an AI agent team for any idea, with an office page where you watch them work.
 
-## What the skill is for
+## What it does
 
-You describe your idea in your own words, and the skill builds a team to work on it. Any kind of project fits: software, a store, a marketing campaign, research, content, or anything else.
+You describe your idea, and it walks you through:
 
-1. **A separate environment per project.** It lists your environments and recommends a new one for each project, so keys and settings never mix. When the work needs an outside site, it asks you to add that site's API key to the environment instead of clicking through the same steps every time, and it can walk you through getting the key in Chrome.
-2. **The Agent Designer builds the team with you.** It is the first agent of every project. You describe what you want; it proposes the agents: each one's role, goals, first tasks, personality, hobbies and look. It points out agents you may have forgotten. Nothing opens until you accept it, and the designer stays for the whole project to add or change agents.
-3. **The Coordinator runs the work.** It opens agents, tracks tasks, runs meetings, and brings sensitive decisions (money, deletion, production, security) to you.
-4. **Everything is visible in the office:** who is working, who is waiting for you, the tasks, and what the agents are discussing.
+1. **Environment:** sets up a separate environment for the project; API keys go there.
+2. **Team:** the Agent Designer proposes the agents; you accept or reject each one.
+3. **Work:** the Coordinator hands out tasks and runs meetings.
+4. **Follow-up:** everything is visible in the office.
+
+It fits any project: software, a store, marketing, research, content.
 
 ## Fixed rules
 
-- Agent names are **always English**. You pick the style: role only (`Frontend`) or role plus a name (`Frontend - Ahmed`).
-- Before using your desktop, the agent asks for permission and which folders it may see, only when it first needs them.
-- When browser work comes up, it suggests a browser kept just for Claude, with the Claude extension.
-- Services and hosting are suggestions, never requirements; it looks for better options at design time.
-- Keys and secrets never go in chat or code.
+- Agent names are always English.
+- It never touches your computer without permission, and only in the folders you allow.
+- Sensitive decisions (money, deletion, security) come back to you.
+- Suggested services are optional, never required.
 
-## Office rooms
+## Rooms
 
 | Room | Who is there |
 |---|---|
-| Manager's office | You and your assistant (the Office Manager); agents waiting for you come here |
-| Main office | Agents working at their desks |
-| Meeting room | The first open meeting or conversation |
-| Huddle room | Conversations that start while the big room is busy |
-| Games & lounge | Agents that are done or not started |
-| Idle room | Any agent with no activity for more than 3 days sits still on a chair with "Idle since <date>" and comes back as soon as it gets work |
+| Manager's office | You and your assistant |
+| Main office | Agents at work |
+| Meeting and huddle rooms | Agents in a discussion |
+| Lounge | Agents that are done |
+| Idle room | No activity for 3 days |
 
-Work and meeting rooms grow and shrink with the load: another main office opens for every 10 working agents, another huddle room for every 4 extra conversations, and the extra rooms close when things calm down.
+Work and meeting rooms grow and shrink with the load.
 
 ## Tabs
 
-- **Office:** the rooms and the team.
-- **Roadmap:** versions (v1, v2...) and where each one's phases stand (software projects).
-- **Chat:** every agent-to-agent conversation has its own chat, plus meetings and an archive.
-- **Task board:** a kanban of tasks by agent, stage and feature.
+| Tab | What's in it |
+|---|---|
+| Office | Rooms and team |
+| Roadmap | Versions and their phases |
+| Chat | Conversations, with their room beside them |
+| Task board | The task kanban |
+
+![Roadmap](docs/images/roadmap.webp)
 
 ## Install
 
-1. Download the `agent-designer-playbook` folder and upload it in Claude (Settings > Capabilities > Skills), or copy it into `~/.claude/skills/`.
-2. Save this repo's link in your project memory as the "office template repo".
-3. Tell Claude: "start this idea with the agent designer" and describe your idea.
+1. Upload the `agent-designer-playbook` folder in Claude (Settings > Capabilities > Skills).
+2. Save this repo's link in your project memory.
+3. Tell Claude: "start my idea with the agent designer".
 
 ## What's inside
 
