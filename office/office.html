@@ -687,8 +687,9 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   <section role="tabpanel" id="panel-calendar" aria-labelledby="tab-calendar" class="stack" hidden>
     <div class="panel">
       <div class="cal-head"><h2>Calendar</h2>
+        <span class="cal-pills" role="group" aria-label="View"><button type="button" class="chip-btn" data-v="">Everyone</button><button type="button" class="chip-btn" data-v="@rooms">Rooms</button></span>
         <label>Person <select id="calWho"></select></label>
-        <span class="cal-nav"><button class="btn-lite" type="button" id="calPrev" aria-label="Previous week">&larr;</button><button class="btn-lite" type="button" id="calToday">This week</button><button class="btn-lite" type="button" id="calNext" aria-label="Next week">&rarr;</button></span>
+        <span class="cal-nav"><button class="btn-lite" type="button" id="calPrev" aria-label="Previous 7 days">&larr;</button><button class="btn-lite" type="button" id="calToday">Next 7 days</button><button class="btn-lite" type="button" id="calNext" aria-label="The 7 days after">&rarr;</button></span>
         <span class="note" id="calNote"></span></div>
       <p class="note">Each task takes its estimate (agents work around the clock unless Settings say otherwise), after the tasks it depends on. When one of those runs late, everything after it moves, and the calendar shows why.</p>
       <div id="calBody"></div>
@@ -1667,14 +1668,19 @@ function calEvent(ev){
   b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)} · ${ev.part ? fmtDur(Math.max(1, Math.round((ev.e - ev.s) / 6e4))) + " of " : ""}${fmtDur(estOf(t))}`), el("b", null, `${t.id} · ${t.title_en || ""}`));
   const w = [lateText(p), whyText(p)].filter(Boolean).join(". "); if (w) b.append(el("span","why", w));
   b.onclick = () => go("#task/" + encodeURIComponent(t.id)); return b; }
-function weekStart(off){ const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay() + off * 7); return d; }
+function weekStart(off){ const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + off * 7); return d; }   // a rolling week: today and the 6 days after
 function weekGrid(evs){
   const wd = workday(), g = el("div","cal-week"), d0 = weekStart(calWeek), today = new Date().toDateString();
+  /* a task paused by a meeting shows as two parts around it, so the day reads in order */
+  const meets = evs.filter(x => x.kind === "meet");
+  evs = evs.flatMap(x => { if (x.kind !== "task" || x.done) return [x]; let segs = [[x.s, x.e]];
+    meets.forEach(m => { segs = segs.flatMap(([a, b]) => m.e <= a || m.s >= b ? [[a, b]] : [[a, Math.min(b, m.s)], [Math.max(a, m.e), b]].filter(([p, q]) => q > p)); });
+    return segs.map(([a, b]) => ({...x, s:a, e:b, split:segs.length > 1})); }).sort((a, b) => a.s - b.s);
   for (let i = 0; i < 7; i++) { const d = new Date(d0); d.setDate(d0.getDate() + i); const s = +d, e = s + DAY;
     const col = el("div","cal-day" + (d.toDateString() === today ? " today" : "") + (wd.days.includes(d.getDay()) ? "" : " off"));
     const list = evs.filter(x => x.s < e && x.e > s);
     const h = el("div","cal-dh"); h.append(el("span", null, d.toLocaleDateString("en-GB", {weekday:"short", day:"numeric", month:"short"})), el("span", null, list.length ? String(list.length) : "")); col.append(h);
-    list.forEach(x => col.append(calEvent({...x, s:Math.max(x.s, s), e:Math.min(x.e, e), part:x.s < s || x.e > e})));
+    list.forEach(x => col.append(calEvent({...x, s:Math.max(x.s, s), e:Math.min(x.e, e), part:x.split || x.s < s || x.e > e})));
     if (!list.length) col.append(el("span","note", wd.days.includes(d.getDay()) ? "Free" : "Day off"));
     g.append(col); }
   return g; }
@@ -1683,6 +1689,7 @@ function renderCalendar(){
   const people = agents.filter(a => a.id !== "owner").sort((a, b) => nameOf(a.id).localeCompare(nameOf(b.id)));
   const keep = calWho; sel.replaceChildren(new Option("Everyone", ""), new Option("Rooms (bookings)", "@rooms")); people.forEach(a => sel.append(new Option(nameOf(a.id), a.id))); sel.value = keep === "@rooms" || people.some(a => a.id === keep) ? keep : ""; calWho = sel.value;
   const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : "";
+  document.querySelectorAll(".cal-pills button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === calWho)));
   const box = $("calBody"); box.replaceChildren();
   const d0 = weekStart(calWeek), d6 = new Date(+d0 + 6 * DAY);
   $("calNote").textContent = `${d0.toLocaleDateString("en-GB", {day:"numeric", month:"short"})} – ${d6.toLocaleDateString("en-GB", {day:"numeric", month:"short"})}` + (lateN ? ` · ${lateN} late` : "");
@@ -1703,6 +1710,7 @@ function renderCalendar(){
   box.append(all);
 }
 $("calWho").onchange = e => { calWho = e.target.value; renderCalendar(); };
+document.querySelectorAll(".cal-pills button").forEach(b => b.onclick = () => { calWho = b.dataset.v; renderCalendar(); });
 $("calPrev").onclick = () => { calWeek--; renderCalendar(); }; $("calNext").onclick = () => { calWeek++; renderCalendar(); }; $("calToday").onclick = () => { calWeek = 0; renderCalendar(); };
 function avatar(id, size){ const av = el("span","av"); av.dataset.id = id; av.style.backgroundImage = `url(${charUrl(id,"front-left")})`; av.style.borderColor = id === "owner" ? "var(--accent)" : colorFor(id); if (size) { av.style.width = av.style.height = size + "px"; } return av; }
 function stateChip(st){ const s = AGENT_STATE[st] || AGENT_STATE.idle; const c = el("span","chip "+s.cls); c.append(el("span","dot"), s.en); return c; }
