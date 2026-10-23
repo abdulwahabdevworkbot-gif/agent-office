@@ -386,6 +386,12 @@ h2{font-weight:700;font-size:19px;margin:0}
 .dec-log{border-top:1px solid var(--line);padding-top:8px;display:grid;gap:6px}.dec-log h2{font-size:15px;margin:0}
 .dec{border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:6px;padding:6px 8px;display:grid;gap:3px;font-size:13px}
 .dec.reopened{border-left-color:var(--idle);opacity:.75}.dec-top{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}.dec-t{overflow-wrap:anywhere}
+/* a "!" over whoever needs the owner (amber: waiting, red: blocked), and LATE under anyone whose task will miss its deadline */
+.ag .bang{display:none;position:absolute;top:-4%;right:-18%;width:16px;height:16px;border-radius:50%;place-items:center;font:700 11px/1 var(--font);color:#1b1300;background:#f0a83c;box-shadow:0 0 0 2px rgba(0,0,0,.35);cursor:pointer;z-index:3;animation:bang 1.6s ease-in-out infinite}
+.ag.need-w .bang,.ag.need-b .bang{display:grid}.ag.need-b .bang{background:#ff6b6b;color:#2a0505}
+.ag.late::after{content:"LATE";position:absolute;left:50%;bottom:-3%;transform:translateX(-50%);font:700 7px/1 var(--font);letter-spacing:.06em;color:#fff;background:#c23a3a;border-radius:3px;padding:1px 3px;pointer-events:none}
+@keyframes bang{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.ag .bang{animation:none}}
 .office-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.office-split{grid-template-columns:1fr}}
 .chat{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;min-height:460px;min-width:0;overflow:hidden}
@@ -964,7 +970,7 @@ const dueOf = t => /^\d{4}-\d{2}-\d{2}$/.test(String(t.due || "")) ? t.due : t.d
 const ST_KINDS = [
   {k:"due", en:"Due today", c:"#7cc4ff", f:(t, d) => dueOf(t) === d},
   {k:"done", en:"Done today", c:"#51cf66", f:(t, d) => isClosed(t) && localDay(t.done_at || t.updated_at) === d},
-  {k:"late", en:"Late", c:"#ff6b6b", f:(t, d) => !isClosed(t) && dueOf(t) && dueOf(t) < d},
+  {k:"late", en:"Late", c:"#ff6b6b", f:(t, d) => !isClosed(t) && ((dueOf(t) && dueOf(t) < d) || !!sched.byTask[t.id]?.lateBy)},   // past due, or planned past its deadline
   {k:"doing", en:"In progress", c:"#fcc419", f:t => t.state === "doing"},
   {k:"review", en:"In review", c:"#b197fc", f:t => t.state === "review"},
   {k:"blocked", en:"Blocked", c:"#ff922b", f:t => t.state === "blocked"},
@@ -1205,12 +1211,13 @@ function makeFig(id){
   const fx = el("img","fx"); fx.alt = ""; b.append(fx);
   const talk = el("span","talk"); talk.append(el("i"), el("i"), el("i")); b.append(talk);
   const idle = el("span","idle"); b.append(idle);
+  const bang = el("span","bang","!"); bang.title = "Needs you: answer here"; b.append(bang);
   const tag = el("span","tag");
   const r = {id, b, img, fx, tag, idle, room:null, pos:null, plan:null, want:null, busy:false, errand:false};
   talk.title = "Open this conversation";
   if (id === "owner") b.tabIndex = -1;
   if (pointed.has(id)) b.classList.add("point");
-  b.onclick = e => { if (b.classList.contains("meeting") && e.target.closest(".talk")) openTalk(id); else if (id !== "owner") selectAgent(id); };
+  b.onclick = e => { if (e.target.closest(".bang")) openNeed(id); else if (b.classList.contains("meeting") && e.target.closest(".talk")) openTalk(id); else if (id !== "owner") selectAgent(id); };
   figs.set(id, r); return r;
 }
 function setPos(r, p, ms){
@@ -1261,7 +1268,7 @@ async function goTo(r, room, spot){
   r.busy = false;
 }
 function dress(r, o){
-  r.b.className = "ag " + o.state + (r.b.classList.contains("walking") ? " walking" : "") + (selectedAgent === r.id ? " sel" : "") + (o.meet ? " meeting" : "") + (o.idle ? " dormant" : "");
+  r.b.className = "ag " + o.state + (r.b.classList.contains("walking") ? " walking" : "") + (selectedAgent === r.id ? " sel" : "") + (o.meet ? " meeting" : "") + (o.idle ? " dormant" : "") + (o.need ? " need-" + o.need : "") + (o.late ? " late" : "") + (pointed.has(r.id) ? " point" : "");
   r.idle.textContent = o.idle ? "Idle since " + idleDate(o.idle) : "";
   if (o.idle) r.fx.hidden = true; else if (o.fx) { r.fx.src = `${A}fx/${o.fx}.webp`; r.fx.hidden = false; } else r.fx.hidden = true;
   r.h = (o.h || CH_H) * heightOf(r.id); if (!r.pose) r.b.style.height = r.h + "%";
@@ -1281,7 +1288,8 @@ function drawScene(){
     const r = figs.get(id) || makeFig(id), a = agentById(id), st = id === "owner" ? "owner" : (a?.state || "working");
     const label = id === "owner" ? "You" : (nameOf(id) === ASSISTANT ? "Office Manager" : nameOf(id));
     const dz = typeOf(p.room) === "idle" ? idleSince(a) : 0;
-    dress(r, {state:st, meet:meetIds.has(id), label, idle:dz, stateText:AGENT_STATE[st]?.en, h:(id === "owner" || id === ASSISTANT) ? CH_H + 1 : CH_H,
+    dress(r, {state:st, meet:meetIds.has(id), label, idle:dz, need:dz ? "" : st === "waiting" && id !== ASSISTANT ? "w" : st === "blocked" ? "b" : "",
+      late:!dz && tasks.some(t => t.session === id && !isClosed(t) && sched.byTask[t.id]?.lateBy), stateText:AGENT_STATE[st]?.en, h:(id === "owner" || id === ASSISTANT) ? CH_H + 1 : CH_H,
       fx: meetIds.has(id) ? null : id === "owner" ? "monster-energy" : id === ASSISTANT && st === "working" ? "need-coffee" : FX[st]});
     const changed = !r.plan || r.plan.room !== p.room || r.plan.slot !== p.slot || r.plan.spot !== p.spot;
     r.plan = p;
@@ -1388,6 +1396,10 @@ function inlineReply(key, target, ph){
     catch (err) { note.textContent = writeError(err); send.disabled = dec.disabled = false; } };
   send.onclick = () => go1(false); dec.onclick = () => go1(true); enterSends(ta, () => go1(false));
   const r = el("div","row-wrap"); r.append(send, dec, note); w.append(ta, r); setTimeout(() => ta.focus(), 0); return w; }
+/* the "!" over a character opens its card in Needs you, ready to answer */
+function openNeed(id){ const a = agentById(id); const key = (a?.state === "blocked" ? "b:" : "w:") + id;
+  inboxOpen.set(key, inboxOpen.get(key) || {}); inboxSent.delete(key); inboxAll = true; showTab("office"); renderInbox();
+  $("inbox").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"}); }
 function renderInbox(){
   const box = $("inboxList"); if (!box) return;
   if (box.contains(document.activeElement) && document.activeElement.matches("textarea")) return;   // never wipe what the owner is typing
@@ -1420,7 +1432,12 @@ function renderInbox(){
   sessions.filter(x => x.state === "open" && isMeeting(x) && x.duration_min && Date.parse(x.opened_at || x.at || "") + x.duration_min * 6e4 < Date.now()).forEach(x => {
     items.push({k:"Time is up", c:"var(--ok)", who:"coordinator", t:x.title_en || "Meeting", s:`Planned for ${x.duration_min} min. Wrap it up, or keep going.`, at:x.opened_at,
       acts:[["Wrap up", () => closeSession(x.id, "owner"), true], ["Open", () => go("#session/" + encodeURIComponent(x.id))]]}); });
+  tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).forEach(t => { const p = sched.byTask[t.id];
+    items.push({k:"Will be late", c:"var(--bad)", who:t.session || "coordinator", t:`${t.id} · ${t.title_en || ""}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), at:t.updated_at,
+      key:"l:" + t.id, inline:() => inlineReply("l:" + t.id, {to:t.session || "coordinator", task:t.id}, `Ask ${nameOf(t.session)} about ${t.id}…`),
+      acts:[["Talk", "inline", true], ["Move the deadline", async () => { try { await db.doc("tasks/" + t.id).update({due_at:new Date(p.e).toISOString(), due_moved_by:"owner", updated_at:new Date().toISOString()}); } catch {} }], ["Task", () => openTask(t.id)]]}); });
   const w = agents.filter(a => a.state === "working").length;
+  { const base = $("title").textContent || "Product Office"; document.title = (items.length ? `(${items.length}) ` : "") + base; }
   $("inboxSum").textContent = items.length ? `${items.length} thing${items.length === 1 ? "" : "s"} for you · ${w} agents working` : "";
   if (!items.length) { box.append(el("div","inbox-empty", `Nothing needs you right now. ${w} agents are working.`)); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
