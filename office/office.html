@@ -314,6 +314,23 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ppl-row input{margin:0;width:15px;height:15px;accent-color:var(--accent)}
 .pr-t{display:grid;min-width:0}.pr-t b{font-size:13.5px}.pr-t .note{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .compose textarea{transition:height .1s}
+/* "Needs you": what the owner must answer or decide, first thing on the page */
+.inbox{gap:10px}
+.inbox-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+.inbox-head h2{margin:0}
+.inbox-head .row-wrap{margin-left:auto}
+.inbox-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:8px}
+.ib{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;align-items:start;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:9px 11px;background:var(--bg)}
+.ib .av{grid-row:span 3}
+.ib-k{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--c);display:flex;gap:8px;justify-content:space-between}
+.ib-k .note{font-weight:400;text-transform:none;letter-spacing:0}
+.ib-t{font-weight:600;overflow-wrap:anywhere}
+.ib-s{font-size:13px;color:var(--muted);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ib-a{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.ib-a button{font-size:12.5px;padding:3px 10px}
+.inbox-empty{color:var(--muted);font-size:13.5px}
+.inbox-more{justify-self:start}
+.chip.go{cursor:pointer;border:0;font:inherit;font-size:13px}.chip.go:hover{box-shadow:0 0 0 1px var(--accent) inset}.chip.go:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .office-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.office-split{grid-template-columns:1fr}}
 .chat{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;min-height:460px;min-width:0;overflow:hidden}
@@ -475,6 +492,10 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   </div>
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
+    <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
+      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="row-wrap"><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
+      <div class="inbox-list" id="inboxList"></div>
+    </div>
     <div class="scene">
       <div class="chrome"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="ttl" id="chromeTitle">Product Office</span><span class="clock" id="clock"></span></div>
       <div class="dept-tabs" id="deptTabs" role="tablist" aria-label="Departments" hidden></div>
@@ -1280,6 +1301,39 @@ function renderAssistant(){
   if (pending) parts.push(`${pending} of your message${pending === 1 ? " has" : "s have"} not reached the agents yet; I'll pass ${pending === 1 ? "it" : "them"} to the Coordinator.`);
   $("assistantSay").textContent = parts.join(" ");
 }
+/* "Needs you" (journey review, 2026-10-23): the owner sees first who waits, who is stuck and what to approve, each with its answer button */
+const ago = iso => { const t = Date.parse(iso || ""); if (!t) return ""; const m = Math.max(0, Math.round((Date.now() - t) / 6e4)); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
+function replyTo(id){ chatSess = chatPair = chatTask = ""; showTab("chat"); pickers.forEach(p => p.refresh()); renderMsgs(); renderSessions(); renderCompose();
+  const s = $("to"); if ([...s.options].some(o => o.value === id)) { s.value = id; s.dispatchEvent(new Event("change")); } $("text").focus(); }
+let inboxAll = false;
+function renderInbox(){
+  const box = $("inboxList"); if (!box) return; box.replaceChildren();
+  const items = [], openOf = id => tasks.find(t => t.session === id && t.state === "blocked") || tasks.find(t => t.session === id && t.state !== "done");
+  agents.filter(a => a.state === "waiting" && a.id !== ASSISTANT).forEach(a => { const t = openOf(a.id);
+    items.push({k:"Waiting for you", c:"var(--warn)", who:a.id, t:nameOf(a.id), s:a.doing_en || (t ? `${t.id} · ${t.title_en || ""}` : "Has a question for you."), at:a.updated_at,
+      acts:[["Reply", () => replyTo(a.id), true], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Profile", () => selectAgent(a.id)]]}); });
+  agents.filter(a => a.state === "blocked").forEach(a => { const t = openOf(a.id);
+    items.push({k:"Blocked", c:"var(--bad)", who:a.id, t:nameOf(a.id), s:[t ? `${t.id} · ${t.title_en || ""}` : "", a.doing_en || ""].filter(Boolean).join(". "), at:a.updated_at,
+      acts:[["Help", () => replyTo(a.id), true], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : [])]}); });
+  msgs.filter(m => m.kind === "proposal" && Array.isArray(m.proposed_tasks) && m.proposed_tasks.length && !(m.added || []).length).forEach(m => {
+    const n = m.proposed_tasks.length;
+    items.push({k:"Tasks to approve", c:"var(--accent)", who:m.from || "coordinator", t:`${n} proposed task${n === 1 ? "" : "s"}`, s:m.proposed_tasks.map(p => p.title_en).join(" · "), at:m.at,
+      acts:[["Review", () => { if (m.session) viewSession(m.session); else { chatSess = chatPair = chatTask = ""; renderMsgs(); } showTab("chat"); }, true]]}); });
+  sessions.filter(x => x.state === "open").forEach(x => {
+    const last = msgs.filter(m => m.session === x.id).sort((a, b) => String(a.at || "").localeCompare(String(b.at || ""))).pop();
+    if (!last || last.from === "owner" || !(last.kind === "question" || last.to === "owner")) return;
+    items.push({k:isMeeting(x) ? "Question in a meeting" : "Question for you", c:"var(--warn)", who:last.from, t:x.title_en || x.task || "Conversation", s:`${nameOf(last.from)}: ${last.text || ""}`, at:last.at,
+      acts:[["Answer", () => { viewSession(x.id); showTab("chat"); $("text").focus(); }, true]]}); });
+  const w = agents.filter(a => a.state === "working").length;
+  $("inboxSum").textContent = items.length ? `${items.length} thing${items.length === 1 ? "" : "s"} for you · ${w} agents working` : "";
+  if (!items.length) { box.append(el("div","inbox-empty", `Nothing needs you right now. ${w} agents are working.`)); return; }
+  (inboxAll ? items : items.slice(0, 6)).forEach(it => {
+    const c = el("div","ib"); c.style.setProperty("--c", it.c);
+    const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", ago(it.at)));
+    const a = el("div","ib-a"); it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", lab); b.type = "button"; b.onclick = fn; a.append(b); });
+    c.append(avatar(it.who, 34), k, el("div","ib-t", it.t), el("div","ib-s", it.s), a); box.append(c); });
+  if (items.length > 6) { const m = el("button","linkish inbox-more", inboxAll ? "Show fewer" : `Show all ${items.length}`); m.type = "button"; m.onclick = () => { inboxAll = !inboxAll; renderInbox(); }; box.append(m); }
+}
 function avatar(id, size){ const av = el("span","av"); av.dataset.id = id; av.style.backgroundImage = `url(${charUrl(id,"front-left")})`; av.style.borderColor = id === "owner" ? "var(--accent)" : colorFor(id); if (size) { av.style.width = av.style.height = size + "px"; } return av; }
 function stateChip(st){ const s = AGENT_STATE[st] || AGENT_STATE.idle; const c = el("span","chip "+s.cls); c.append(el("span","dot"), s.en); return c; }
 function renderRoster(){
@@ -1303,10 +1357,13 @@ function renderLegend(){
 function renderSummary(){
   const box = $("summary"); box.replaceChildren();
   const counts = {}; agents.forEach(a => counts[a.state||"idle"] = (counts[a.state||"idle"]||0)+1);
-  ["waiting","working","blocked","done","idle"].forEach(k => { if (counts[k]) { const c = stateChip(k); c.lastChild.textContent = `${AGENT_STATE[k].en}: ${counts[k]}`; box.append(c); } });
+  const goChip = (c, fn, tip) => { const b = el("button", c.className + " go"); b.type = "button"; b.append(...c.childNodes); b.title = tip; b.onclick = fn; return b; };
+  const toInbox = () => { showTab("office"); $("inbox").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"}); };
+  ["waiting","working","blocked","done","idle"].forEach(k => { if (counts[k]) { const c = stateChip(k); c.lastChild.textContent = `${AGENT_STATE[k].en}: ${counts[k]}`;
+    box.append(k === "waiting" || k === "blocked" ? goChip(c, toInbox, "Show them in Needs you") : c); } });
   const open = tasks.filter(t => t.state !== "done").length;
-  box.append(el("span","chip", `Open tasks: ${open}`));
-  const os = sessions.filter(x => x.state === "open").length; if (os) { const c = stateChip("waiting"); c.lastChild.textContent = `Open sessions: ${os}`; box.append(c); }
+  box.append(goChip(el("span","chip", `Open tasks: ${open}`), () => showTab("board"), "Open the task board"));
+  const os = sessions.filter(x => x.state === "open").length; if (os) { const c = stateChip("waiting"); c.lastChild.textContent = `Open sessions: ${os}`; box.append(goChip(c, () => showTab("chat"), "Open the chat")); }
   $("taskCount").textContent = tasks.length ? String(tasks.length) : "";
   const latest = [...agents.map(a=>a.updated_at), ...tasks.map(t=>t.updated_at)].filter(Boolean).sort().pop();
   $("updated").textContent = latest ? `Last update: ${fmt(latest)}` : "";
@@ -1924,7 +1981,7 @@ function callMeeting(){
   };
   closeDialogs(); $("meetDlg").showModal(); ta.focus();
 }
-$("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat");
+$("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
 function writeError(err){
   if (err && err.code === "quota_exceeded") return "The office data is full. Ask the Office Manager to archive old messages.";
   if (err && (err.code === "not_granted" || err.code === "permission_denied")) { canWrite = false; return "You can read this page but not post."; }
@@ -2407,7 +2464,7 @@ $("rsSave").onclick = async () => { const rooms = {};
   try { await db.doc("meta/office").update({rooms}); $("rsNote").textContent = "Saved. Rooms open and close by the new sizes."; } catch (err) { $("rsNote").textContent = writeError(err); } };
 $("rsReset").onclick = async () => { $("rsNote").textContent = "Saving…";
   try { await db.doc("meta/office").update({rooms:{}}); document.activeElement.blur(); renderSettings(); $("rsNote").textContent = "Back to the defaults."; } catch (err) { $("rsNote").textContent = writeError(err); } };
-function renderAll(){ renderSettings(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+function renderAll(){ renderSettings(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);
