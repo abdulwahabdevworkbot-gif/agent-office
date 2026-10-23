@@ -1,0 +1,34 @@
+Agent Office License
+
+Copyright (c) 2026 @Abdulwahabdev. All rights reserved, except as allowed below.
+
+This covers everything in this repository (the skill, the office page, the rooms,
+furniture and character art, the art generators and the docs), except the files
+listed under "Third-party parts".
+
+1. Direct use is allowed.
+   You may use the skill and the office page as they are, for personal or
+   commercial projects, with no fee, as long as the credit stays visible:
+   keep the "@Abdulwahabdev" tags on the art, and keep this notice and a link
+   to this repository with any copy you publish.
+
+2. Changes and derived works need written permission.
+   Modifying, redrawing, tracing or extending the art, or publishing an
+   improved or changed version of this work (in a separate repository, a
+   package, a product or any other place), needs written permission from the
+   account owner first. Ask by opening an issue on this repository.
+
+3. The credit tags must not be removed.
+   Removing, hiding or cropping the "@Abdulwahabdev" tags from the characters
+   or the rooms is not allowed.
+
+4. No warranty.
+   The work is provided "as is", without warranty of any kind. The owner is not
+   liable for any claim or damage that comes from using it.
+
+Third-party parts
+
+- office/assets/fx/: status effect icons from W17ant/Claude-Office, under the
+  MIT license (see office/assets/LICENSE-Claude-Office.txt). That license, not
+  this one, applies to those files.
+- Fonts in office/assets/fonts/ keep their own licenses.

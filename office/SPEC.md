@@ -5,7 +5,7 @@ The owner's requirements for the office page. Keep all of them when publishing o
 ## The page
 
 - Entire page in English, left to right, left-aligned. Agents' names, descriptions, status and discussions are in English. Font: Dubai (shipped in `office/assets/fonts/`; never Thmanyah, its license forbids hosting the files). Title "Product Office", or "<product_en> Office" when `meta/office.product_en` is set.
-- Art: rooms, furniture and characters come from `tools/art/` (soft flat isometric, see `tools/art/STYLE.md`); only the status effects are from W17ant/Claude-Office (MIT). Day and night rooms by local time.
+- Art: rooms, characters and seated poses are the owner's own pictures, cut out of the owner's sheets with `tools/cut/` (never redrawn). Each carries the credit tag `@Abdulwahabdev`: small, readable only when zoomed, on every character and seated body; clear on every room. Only the status effects are from W17ant/Claude-Office (MIT).
 - Four tabs: **Office**, **Roadmap**, **Chat** (with the count of open conversations) and **Task board**.
 - Office tab: six rooms (Manager's office and Main office, then Meeting room and Huddle room, then Games & lounge and Idle room); hovering a room zooms it (stacked, no zoom, on phones).
   - Manager's office: the owner ("You") and `office-manager` as the assistant, seated at the desk; agents in state `waiting` come and stand here.
@@ -101,18 +101,33 @@ The owner's rule: the Team tab (`#team`) shows the project's hierarchy as a top-
 
 An agent's `reports_to` overrides this. Cycles fall back to the owner. Each card shows the avatar, the department code, the name, the position or role and the state, and opens the agent's page.
 
-## Look options
+## Characters and rooms
 
-The owner's rule: characters can carry options in `characters.json`:
+The owner's rule: use the owner's drawings as they are.
 
-- `options.beard`: none / goatee / light / full;
-- `options.glasses`;
-- `options.cover`: none / hijab / hijab-abaya / niqab;
-- `defaults` for each.
+- **Characters:** 41 standing characters in `assets/chars/` (`cNN-l.webp`, and the mirror `cNN-r.webp`), listed in `characters.json`. The art is front-facing, so walking away mirrors the picture. The agent page shows them as a grid: featured first, the rest under "More characters". It saves `look.char`. Agents with no pick get one from their id.
+- **Seated poses:** when an agent sits, the page draws the owner's seated body for that agent's outfit and seat type (`assets/seated/bRR-K.webp`: 12 outfits × 9 seats) with the character's own head (`assets/heads/cNN.webp`) on its neck. The seat types:
+  1. task chair, front;
+  2. task chair, side;
+  3. manager chair;
+  4. visitor chair;
+  5. meeting chair;
+  6. sofa;
+  7. armchair;
+  8. bean bag;
+  9. stool.
 
-The agent page shows them as buttons and saves `look.beard`, `look.glasses` and `look.cover`.
+  `seated.json` holds each body's neck point and each character's outfit row. A seat in the page's room data is `{x, y, k, cut?}`: `y` is the neck, `k` the seat type, and `cut` the line below which the body is hidden (a desk or table edge).
+- **Rooms:** pictures in `assets/rooms/`, with the furniture drawn in:
+  - `boss`: the manager's office;
+  - `main-a`, `main-b`: offices with an S bench and the manager's glass office;
+  - `main-wide`: three teams;
+  - `meet-8`, `meet-10`, `meet-20`, `meet-30`;
+  - `huddle`: three tables of four;
+  - `idle`: the waiting room;
+  - `game`: games and lounge.
 
-Cover variants are full sprites (`chars/<id>_<cover>-<facing>.webp` with masks). Beard and glasses are overlays (`acc/<id>-<facing>-<goatee|light|full|glasses>.webp`). A beard takes the hair color. `tools/art/embed_chars.py` copies the list into the page.
+  The page uses `boss`, `main-b`/`main-a` (alternating for extra offices), `meet-10`, `huddle`, `idle` and `game`. The other rooms are ready for larger teams.
 
 ## Reviews tab
 

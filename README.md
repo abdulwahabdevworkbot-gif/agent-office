@@ -1,10 +1,12 @@
+[Go to English description](#agent-office)
+
 <div dir="rtl">
 
 # مكتب الوكلاء
 
 سكل لـ Claude يبني لك فريق وكلاء لأي فكرة، ويعطيك مكتب تشوفهم فيه يشتغلون.
 
-![المكتب](docs/images/rooms-new.webp)
+![المكتب](docs/images/office.webp)
 
 ## وش يسوي؟
 
@@ -28,13 +30,17 @@
 
 | الغرفة | مين فيها |
 |---|---|
-| مكتب المدير | أنت ومساعدك |
-| المكتب الرئيسي | اللي يشتغلون |
-| الاجتماعات والطاولات | اللي يتناقشون |
-| الاستراحة | اللي خلصوا |
-| الخاملين | ٣ أيام بدون نشاط |
+| مكتب المدير | أنت ومساعدك، واللي ينتظرون ردك |
+| المكتب الرئيسي | اللي يشتغلون، ومدير القسم في مكتبه الزجاجي |
+| الاجتماعات والهادل | اللي يتناقشون |
+| الألعاب | اللي خلصوا |
+| الانتظار | الخاملين ٣ أيام وأكثر |
 
-غرف العمل والاجتماعات تزيد وتنقص حسب الضغط.
+غرف العمل والهادل تزيد وتنقص حسب الضغط. لما يقعد الوكيل ينرسم بجلسة تناسب لبسه والكرسي اللي قاعد عليه.
+
+كل نوع غرفة مرة وحدة، وتحت كل وحدة وش يميزها:
+
+![الغرف](docs/images/rooms.webp)
 
 ## الأقسام
 
@@ -50,18 +56,12 @@ Intern ← Developer / Analyst ← Senior ← Consultant ← Senior Consultant �
 
 ![قسم التسويق](docs/images/department.webp)
 
-<table><tr>
-<td><img src="docs/images/meeting-room.webp" alt="غرفة الاجتماعات"></td>
-<td><img src="docs/images/idle-room.webp" alt="غرفة الخاملين"></td>
-</tr></table>
 
 ## الشخصيات
 
-١٨ شخصية من ثقافات مختلفة (منها ٨ عربية زيادة)، ومصمم الوكلاء يختار منها لكل وكيل. هذي أفضل ١٠: الشعر ولون القميص يتغيرون، واللبس التقليدي يبقى بألوانه.
+٤١ شخصية من ثقافات مختلفة. تختار وحدة لكل وكيل من صفحته.
 
-![الشخصيات](docs/images/characters-top10.webp)
-
-كل الشخصيات: [characters-all](docs/images/characters-all.webp). وفيه ٣٠ شخصية ثانية مكتوبة في المولّد وبتنضاف قريب.
+![الشخصيات](docs/images/characters.webp)
 
 ## التبويبات
 
@@ -74,15 +74,41 @@ Intern ← Developer / Analyst ← Senior ← Consultant ← Senior Consultant �
 | Reviews | المراجعات: قبول، قبول بملاحظات، أو رفض مع التعديلات المطلوبة والمهام الفرعية والشات |
 | Team | الهيكل: أنت، ثم المدراء، ثم اللي تحتهم |
 
-![الشات وغرفته](docs/images/chat.webp)
+## أمثلة حقيقية من الصفحة
+
+**المراحل:** كل نسخة تمشي بأربع مراحل: تخطيط، نموذج، تجريبي، إنتاج. كل مرحلة فيها: لم يبدأ، شغال، اختبار، خلص. وفوق مكتوب وين وصلنا الحين.
+
+![المراحل](docs/images/roadmap.webp)
+
+**حركة الوكيل:** نفس الوكيل (Backend) يشتغل على مكتبه، ينادونه لاجتماع مراجعة، ولما يخلص مهمته يروح غرفة الألعاب.
+
+![حركة الوكيل](docs/images/moves.webp)
+
+**الكانبان:** المهام حسب الوكيل والمرحلة، مع فلتر النسخة والمرحلة.
 
 ![لوحة المهام](docs/images/task-board.webp)
+
+**طلب اجتماع:** تختار مين يحضر، وتكتب وش تبي تناقش، والمنسق يدير الاجتماع.
+
+![طلب اجتماع](docs/images/meeting-call.webp)
+
+**الاجتماع نفسه:** النقاش، والغرفة بجنبه وفيها الحاضرين قاعدين.
+
+![الاجتماع وغرفته](docs/images/chat.webp)
 
 ## التركيب
 
 1. ارفع مجلد `agent-designer-playbook` في Claude من Settings > Capabilities > Skills.
 2. احفظ رابط هذا الريبو في ذاكرة مشروعك.
 3. قول لـ Claude: "ابدأ فكرتي مع مصمم الوكلاء".
+
+## الحقوق والاستخدام
+
+كل الرسومات (الغرف والأثاث والشخصيات) والكود من عمل @Abdulwahabdev، والتفاصيل في ملف [LICENSE](LICENSE).
+
+- **الاستخدام المباشر مسموح** في أي مشروع، شخصي أو تجاري، بشرط تبقى الحقوق ظاهرة ورابط هذا الريبو موجود.
+- **التعديل أو التحسين في ريبو مستقل** (أو إعادة الرسم أو النشر بنسخة معدلة) لازم قبله إذن مكتوب من صاحب الحساب. اطلبه بفتح Issue هنا.
+- كل شخصية عليها تاق صغير `@Abdulwahabdev` يبان بالزوم، والغرف عليها تاق واضح. ممنوع شيلها أو قصها.
 
 </div>
 
@@ -91,6 +117,8 @@ Intern ← Developer / Analyst ← Senior ← Consultant ← Senior Consultant �
 # Agent Office
 
 A Claude skill that builds an AI agent team for any idea, with an office page where you watch them work.
+
+![The office](docs/images/office.webp)
 
 ## What it does
 
@@ -114,13 +142,17 @@ It fits any project: software, a store, marketing, research, content.
 
 | Room | Who is there |
 |---|---|
-| Manager's office | You and your assistant |
-| Main office | Agents at work |
+| Manager's office | You, your assistant, and agents waiting for your answer |
+| Main office | Agents at work, and the department head in the glass office |
 | Meeting and huddle rooms | Agents in a discussion |
-| Lounge | Agents that are done |
-| Idle room | No activity for 3 days |
+| Games & lounge | Agents that are done |
+| Waiting room | No activity for 3 days |
 
-Work and meeting rooms grow and shrink with the load.
+Work and huddle rooms grow and shrink with the load. A seated agent is drawn in a pose that fits its outfit and its seat.
+
+Each kind of room once, with what sets it apart:
+
+![Rooms](docs/images/rooms.webp)
 
 ## Departments
 
@@ -133,13 +165,13 @@ When the project grows, the Agent Designer proposes departments (e.g. Marketing)
 
 Positions, lowest to highest: Intern → Developer / Analyst → Senior → Consultant → Senior Consultant → Manager → Director.
 
+![Department](docs/images/department.webp)
+
 ## Characters
 
-Eighteen characters from different cultures (including eight more Arab looks), and the Agent Designer picks one for each agent. These are the top ten: Hair and shirt colors can change; traditional dress keeps its own colors. The list is in `office/assets/chars/characters.json`.
+Forty-one characters from different cultures. Pick one for each agent in its page.
 
-![Characters](docs/images/characters-top10.webp)
-
-All of them: [characters-all](docs/images/characters-all.webp). Thirty more are already written in the generator and are coming soon.
+![Characters](docs/images/characters.webp)
 
 ## Tabs
 
@@ -152,7 +184,27 @@ All of them: [characters-all](docs/images/characters-all.webp). Thirty more are 
 | Reviews | Review rounds: approved, approved with notes, or sent back with the changes, sub-tasks and chat |
 | Team | The hierarchy: you, then the managers, then their people |
 
-![Roadmap](docs/images/roadmap.webp)
+## Real examples from the page
+
+**Stages:** each version goes through four phases: Planning, Prototype, Staging, Production. Each phase has To do, In progress, Testing and Done, and the top line says where the version is now.
+
+![Stages](docs/images/roadmap.webp)
+
+**How an agent moves:** the same agent (Backend) works at its desk, gets called to a review meeting, and goes to the lounge when its task is done.
+
+![How an agent moves](docs/images/moves.webp)
+
+**Kanban:** tasks by agent and stage, filtered by version and phase.
+
+![Task board](docs/images/task-board.webp)
+
+**Calling a meeting:** pick who attends and write what to discuss; the Coordinator runs it.
+
+![Call a meeting](docs/images/meeting-call.webp)
+
+**The meeting:** the discussion, with its room beside it and the attendees seated.
+
+![The meeting and its room](docs/images/chat.webp)
 
 ## Install
 
@@ -165,9 +217,17 @@ All of them: [characters-all](docs/images/characters-all.webp). Thirty more are 
 - `agent-designer-playbook/SKILL.md`: the skill.
 - `office/office.html`: the office page template (a claude.ai Artifact with the `db`, `user` and `sample` capabilities).
 - `office/SPEC.md`: every requirement of the page and its data layout. `office/README.md`: how to publish it.
-- `office/assets/`: rooms, furniture, characters, effects and fonts.
-- `office/tools/art/`: the generators that draw the rooms, furniture and characters (`build_rooms.py`, `chars.py`), with the shared style in `STYLE.md`.
+- `office/assets/`: rooms, characters, seated poses, effects and fonts.
+- `office/tools/cut/`: the scripts that cut the owner's art out of the owner's sheets (nothing is redrawn).
+
+## Rights and use
+
+All art (rooms, furniture, characters) and code are by @Abdulwahabdev; see [LICENSE](LICENSE).
+
+- **Direct use is allowed** in any project, personal or commercial, as long as the credit stays visible and this repo is linked.
+- **Changing or improving it in a separate repo** (or redrawing it, or publishing a modified version) needs written permission from the account owner first. Ask by opening an issue here.
+- Every character carries a tiny `@Abdulwahabdev` tag that shows when zoomed in, and the rooms carry a clear tag. Do not remove or crop them.
 
 ## Credits
 
-Rooms, furniture and characters are drawn for this repo by the generators in `office/tools/art/`. The small status effects are from [W17ant/Claude-Office](https://github.com/W17ant/Claude-Office) (MIT, see `office/assets/LICENSE-Claude-Office.txt`). Font: Dubai. Screenshots use made-up demo data.
+The status effect icons are from [W17ant/Claude-Office](https://github.com/W17ant/Claude-Office) (MIT, see `office/assets/LICENSE-Claude-Office.txt`). Font: Dubai. Screenshots use made-up demo data.

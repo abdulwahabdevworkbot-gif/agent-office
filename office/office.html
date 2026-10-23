@@ -106,6 +106,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .sp{position:absolute;transform:translate(-50%,-100%);pointer-events:none}
 .ag{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:pointer;border:0;background:none;padding:0}
 .ag img.body{height:100%;width:auto;display:block;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.ag .pose{position:relative;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}.ag .pose img{position:absolute;display:block;height:auto}
+.ag.sel .pose,.ag:focus-visible .pose{filter:drop-shadow(0 0 4px #7cc4ff) drop-shadow(0 0 2px #7cc4ff)}
 .ag:focus-visible{outline:none}.ag:focus-visible img.body,.ag.sel img.body{filter:drop-shadow(0 0 4px #7cc4ff) drop-shadow(0 0 2px #7cc4ff)}
 .ag .fx{position:absolute;bottom:100%;margin-bottom:2px;height:30%;min-height:14px;max-height:40px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
 .room .tag{position:absolute;z-index:5000;transform:translate(-50%,3px);pointer-events:none;white-space:nowrap;background:rgba(10,14,22,.85);color:#fff;border-radius:4px;padding:0 5px;font-size:clamp(8px,2cqi,12px);line-height:1.5}
@@ -253,6 +255,9 @@ h2{font-weight:700;font-size:19px;margin:0}
 .org-node.me{border-color:var(--accent);cursor:default}.org-node.lead{border-color:#f0c75e}
 .org-pair{display:flex;gap:10px;align-items:center}.org-pair .side{opacity:.95}
 .org-dept{font-size:11px;font-weight:700;letter-spacing:.04em;color:#fff;border-radius:4px;padding:1px 6px;margin-bottom:2px}
+.sw{all:unset;cursor:pointer;width:20px;height:20px;border-radius:50%;border:2px solid var(--line);box-sizing:border-box}.sw[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}.sw:focus-visible{outline:2px solid var(--accent)}
+.ag-more>summary{cursor:pointer;font-size:12.5px;margin:6px 0;color:var(--muted,#667)}
+.ag-opt input[type=color]{width:28px;height:22px;padding:0;border:0;background:none}
 .ag-opts{display:grid;gap:8px;margin:10px 0}.ag-opt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.ag-opt .lbl{min-width:70px;color:var(--muted,#667);font-size:12.5px}
 .chip-btn{all:unset;cursor:pointer;font-size:12.5px;padding:3px 10px;border:1px solid var(--line);border-radius:999px}.chip-btn[aria-pressed="true"]{border-color:var(--accent);background:var(--doing-bg)}.chip-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .ag-sp[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--doing-bg)}.ag-sp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -693,102 +698,63 @@ addEventListener("hashchange", () => route());
 
 /* ---------- office scene (art drawn by tools/art) ---------- */
 const A = "assets/";
-const SPRITE = {"coordinator":"gulf-thobe","reviewer":"japan-suit","context-keeper":"arab-hijab","business-analyst":"india-sari","mock-api":"sikh-dastar","devops":"china-qipao","backend":"saudi-shemagh","qa-api":"brazil-curls","office-manager":"gulf-abaya","owner":"saudi-shemagh"};
-const POOL = ["gulf-thobe", "saudi-shemagh", "gulf-abaya", "arab-hijab", "india-sari", "sikh-dastar", "china-qipao", "japan-suit", "nigeria-gele", "brazil-curls", "arab-thobe-goatee", "arab-blazer-goatee", "arab-young", "arab-thobe", "arab-black-hijab", "arab-niqab", "saudi-mutawa", "saudi-agal-beard"];
-const spriteBase = id => SPRITE[id] || POOL[[...String(id)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7) % POOL.length];
+const SPRITE = {"coordinator":"c01","reviewer":"c09","context-keeper":"c18","business-analyst":"c13","mock-api":"c03","devops":"c17","backend":"c02","qa-api":"c08","office-manager":"c05","owner":"c20"};
 const FX = {working:"typing", waiting:"post-it", blocked:"build-failed", done:"party", idle:"sleeping"};
 const ASSISTANT = "office-manager";
 const FACINGS = ["front-left","front-right","rear-left","rear-right"];
-// furniture: [sprite, x%, y%, width% of room, z]
-const F_MAIN = [
-  ["desk-lr",42.4,50.4,10.5],["desk-lf",46.7,53,10.5],["desk-rf",39.9,55.2,10.5],
-  ["desk-lr",31.4,64.8,10.5],["desk-lf",35.4,67.5,10.5],["desk-rf",27.9,70,10.5],
-  ["desk-lr",59,73.7,10.5],["desk-lf",62.6,76,10.5],["desk-rf",55.4,78.7,10.5],["desk-rr",66.6,71.1,10.5],
-  ["coffee",69.6,57.1,5],["filing",45,56.5,5.2],["monstera",8.7,64.2,6.2],["snake",48.5,43.4,5],
-  ["money",32,71.2,5.2],["money",78.0,71.5,5.2],["monstera",60.2,80.4,6.2],["printer",83.5,67.0,6.9]];
-const S_MAIN = [
-  {x:25.8,y:71,f:"rear-left",z:85},{x:52.7,y:78.8,f:"rear-left",z:95},{x:48.9,y:52.9,f:"rear-right",z:70},
-  {x:37.9,y:68.2,f:"rear-right",z:85},{x:65.9,y:75.8,f:"rear-right",z:95},{x:38.5,y:55.2,f:"rear-left",z:58},
-  {x:26.9,y:59.2,f:"front-left",z:40},{x:68.7,y:66.2,f:"front-right",z:55},{x:38.8,y:43.6,f:"front-left",z:30},{x:55.2,y:66.8,f:"front-left",z:55},
-  {x:73.5,y:56.7,f:"rear-left"},{x:76.2,y:58.4,f:"front-right"},{x:53.3,y:46.6,f:"rear-left"},{x:56,y:47.7,f:"front-right"},{x:81,y:63,f:"rear-left"},{x:47.8,y:57.6,f:"front-right",z:70}];
-const F_BOSS = [
-  ["desk-lr",47,63.7,10.5],["desk-lf",50.6,66,10.5],["desk-rf",43.4,68.7,10.5],["desk-rr",54.6,61.1,10.5],
-  ["whiteboard",35.8,50.8,8.1],["coffee",69.6,57.1,5],["filing",77.9,62.1,5.2],["filing",81.0,64.1,5.2],
-  ["monstera",78.4,71.6,6.2],["monstera",14,66,6.2],["snake",48.5,43.4,5],["money",64.7,82.3,5.2],["money",22,73,5.2]];
-const S_BOSS_OWNER = {x:43.2,y:56.8,f:"front-left",z:50}, S_BOSS_ASSIST = {x:56.7,y:56.2,f:"front-right",z:50};
-const S_BOSS_VISIT = [{x:40.7,y:76,f:"rear-right"},{x:53.9,y:74,f:"rear-left"},{x:33,y:70,f:"rear-right"},{x:62,y:79,f:"rear-left"},{x:27,y:63,f:"rear-right"},{x:68,y:72,f:"rear-left"}];
-const S_GAME = [
-  {x:62.4,y:68.9,f:"rear-right"},{x:34,y:57,f:"rear-left"},{x:21.8,y:68.9,f:"rear-right"},{x:55.2,y:70,f:"rear-left"},
-  {x:67.8,y:74.4,f:"rear-right"},{x:41.5,y:52.9,f:"rear-left"},{x:37.9,y:78.9,f:"rear-right"},{x:39.3,y:59.9,f:"front-right"},
-  {x:58.2,y:74.4,f:"rear-right"},{x:30.8,y:63.7,f:"front-left"},{x:55.7,y:58.4,f:"front-right"},{x:47,y:82,f:"rear-left"}];
+/* rooms are the owner's own pictures, cut from the reference sheets, with the furniture drawn in (assets/rooms).
+   Seats: y is the line where a seated body disappears behind a desk edge or a chair back. Standing spots: y is the feet. */
+const ROOM_BG = {boss:"boss", main:["main-b","main-a"], meet:"meet-10", huddle:"huddle", game:"game", idle:"idle"};
+/* main office (the owner's rule): S-shaped benches, and the manager's glass office in the corner */
+const S_MAIN = [{"x":20.5,"y":54.3,"f":"front-left","seat":true,"k":1,"cut":60.5},{"x":32,"y":50.3,"f":"front-right","seat":true,"k":1,"cut":56.5},{"x":42,"y":46.3,"f":"front-left","seat":true,"k":1,"cut":52.5},{"x":50.5,"y":45.3,"f":"front-right","seat":true,"k":1,"cut":51.5},{"x":58.5,"y":46.3,"f":"front-left","seat":true,"k":1,"cut":52.5},{"x":62.5,"y":54.8,"f":"front-right","seat":true,"k":1,"cut":61},{"x":34.5,"y":64.7,"f":"rear-right","seat":true,"k":2},{"x":44.5,"y":59.2,"f":"rear-left","seat":true,"k":2},{"x":55,"y":58.6,"f":"rear-right","seat":true,"k":2},{"x":80.5,"y":31.3,"f":"front-left","seat":true,"k":3,"cut":37.5},{"x":75,"y":63,"f":"front-left"},{"x":86,"y":58,"f":"front-right"},{"x":68,"y":76,"f":"front-left"},{"x":42,"y":82,"f":"front-right"},{"x":55,"y":87,"f":"front-left"},{"x":28,"y":76,"f":"front-right"}];
+const MGR_SEAT = 9;
+const S_BOSS_OWNER = {"x":61,"y":50.8,"f":"front-left","k":3,"cut":57}, S_BOSS_ASSIST = {"x":37.5,"y":44.8,"f":"front-right","k":1,"cut":51};
+const S_BOSS_VISIT = [{"x":25,"y":72,"f":"front-right"},{"x":70,"y":76,"f":"front-left"},{"x":55,"y":84,"f":"front-left"},{"x":82,"y":68,"f":"front-left"},{"x":32,"y":86,"f":"front-right"},{"x":44,"y":90,"f":"front-left"}];
+const S_GAME = [{"x":12,"y":54.5,"f":"front-right","k":8,"seat":true},{"x":20,"y":58.5,"f":"front-left","k":8,"seat":true},{"x":24,"y":56,"f":"front-right"},{"x":52,"y":48,"f":"front-left"},{"x":41,"y":63,"f":"front-right"},{"x":56,"y":42,"f":"front-left"},{"x":64,"y":45,"f":"front-right"},{"x":57,"y":58,"f":"front-left"},{"x":92,"y":64,"f":"front-left"},{"x":36,"y":71,"f":"front-right"},{"x":64,"y":77,"f":"front-left"},{"x":82,"y":52,"f":"front-left"},{"x":14,"y":62,"f":"front-right"},{"x":72,"y":86,"f":"front-left"}];
+const MEET = {"seats":[{"x":27.5,"y":47.8,"f":"front-right","k":4,"cut":54},{"x":36,"y":43.3,"f":"front-right","k":4,"cut":49.5},{"x":44.5,"y":38.5,"f":"front-right","k":4,"cut":44.7},{"x":62,"y":40.8,"f":"front-left","k":4,"cut":47},{"x":67.5,"y":44.0,"f":"front-left","k":4,"cut":50.2},{"x":73,"y":48.8,"f":"front-left","k":4,"cut":55},{"x":28,"y":54.7,"f":"rear-right","k":4},{"x":36,"y":60.8,"f":"rear-right","k":4},{"x":51.7,"y":59.2,"f":"rear-left","k":4},{"x":61,"y":54.7,"f":"rear-left","k":4},{"x":70.5,"y":50.2,"f":"rear-left","k":4}],"stand":[{"x":18,"y":66,"f":"front-right"},{"x":88,"y":64,"f":"front-left"},{"x":30,"y":80,"f":"front-right"},{"x":70,"y":78,"f":"front-left"},{"x":50,"y":88,"f":"front-left"},{"x":82,"y":72,"f":"front-left"}],"door":{"x":90,"y":62}};
+// huddle room: three small tables, four seats each, two standing spots per table
+const HUDDLE = {"tables":[{"seats":[{"x":23.8,"y":51.3,"f":"front-right","k":4,"cut":57.5},{"x":37.5,"y":50.2,"f":"front-left","k":4,"cut":56.4},{"x":25,"y":55.8,"f":"rear-right","k":4},{"x":40.8,"y":58.0,"f":"rear-left","k":4}],"stand":[{"x":17,"y":68,"f":"front-right"},{"x":45,"y":72,"f":"front-left"}]},{"seats":[{"x":45,"y":35.7,"f":"front-right","k":4,"cut":41.9},{"x":59.2,"y":37.3,"f":"front-left","k":4,"cut":43.5},{"x":48.5,"y":41.2,"f":"rear-right","k":4},{"x":62,"y":43.0,"f":"rear-left","k":4}],"stand":[{"x":40,"y":48,"f":"front-right"},{"x":68,"y":52,"f":"front-left"}]},{"seats":[{"x":64.6,"y":58.5,"f":"front-right","k":4,"cut":64.7},{"x":79.2,"y":56.3,"f":"front-left","k":4,"cut":62.5},{"x":67.5,"y":61.9,"f":"rear-right","k":4},{"x":82.5,"y":60.8,"f":"rear-left","k":4}],"stand":[{"x":60,"y":74,"f":"front-right"},{"x":88,"y":70,"f":"front-left"}]}]};
 
-// meeting room: sprites placed by top-left box in % of the room; seats are seat-height points (clockwise from the head)
-const MEET = {"table": {"x": 35.01, "y": 50.8, "w": 29.18, "z": 500}, "mchair-0": {"x": 47.35, "y": 46.98, "w": 5.37, "z": 295}, "mchair-1": {"x": 54.11, "y": 51.33, "w": 5.24, "z": 305}, "mchair-2": {"x": 60.94, "y": 55.6, "w": 5.04, "z": 315}, "mchair-3": {"x": 33.29, "y": 47.07, "w": 5.57, "z": 395}, "mchair-4": {"x": 32.82, "y": 57.02, "w": 5.57, "z": 695}, "mchair-5": {"x": 40.25, "y": 61.72, "w": 5.44, "z": 705}, "mchair-6": {"x": 47.68, "y": 66.34, "w": 5.37, "z": 715}, "mchair-7": {"x": 61.07, "y": 65.99, "w": 5.11, "z": 645}, "seats": [{"x": 36.24, "y": 54.01, "f": "front-right", "z": 400}, {"x": 49.93, "y": 53.93, "f": "front-left", "z": 300}, {"x": 56.64, "y": 58.24, "f": "front-left", "z": 310}, {"x": 63.35, "y": 62.56, "f": "front-left", "z": 320}, {"x": 63.52, "y": 71.37, "f": "rear-left", "z": 650}, {"x": 50.49, "y": 71.77, "f": "rear-right", "z": 720}, {"x": 43.12, "y": 67.13, "f": "rear-right", "z": 710}, {"x": 35.75, "y": 62.48, "f": "rear-right", "z": 700}], "stand": [{"x": 38.52, "y": 51.54, "f": "front-right", "z": 515}, {"x": 62.59, "y": 81.25, "f": "rear-left", "z": 813}, {"x": 25.18, "y": 59.71, "f": "front-right", "z": 597}, {"x": 73.07, "y": 72.7, "f": "rear-left", "z": 727}, {"x": 32.52, "y": 72.54, "f": "rear-right", "z": 725}, {"x": 40.4, "y": 78.48, "f": "rear-right", "z": 785}], "door": {"x": 16.24, "y": 63.4}, "chair-front-left": {"x": 46.42, "y": 55.15, "w": 5.37, "ax": 0.48, "ay": 0.618}, "chair-front-right": {"x": 46.15, "y": 55.15, "w": 5.37, "ax": 0.53, "ay": 0.618}, "chair-rear-left": {"x": 46.42, "y": 56.84, "w": 5.37, "ax": 0.48, "ay": 0.551}, "chair-rear-right": {"x": 46.22, "y": 56.75, "w": 5.31, "ax": 0.524, "ay": 0.555}};
-// huddle room: four small tables, four seats each, two standing spots per table
-const HUDDLE = {"tables":[{"table":{"x":44.705,"y":40.94254464285714,"w":14.59,"z":500},"chairs":[{"k":"mchair-3","x":42.86,"y":36.57,"w":5.57,"z":395},{"k":"mchair-1","x":52.73,"y":38.6,"w":5.24,"z":305},{"k":"mchair-7","x":56.04,"y":45.86,"w":5.11,"z":645},{"k":"mchair-5","x":46.16,"y":43.82,"w":5.44,"z":705}],"seats":[{"x":45.81,"y":43.51,"f":"front-right","z":400},{"x":55.26,"y":45.51,"f":"front-left","z":310},{"x":58.49,"y":51.24,"f":"rear-left","z":650},{"x":49.03,"y":49.23,"f":"rear-right","z":710}],"stand":[{"x":39,"y":55,"f":"rear-right","z":550},{"x":65,"y":56,"f":"rear-left","z":560}]},{"table":{"x":22.705,"y":55.94254464285714,"w":14.59,"z":1500},"chairs":[{"k":"mchair-3","x":20.86,"y":51.57,"w":5.57,"z":1395},{"k":"mchair-1","x":30.73,"y":53.6,"w":5.24,"z":1305},{"k":"mchair-7","x":34.04,"y":60.86,"w":5.11,"z":1645},{"k":"mchair-5","x":24.16,"y":58.82,"w":5.44,"z":1705}],"seats":[{"x":23.81,"y":58.51,"f":"front-right","z":1400},{"x":33.26,"y":60.51,"f":"front-left","z":1310},{"x":36.49,"y":66.24,"f":"rear-left","z":1650},{"x":27.03,"y":64.23,"f":"rear-right","z":1710}],"stand":[{"x":17,"y":70,"f":"rear-right","z":1700},{"x":43,"y":71,"f":"rear-left","z":1710}]},{"table":{"x":64.705,"y":53.94254464285714,"w":14.59,"z":2500},"chairs":[{"k":"mchair-3","x":62.86,"y":49.57,"w":5.57,"z":2395},{"k":"mchair-1","x":72.73,"y":51.6,"w":5.24,"z":2305},{"k":"mchair-7","x":76.04,"y":58.86,"w":5.11,"z":2645},{"k":"mchair-5","x":66.16,"y":56.82,"w":5.44,"z":2705}],"seats":[{"x":65.81,"y":56.51,"f":"front-right","z":2400},{"x":75.26,"y":58.51,"f":"front-left","z":2310},{"x":78.49,"y":64.24,"f":"rear-left","z":2650},{"x":69.03,"y":62.23,"f":"rear-right","z":2710}],"stand":[{"x":59,"y":68,"f":"rear-right","z":2680},{"x":85,"y":69,"f":"rear-left","z":2690}]},{"table":{"x":44.705,"y":69.94254464285714,"w":14.59,"z":3500},"chairs":[{"k":"mchair-3","x":42.86,"y":65.57,"w":5.57,"z":3395},{"k":"mchair-1","x":52.73,"y":67.6,"w":5.24,"z":3305},{"k":"mchair-7","x":56.04,"y":74.86,"w":5.11,"z":3645},{"k":"mchair-5","x":46.16,"y":72.82,"w":5.44,"z":3705}],"seats":[{"x":45.81,"y":72.51,"f":"front-right","z":3400},{"x":55.26,"y":74.51,"f":"front-left","z":3310},{"x":58.49,"y":80.24,"f":"rear-left","z":3650},{"x":49.03,"y":78.23,"f":"rear-right","z":3710}],"stand":[{"x":39,"y":84,"f":"rear-right","z":3840},{"x":65,"y":85,"f":"rear-left","z":3850}]}]};
-
-/* looks: each agent can pick a character and recolor its hair and shirt (masks mark those pixels) */
-const CHARS = [{"id": "gulf-thobe", "label_en": "Gulf man in thobe and ghutra", "featured": true, "hair": false}, {"id": "saudi-shemagh", "label_en": "Saudi man in red shemagh", "featured": true, "hair": false}, {"id": "gulf-abaya", "label_en": "Gulf woman in abaya and shayla", "featured": true, "hair": false}, {"id": "arab-hijab", "label_en": "Arab woman in hijab and blazer", "featured": true, "hair": false}, {"id": "india-sari", "label_en": "Indian woman in sari", "featured": true, "hair": true}, {"id": "sikh-dastar", "label_en": "Sikh man in dastar", "featured": true, "hair": false}, {"id": "china-qipao", "label_en": "Chinese woman in qipao-style top", "featured": true, "hair": true}, {"id": "japan-suit", "label_en": "Japanese man in suit", "featured": true, "hair": true}, {"id": "nigeria-gele", "label_en": "Nigerian woman in gele and ankara", "featured": true, "hair": false}, {"id": "brazil-curls", "label_en": "Brazilian woman with curls", "featured": true, "hair": true}, {"id": "arab-thobe-goatee", "label_en": "Arab man in thobe with goatee", "featured": false, "hair": true}, {"id": "arab-blazer-goatee", "label_en": "Arab man in blazer with goatee", "featured": false, "hair": true}, {"id": "arab-young", "label_en": "Young Arab man, smart casual", "featured": false, "hair": true}, {"id": "arab-thobe", "label_en": "Arab man in white thobe", "featured": false, "hair": true}, {"id": "arab-black-hijab", "label_en": "Arab woman in black hijab and abaya", "featured": false, "hair": false}, {"id": "arab-niqab", "label_en": "Arab woman in niqab and abaya", "featured": false, "hair": false}, {"id": "saudi-mutawa", "label_en": "Saudi man in shemagh without agal", "featured": false, "hair": false}, {"id": "saudi-agal-beard", "label_en": "Saudi man in shemagh with full beard", "featured": false, "hair": false}];
-const LOOK_SPRITES = CHARS.map(c => c.id), CHAR_LABEL = Object.fromEntries(CHARS.map(c => [c.id, c.label_en])), CHAR = Object.fromEntries(CHARS.map(c => [c.id, c]));
-/* options the owner can switch per agent (the owner's rule): beard and glasses for men, hijab / abaya / niqab for women */
-const OPT_LABEL = {beard:{none:"None", goatee:"Goatee", light:"Light beard", full:"Full beard"}, cover:{none:"None", hijab:"Hijab", "hijab-abaya":"Hijab + abaya", niqab:"Niqab"}};
-const optsOf = c => (c && c.options) || {};
-function looksOf(base, lk){
-  const c = CHAR[base] || {}, o = optsOf(c), d = c.defaults || {}, pickOf = k => (o[k] || []).includes(lk[k]) ? lk[k] : (o[k] || []).includes(d[k]) ? d[k] : "none";
-  return {beard:o.beard ? pickOf("beard") : "none", cover:o.cover ? pickOf("cover") : "none", glasses:o.glasses ? (typeof lk.glasses === "boolean" ? lk.glasses : !!d.glasses) : false};
-}
-const keyOf = (base, cover) => cover && cover !== "none" ? `${base}_${cover}` : base;
-const hasHair = (base, lk) => !!(CHAR[base] || {}).hair && looksOf(base, lk).cover === "none";
-const isRobe = (base, lk) => !!(CHAR[base] || {}).robe || ["hijab-abaya","niqab"].includes(looksOf(base, lk).cover);
-const SHIRTS = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d9480f","#5c940d","#a61e4d","#087f5b","#862e9c","#495057"];
+/* characters (the owner's rule): the owner's own drawings, cut from the reference sheet, each with a small credit tag.
+   -l faces screen left, -r is its mirror. An agent stores the one picked in its page as look.char. */
+const CHARS = [{"id":"c01","label_en":"Man in white ghutra and thobe","for":"m","featured":true},{"id":"c02","label_en":"Man in red shemagh and thobe","for":"m","featured":true},{"id":"c03","label_en":"Man in blue turban and grey thobe","for":"m","featured":false},{"id":"c04","label_en":"Man in white imama and cream thobe","for":"m","featured":false},{"id":"c05","label_en":"Woman in black hijab and abaya","for":"f","featured":true},{"id":"c06","label_en":"Woman in purple hijab and abaya","for":"f","featured":true},{"id":"c07","label_en":"Woman in niqab and abaya","for":"f","featured":true},{"id":"c08","label_en":"Woman in a navy suit","for":"f","featured":true},{"id":"c09","label_en":"Man in a suit and red tie","for":"m","featured":true},{"id":"c10","label_en":"Man in a beige blazer","for":"m","featured":true},{"id":"c11","label_en":"Man in a light blue sweater","for":"m","featured":false},{"id":"c12","label_en":"Grey-haired man with glasses","for":"m","featured":true},{"id":"c13","label_en":"Woman in a head wrap and wax-print dress","for":"f","featured":false},{"id":"c14","label_en":"Man in a navy shirt","for":"m","featured":false},{"id":"c15","label_en":"Woman with braids in a kameez","for":"f","featured":false},{"id":"c16","label_en":"Man in a black cap and hoodie","for":"m","featured":false},{"id":"c17","label_en":"Woman with a bun in a cream shirt","for":"f","featured":false},{"id":"c18","label_en":"Woman in hijab, glasses and green jacket","for":"f","featured":true},{"id":"c19","label_en":"Man in white ghutra and thobe (2)","for":"m","featured":false},{"id":"c20","label_en":"Man in shemagh and thobe","for":"m","featured":false},{"id":"c21","label_en":"Man in shemagh, tossed end","for":"m","featured":false},{"id":"c22","label_en":"Man in white ghutra, loose","for":"m","featured":false},{"id":"c23","label_en":"Man in white ghutra, wrapped","for":"m","featured":false},{"id":"c24","label_en":"Man in a beige patterned turban","for":"m","featured":false},{"id":"c25","label_en":"Man in a green patterned turban","for":"m","featured":false},{"id":"c26","label_en":"Man in a white kuma cap","for":"m","featured":false},{"id":"c27","label_en":"Man in a kuma cap and grey thobe","for":"m","featured":false},{"id":"c28","label_en":"Man in shemagh and navy thobe","for":"m","featured":false},{"id":"c29","label_en":"Woman in black hijab and abaya (2)","for":"f","featured":false},{"id":"c30","label_en":"Woman in niqab, plain","for":"f","featured":false},{"id":"c31","label_en":"Woman in niqab, side-tied","for":"f","featured":false},{"id":"c32","label_en":"Woman in niqab, layered","for":"f","featured":false},{"id":"c33","label_en":"Woman in long niqab","for":"f","featured":false},{"id":"c34","label_en":"Woman in brown hijab","for":"f","featured":false},{"id":"c35","label_en":"Woman in mauve hijab","for":"f","featured":false},{"id":"c36","label_en":"Woman in beige hijab","for":"f","featured":false},{"id":"c37","label_en":"Woman in black hijab, wrapped","for":"f","featured":false},{"id":"c38","label_en":"Woman with long hair, open abaya","for":"f","featured":false},{"id":"c39","label_en":"Woman in navy open abaya","for":"f","featured":false},{"id":"c40","label_en":"Woman in maroon kaftan","for":"f","featured":false},{"id":"c41","label_en":"Woman in long niqab (2)","for":"f","featured":false}];   // copied from assets/chars/characters.json
+const CHAR = Object.fromEntries(CHARS.map(c => [c.id, c]));
 const hashOf = id => [...String(id)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);
-/* the owner's rule: an agent without a saved look still gets its own shirt color, so two agents on one character differ */
-const lookOf = id => { const a = agentById(id), lk = (a || {}).look || {};
-  if (!a || okHex(lk.shirt) || id === "owner" || id === ASSISTANT || SPRITE[id] || isRobe(LOOK_SPRITES.includes(lk.sprite) ? lk.sprite : spriteBase(id), lk)) return lk;
-  return {...lk, shirt:SHIRTS[(hashOf(id) >> 3) % SHIRTS.length]}; };
-const spriteOf = id => { const s = lookOf(id).sprite; return LOOK_SPRITES.includes(s) ? s : spriteBase(id); };
-const tinted = new Map(), tinting = new Set();
-const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
-const hexRgb = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const lookOf = id => (agentById(id) || {}).look || {};
+const charOf = (id, lk) => { lk = lk || lookOf(id); return CHAR[lk.char] ? lk.char : CHAR[SPRITE[id]] ? SPRITE[id] : CHARS[(Math.imul(hashOf(id), 2654435761) >>> 0) % CHARS.length].id; };
+const charImg = (c, facing) => `${A}chars/${c}-${/right$/.test(facing || "") === /^front/.test(facing || "front") ? "r" : "l"}.webp`;
+const charUrl = (id, facing) => charImg(charOf(id), facing || "front-left");
 function okHex(h){ return /^#[0-9a-f]{6}$/i.test(String(h || "")); }
-async function tint(base, facing, lk){
-  const lo = looksOf(base, lk), key = keyOf(base, lo.cover), acc = [lo.beard !== "none" ? lo.beard : "", lo.glasses ? "glasses" : ""].filter(Boolean);
-  const [im, mk, ...ov] = await Promise.all([loadImg(`${A}chars/${key}-${facing}.webp`), loadImg(`${A}masks/${key}-${facing}.png`), ...acc.map(k => loadImg(`${A}acc/${base}-${facing}-${k}.webp`))]);
-  const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas"); c.width = w; c.height = h;
-  const x = c.getContext("2d", {willReadFrequently:true});
-  const recolor = (p, sel, col) => { const t = hexRgb(col); let sum = 0, n = 0; const lum = i => .299 * p[i] + .587 * p[i + 1] + .114 * p[i + 2];
-    for (let i = 0; i < p.length; i += 4) if (sel(i)) { sum += lum(i); n++; }
-    if (!n) return; const ref = Math.max(10, sum / n);
-    for (let i = 0; i < p.length; i += 4) if (sel(i)) { const k = Math.min(1.7, lum(i) / ref); for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, t[j] * k); } };
-  x.drawImage(mk, 0, 0); const m = x.getImageData(0, 0, w, h).data;
-  x.clearRect(0, 0, w, h); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, w, h), p = d.data;
-  [[0, lk.hair], [1, lk.shirt]].forEach(([ch, col]) => { if (okHex(col)) recolor(p, i => m[i + ch] > 127, col); });
-  x.putImageData(d, 0, 0);
-  acc.forEach((k, n) => { const o = ov[n];
-    if (k === "glasses" || !okHex(lk.hair)) { x.drawImage(o, 0, 0); return; }
-    const oc = document.createElement("canvas"); oc.width = w; oc.height = h; const ox = oc.getContext("2d", {willReadFrequently:true}); ox.drawImage(o, 0, 0);
-    const od = ox.getImageData(0, 0, w, h); recolor(od.data, i => od.data[i + 3] > 20, lk.hair); ox.putImageData(od, 0, 0); x.drawImage(oc, 0, 0); });
-  return await new Promise((ok, no) => c.toBlob(b => b ? ok(URL.createObjectURL(b)) : no(), "image/png"));
-}
-function lookUrl(base, facing, lk){
-  const lo = looksOf(base, lk), plain = `${A}chars/${keyOf(base, lo.cover)}-${facing}.webp`;
-  if (!okHex(lk.hair) && !okHex(lk.shirt) && lo.beard === "none" && !lo.glasses) return plain;
-  const key = [base, facing, lk.hair || "", lk.shirt || "", lo.beard, lo.cover, lo.glasses].join("|");
-  if (tinted.has(key)) return tinted.get(key);
-  if (!tinting.has(key)) { tinting.add(key); tint(base, facing, lk).then(u => { tinted.set(key, u); refreshLooks(); }, () => tinted.set(key, plain)); }
-  return plain;
-}
-const charUrl = (id, facing) => lookUrl(spriteOf(id), facing || "front-left", lookOf(id));
-let lookTimer = 0;
 function refreshLooks(){
-  clearTimeout(lookTimer);
-  lookTimer = setTimeout(() => {
-    figs.forEach(r => { if (r.pos) r.img.src = charUrl(r.id, r.pos.f); });
-    document.querySelectorAll(".av[data-id]").forEach(av => { av.style.backgroundImage = `url(${charUrl(av.dataset.id, "front-left")})`; });
-    if (typeof agentPreview === "function") agentPreview();
-  }, 30);
+  figs.forEach(r => { if (r.pos && !r.b.classList.contains("walking")) setPos(r, r.pos, 0); });
+  document.querySelectorAll(".av[data-id]").forEach(av => { av.style.backgroundImage = `url(${charUrl(av.dataset.id, "front-left")})`; });
+  if (typeof agentPreview === "function") agentPreview();
 }
-const CH_H = 13, SEAT_CUT = .44, SEAT_LIFT = 3.37;   // character height, hidden part when seated, seat height (all % of room height)
+const CH_H = 16, SEAT_CUT = .44;                     // character height, hidden part when seated (% of room height)
+/* seated poses (the owner's rule): when an agent sits, the owner's seated body for its outfit and seat type is drawn with the
+   character's own head on its neck. k is the seat type (1 task chair front, 2 task chair side, 3 manager chair, 4 visitor chair,
+   5 meeting chair, 6 sofa, 7 armchair, 8 bean bag, 9 stool). A seat's y is the neck; cut, when given, hides what is below it. */
+const SEATED = {"rows":{"1":85,"2":85,"3":85,"4":85,"5":85,"6":85,"7":85,"8":85,"9":85,"10":85,"11":85,"12":85},"bodies":{"1-1":[255,240,96.5,2],"1-2":[276,243,151.5,4],"1-3":[282,243,101.0,2],"1-4":[261,240,101.0,2],"1-5":[345,234,97.0,0],"1-6":[474,225,152.5,0],"1-7":[303,228,125.5,2],"1-8":[300,231,124.5,2],"1-9":[234,243,74.0,2],"2-1":[249,246,94.5,2],"2-2":[282,246,168.0,0],"2-3":[279,243,100.0,0],"2-4":[264,237,101.0,2],"2-5":[345,237,87.5,3],"2-6":[471,240,147.5,5],"2-7":[294,237,117.5,2],"2-8":[300,237,127.5,2],"2-9":[231,240,69.5,2],"3-1":[255,249,96.5,2],"3-2":[285,252,172.0,5],"3-3":[276,243,103.5,2],"3-4":[258,246,100.0,2],"3-5":[345,240,95.0,2],"3-6":[477,237,154.0,0],"3-7":[294,237,125.5,0],"3-8":[309,243,136.0,0],"3-9":[237,249,74.0,2],"4-1":[243,246,82.5,1],"4-2":[276,249,164.0,0],"4-3":[279,249,108.0,2],"4-4":[267,246,97.5,5],"4-5":[345,243,104.0,2],"4-6":[468,237,154.5,2],"4-7":[294,237,128.0,2],"4-8":[300,237,136.0,0],"4-9":[231,237,70.5,0],"5-1":[246,252,95.5,5],"5-2":[285,249,174.5,0],"5-3":[291,255,113.5,5],"5-4":[258,240,97.0,0],"5-5":[348,240,92.0,2],"5-6":[471,237,159.0,3],"5-7":[288,234,131.0,0],"5-8":[300,237,131.0,0],"5-9":[234,249,76.0,5],"6-1":[243,252,82.5,0],"6-2":[288,252,183.5,0],"6-3":[270,252,103.5,2],"6-4":[270,243,99.0,0],"6-5":[351,240,100.0,0],"6-6":[471,237,151.5,0],"6-7":[294,237,124.0,0],"6-8":[306,240,134.5,1],"6-9":[240,249,86.0,4],"7-1":[246,246,99.0,2],"7-2":[285,249,172.5,3],"7-3":[303,249,99.0,2],"7-4":[279,240,104.5,0],"7-5":[345,240,109.0,0],"7-6":[474,237,150.0,2],"7-7":[297,234,129.0,0],"7-8":[300,237,139.0,0],"7-9":[228,252,67.5,5],"8-1":[246,246,101.5,0],"8-2":[273,258,164.5,0],"8-3":[285,255,97.0,2],"8-4":[282,246,98.5,5],"8-5":[345,243,106.0,2],"8-6":[471,240,160.0,0],"8-7":[291,237,133.5,0],"8-8":[309,249,138.0,0],"8-9":[234,243,79.0,0],"9-1":[246,249,93.0,0],"9-2":[291,252,185.0,0],"9-3":[276,255,107.0,0],"9-4":[285,246,107.0,2],"9-5":[342,243,97.0,0],"9-6":[471,240,157.0,0],"9-7":[288,246,126.5,5],"9-8":[309,252,147.0,3],"9-9":[231,246,74.5,0],"10-1":[252,252,93.0,2],"10-2":[282,252,175.5,0],"10-3":[276,252,101.0,2],"10-4":[276,243,89.0,2],"10-5":[348,246,101.0,0],"10-6":[474,249,151.5,3],"10-7":[285,240,122.5,0],"10-8":[315,246,143.5,0],"10-9":[219,249,64.5,0],"11-1":[249,204,86.5,0],"11-2":[282,204,155.0,0],"11-3":[270,204,104.0,0],"11-4":[243,204,94.5,1],"11-5":[342,204,98.0,0],"11-6":[471,204,145.0,0],"11-7":[276,204,107.0,0],"11-8":[300,204,136.5,0],"11-9":[204,204,60.0,0],"12-1":[243,204,89.5,0],"12-2":[282,201,169.0,0],"12-3":[264,201,104.5,0],"12-4":[246,198,95.5,0],"12-5":[342,201,96.0,0],"12-6":[468,195,148.0,0],"12-7":[276,198,110.5,0],"12-8":[300,201,132.5,0],"12-9":[222,201,63.5,0]},"heads":{"c01":[96,103],"c02":[96,99],"c03":[96,120],"c04":[96,125],"c05":[96,117],"c06":[96,110],"c07":[96,105],"c08":[96,99],"c09":[96,122],"c10":[96,107],"c11":[96,112],"c12":[96,132],"c13":[96,135],"c14":[96,119],"c15":[96,121],"c16":[96,113],"c17":[96,130],"c18":[96,115],"c19":[96,100],"c20":[96,96],"c21":[96,99],"c22":[96,100],"c23":[96,105],"c24":[96,113],"c25":[96,115],"c26":[96,129],"c27":[96,128],"c28":[96,95],"c29":[96,110],"c30":[96,102],"c31":[96,91],"c32":[96,94],"c33":[96,99],"c34":[96,112],"c35":[96,104],"c36":[96,109],"c37":[96,108],"c38":[96,96],"c39":[96,87],"c40":[96,75],"c41":[96,93]},"row_of":{"c01":1,"c02":1,"c03":2,"c04":3,"c05":4,"c06":4,"c07":5,"c08":6,"c09":7,"c10":7,"c11":8,"c12":10,"c13":11,"c14":8,"c15":12,"c16":9,"c17":6,"c18":6,"c19":1,"c20":1,"c21":1,"c22":1,"c23":1,"c24":3,"c25":3,"c26":1,"c27":2,"c28":2,"c29":4,"c30":5,"c31":5,"c32":5,"c33":5,"c34":4,"c35":4,"c36":4,"c37":4,"c38":5,"c39":5,"c40":12,"c41":5}};   // copied from assets/seated/seated.json
+const HEAD_ROOM = 2.8;                     // a seated head's width, in % of the room height
+/* the pose is built from two pictures (body, then head on its neck), so it needs no canvas */
+function poseFor(id, k){
+  const c = charOf(id), r = SEATED.row_of[c], bm = SEATED.bodies[r + "-" + k], hd = SEATED.heads[c]; if (!bm || !hd) return null;
+  const [bw, bh, nx, ny] = bm, hw = SEATED.rows[r], hh = hd[1] * hw / hd[0];
+  const W = Math.ceil(Math.max(bw, hw + 2 * Math.abs(nx - bw / 2))) + 4, top = Math.ceil(hh), H = top + bh, ox = (W - bw) / 2;
+  return {w:W, h:H, hw, ax:(ox + nx) / W, ay:(top + ny) / H, body:`${A}seated/b${String(r).padStart(2,"0")}-${k}.webp`, head:`${A}heads/${c}.webp`,
+    bx:ox / W, by:top / H, bwf:bw / W, hx:(ox + nx - hw / 2) / W, hy:(top + ny - hh * .94) / H, hwf:hw / W};
+}
+function poseEl(P, clip){
+  const d = el("div", "pose"); d.style.aspectRatio = P.w + "/" + P.h; if (clip) d.style.clipPath = `inset(0 0 ${clip.toFixed(1)}% 0)`;
+  const b = el("img"), h = el("img"); b.alt = h.alt = ""; b.src = P.body; h.src = P.head;
+  b.style.cssText = `left:${P.bx * 100}%;top:${P.by * 100}%;width:${P.bwf * 100}%`; h.style.cssText = `left:${P.hx * 100}%;top:${P.hy * 100}%;width:${P.hwf * 100}%`;
+  d.append(b, h); return d;
+}
+/* where a seated pose goes: left/top for the button (bottom-centre anchor), its height, and how much of the bottom to hide */
+function poseBox(p, P){
+  const h = P.h / P.hw * HEAD_ROOM, w = h * P.w / P.h * 896 / 1200, bottom = p.y + (1 - P.ay) * h;
+  return {left:p.x + (.5 - P.ax) * w, top:bottom, h, clip:p.cut != null ? Math.max(0, (bottom - p.cut) / h * 100) : 0, head:bottom - h};
+}
 const TALK_MIN = 15;                                  // agents who messaged each other in the last 15 minutes meet in the meeting room
 const ROOMS = {boss:$("room-boss"), meet:$("room-meet"), huddle:$("room-huddle"), main:$("room-main"), game:$("room-game"), idle:$("room-idle")};
 /* work and huddle rooms grow and shrink with the load (the owner's rule): one more main office for every 10 people at desks,
@@ -807,8 +773,6 @@ function ensureRoom(key){
   if (n === 1 && dept) deptPane(dept).querySelector(".rooms").append(r);
   else (ROOMS[roomKey(base, n - 1)] || ensureRoom(roomKey(base, n - 1))).after(r);
   ROOMS[key] = r;
-  if (typeOf(key) === "main") { furnish(r, F_MAIN); DESKS.forEach(sp => deskChair(r, sp)); }
-  else { HUDDLE.tables.forEach(t => { boxSprite(r, "table", t.table); t.chairs.forEach(c => boxSprite(r, c.k, c)); }); furnish(r, [["monstera",77.3,71.9,6.2,4700],["snake",14,58,5,1580]]); }
   setRoomBg(); return r;
 }
 const roomsOf = base => Object.keys(ROOMS).filter(k => baseOf(k) === base).sort((a, b) => (+a.split("-").pop() || 1) - (+b.split("-").pop() || 1));
@@ -931,15 +895,7 @@ function renderDepts(){
 /* idle room (the owner's rule): an agent with no activity for more than 3 days sits here on a chair and does not move,
    with "Idle since <date>" over its head. Any new message, task update or meeting brings it back. */
 const IDLE_DAYS = 3, NEVER_IDLE = new Set(["coordinator", "office-manager", "agent-designer"]);
-const IDLE_SEATS = (() => {   // rows of chairs facing front-right, on the same iso floor as the meeting room
-  const B=[50,40], R=[88,65], F=[54,94], L=[4,63];
-  const P = (u, v) => [0,1].map(k => (1-u)*(1-v)*B[k] + u*(1-v)*R[k] + u*v*F[k] + (1-u)*v*L[k]);
-  const out = [];
-  // filled front row first, every other chair, so name tags don't overlap
-  [[.70,.32],[.70,.64],[.50,.48],[.30,.32],[.30,.64],[.50,.80],[.70,.48],[.70,.80],[.50,.32],[.50,.64],[.30,.48],[.30,.80]].forEach(([u, v]) => { const [x, y] = P(u, v);
-    out.push({x:+x.toFixed(2), y:+(y - SEAT_LIFT).toFixed(2), f:"front-right", z:Math.round(y * 10), seat:true}); });
-  return out;
-})();
+const IDLE_SEATS = [{"x":40,"y":37.5,"f":"front-right","seat":true,"k":7},{"x":47,"y":36.0,"f":"front-left","seat":true,"k":7},{"x":53.5,"y":34.0,"f":"front-right","seat":true,"k":7},{"x":64,"y":36.0,"f":"front-left","seat":true,"k":7},{"x":77,"y":47.5,"f":"front-right","seat":true,"k":7},{"x":84,"y":49.5,"f":"front-left","seat":true,"k":7},{"x":90.5,"y":51.5,"f":"front-left","seat":true,"k":7},{"x":38,"y":57.5,"f":"rear-right","seat":true,"k":7},{"x":45,"y":60.5,"f":"rear-left","seat":true,"k":7},{"x":51,"y":63.0,"f":"rear-right","seat":true,"k":7},{"x":30,"y":49.5,"f":"front-left","seat":true,"k":7},{"x":63,"y":66.5,"f":"front-right","seat":true,"k":7},{"x":79,"y":59.5,"f":"front-left","seat":true,"k":7},{"x":57,"y":38.5,"f":"front-left","seat":true,"k":7},{"x":25,"y":76,"f":"front-right"},{"x":70,"y":82,"f":"front-left"},{"x":86,"y":70,"f":"front-left"},{"x":18,"y":60,"f":"front-right"},{"x":46,"y":86,"f":"front-left"},{"x":60,"y":55,"f":"front-left"}];
 const lastActive = a => {
   let t = 0; const bump = v => { const n = Date.parse(v || ""); if (n > t) t = n; };
   bump(a.last_active_at); bump(a.updated_at); bump(a.profile_updated_at);
@@ -951,48 +907,26 @@ const lastActive = a => {
 const idleSince = a => { if (!a || NEVER_IDLE.has(a.id) || a.state === "waiting") return 0;
   const t = lastActive(a); return a.archived === true ? (t || 1) : (t && Date.now() - t > IDLE_DAYS * 864e5 ? t : 0); };
 const DOOR = MEET.door;
-const DESKS = S_MAIN.slice(0, 10);                    // spots 0-9 are at desks and get a chair
-const COFFEE = {x:74.2, y:57.4, f:"rear-right", z:60};
-const sitAt = s => ({...s, seat:true, y:s.y - SEAT_LIFT});
+const DESKS = S_MAIN.slice(0, MGR_SEAT);              // bench seats; MGR_SEAT is the manager's chair in the glass office
+const COFFEE = {x:84, y:60, f:"front-right"};
+const sitAt = s => ({...s, seat:true});
 const SLOTS = {
   boss: S_BOSS_VISIT,
-  main: S_MAIN.map((s, i) => i < DESKS.length ? sitAt(s) : s),
+  main: S_MAIN,
   game: S_GAME,
   idle: IDLE_SEATS,
-  meet: MEET.seats.map(s => ({...s, seat:true})).concat(MEET.stand),
-  huddle: HUDDLE.tables.flatMap(t => t.seats.map(s => ({...s, seat:true}))).concat(HUDDLE.tables.flatMap(t => t.stand))
+  meet: MEET.seats.map(sitAt).concat(MEET.stand),
+  huddle: HUDDLE.tables.flatMap(t => t.seats.map(sitAt)).concat(HUDDLE.tables.flatMap(t => t.stand))
 };
 const N_TABLES = HUDDLE.tables.length, tableSlots = ti => [0,1,2,3].map(k => ti * 4 + k).concat([N_TABLES * 4 + ti * 2, N_TABLES * 4 + ti * 2 + 1]);
 const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 18; };
 function setRoomBg(){
-  const n = isNight() ? "night" : "day";
-  Object.entries(ROOMS).forEach(([k, r]) => { const b = typeOf(k); if (b === "boss") r.style.backgroundImage = `url(${A}rooms/office-boss-${n}.webp)`; if (b === "main") r.style.backgroundImage = `url(${A}rooms/office-${n}.webp)`; if (b === "meet" || b === "huddle") r.style.backgroundImage = `url(${A}rooms/meet-${n}.webp)`; });
-  ROOMS.game.style.backgroundImage = `url(${A}rooms/game-${n}.webp)`;
-  ROOMS.idle.style.backgroundImage = `url(${A}rooms/office-${n}.webp)`;
+  const bg = (k, n) => { const b = ROOM_BG[typeOf(k)]; return b ? `url(${A}rooms/${Array.isArray(b) ? b[(n - 1) % b.length] : b}.webp)` : ""; };
+  Object.entries(ROOMS).forEach(([k, r]) => { const n = k === baseOf(k) ? 1 : +k.split("-").pop() || 1; r.style.backgroundImage = bg(k, n); });
   const d = new Date(); $("clock").textContent = (isNight() ? "NIGHT " : "DAY ") + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
 }
-function furnish(room, list){
-  list.forEach(([k,x,y,w,z]) => { const i = el("img","sp"); i.src = `${A}furn/${k}.webp`; i.alt = ""; i.style.cssText = `left:${x}%;top:${y}%;width:${w}%;z-index:${z ?? Math.round(y)}`; room.append(i); });
-}
-function boxSprite(room, k, b){ const i = el("img","sp box"); i.src = `${A}furn/${k}.webp`; i.alt = ""; i.style.cssText = `left:${b.x}%;top:${b.y}%;width:${b.w}%;z-index:${b.z}`; room.append(i); }
-function deskChair(room, s){
-  const f = s.f, c = MEET["chair-" + f], i = el("img","sp box"); i.src = `${A}furn/chair-${f}.webp`; i.alt = "";
-  i.style.cssText = `left:${s.x}%;top:${s.y - SEAT_LIFT}%;width:${c.w}%;transform:translate(${-c.ax*100}%,${-c.ay*100}%);z-index:${(s.z ?? Math.round(s.y)+10) - 1}`;
-  room.append(i);
-}
 let built = false;
-function buildRooms(){
-  if (built) return; built = true;
-  furnish(ROOMS.boss, F_BOSS); furnish(ROOMS.main, F_MAIN);
-  [S_BOSS_OWNER, S_BOSS_ASSIST].forEach(s => deskChair(ROOMS.boss, s));
-  DESKS.forEach(s => deskChair(ROOMS.main, s));
-  boxSprite(ROOMS.meet, "table", MEET.table);
-  for (let i = 0; i < 8; i++) boxSprite(ROOMS.meet, "mchair-" + i, MEET["mchair-" + i]);
-  furnish(ROOMS.meet, [["monstera",77.3,71.9,6.2,720],["monstera",14,60,6.2,600],["snake",84.2,66.3,5,660],["whiteboard",21.3,58.3,8.1,580]]);
-  HUDDLE.tables.forEach(t => { boxSprite(ROOMS.huddle, "table", t.table); t.chairs.forEach(c => boxSprite(ROOMS.huddle, c.k, c)); });
-  furnish(ROOMS.huddle, [["monstera",77.3,71.9,6.2,4700],["snake",14,58,5,1580]]);
-  IDLE_SEATS.forEach(s => boxSprite(ROOMS.idle, "mchair-3", {x:s.x - 2.95, y:s.y - 6.94, w:5.57, z:s.z - 5}));   // chairs only
-}
+function buildRooms(){ built = true; }   // the furniture is part of each room picture
 
 /* who meets: members of open task sessions, plus agents talking to each other */
 function meetingGroups(){
@@ -1042,9 +976,14 @@ function plan(){
   agents.filter(a => !place.has(a.id) && a.id !== ASSISTANT && !idleSince(a) && (a.state === "working" || a.state === "blocked")).forEach(a => { const b = deskBase(a); atDesk[b] = (atDesk[b] || 0) + 1; });
   const nMainOf = {}; ["main", ...depts().map(d => "main@" + d.id)].forEach(b => { nMainOf[b] = Math.max(1, Math.ceil((atDesk[b] || 0) / DESKS.length)); for (let k = 1; k <= nMainOf[b]; k++) ensureRoom(roomKey(b, k)); });
   const mainsOf = room => { const b = baseOf(room); return Array.from({length:nMainOf[b] || 1}, (_, k) => roomKey(b, k + 1)); };
-  const free = (room, list) => { const l = list || slotsOf(room).map((_, i) => i).filter(i => typeOf(room) !== "main" || (nMainOf[baseOf(room)] || 1) === 1 || i < DESKS.length); const i = l.find(k => !used[room].has(k)); return i ?? -1; };
+  const free = (room, list) => { const l = list || slotsOf(room).map((_, i) => i).filter(i => typeOf(room) !== "main" || (i !== MGR_SEAT && ((nMainOf[baseOf(room)] || 1) === 1 || i < DESKS.length))); const i = l.find(k => !used[room].has(k)); return i ?? -1; };
   const pending = [];
-  wants.forEach(([id, room, list]) => { if (out.has(id)) return; const r = figs.get(id);
+  /* the manager's glass office: the department's Director (or its top Manager), and the Coordinator at headquarters */
+  const leadOf = base => { const d = deptOfRoom(base); if (!d) return "coordinator"; const dp = deptById(d), st = agents.filter(a => deptOf(a.id) === d);
+    return (dp && dp.director && st.some(a => a.id === dp.director) ? dp.director : "") || (st.slice().sort((x, y) => rankOf(y) - rankOf(x))[0] || {}).id; };
+  wants.forEach(([id, room]) => { if (out.has(id) || typeOf(room) !== "main" || leadOf(baseOf(room)) !== id) return; const rm = mainsOf(room)[0];
+    if (!used[rm].has(MGR_SEAT)) { used[rm].add(MGR_SEAT); out.set(id, {room:rm, spot:slotsOf(rm)[MGR_SEAT], slot:MGR_SEAT}); } });
+  wants.forEach(([id, room, list]) => { if (out.has(id)) return; const r = figs.get(id); if (r && r.plan && typeOf(r.plan.room) === "main" && r.plan.slot === MGR_SEAT) r.plan.slot = -1;
     if (r && r.plan && (r.plan.room === room || (typeOf(room) === "main" && mainsOf(room).includes(r.plan.room))) && r.plan.slot >= 0 && (!list || list.includes(r.plan.slot)) && !used[r.plan.room].has(r.plan.slot)) { used[r.plan.room].add(r.plan.slot); out.set(id, r.plan); }
     else pending.push([id, room, list]); });
   pending.forEach(([id, room, list]) => {
@@ -1079,11 +1018,16 @@ function makeFig(id){
 function setPos(r, p, ms){
   const t = ms ? `left ${ms}ms linear, top ${ms}ms linear` : "none";
   r.b.style.transition = r.tag.style.transition = ms ? t + ", opacity .35s" : "opacity .35s";
-  const y = p.seat ? p.y + SEAT_CUT * CH_H : p.y;
-  r.b.style.left = r.tag.style.left = p.x + "%"; r.b.style.top = y + "%"; r.tag.style.top = p.y + "%";
-  r.b.style.zIndex = p.z ?? Math.round(p.y) + 10;
-  r.b.classList.toggle("seated", !!p.seat);
-  r.img.src = charUrl(r.id, p.f);
+  const P = p.seat && p.k ? poseFor(r.id, p.k) : null;
+  if (P) { const q = poseBox(p, P); r.pose = q.h;
+    r.b.style.left = q.left + "%"; r.b.style.top = q.top + "%"; r.b.style.height = q.h + "%"; r.tag.style.left = p.x + "%"; r.tag.style.top = p.y + "%";
+    r.img.style.display = "none"; r.b.querySelector(".pose")?.remove(); r.img.after(poseEl(P, q.clip)); }
+  else { r.pose = 0; r.img.style.display = ""; r.b.querySelector(".pose")?.remove();
+    const y = p.seat ? (p.cut ?? p.y + 4.6) + SEAT_CUT * CH_H : p.y;
+    r.b.style.left = r.tag.style.left = p.x + "%"; r.b.style.top = y + "%"; r.tag.style.top = p.y + "%"; r.b.style.height = (r.h || CH_H) + "%";
+    r.img.src = charUrl(r.id, p.f); }
+  r.b.style.zIndex = p.z ?? Math.round(p.cut ?? p.y) + 10;
+  r.b.classList.toggle("seated", !!p.seat && !P);
   r.pos = p;
 }
 const idleDate = t => { try { return new Date(t).toLocaleDateString("en-GB", {day:"numeric", month:"short"}); } catch { return ""; } };
@@ -1118,7 +1062,7 @@ function dress(r, o){
   r.b.className = "ag " + o.state + (r.b.classList.contains("walking") ? " walking" : "") + (r.pos?.seat ? " seated" : "") + (selectedAgent === r.id ? " sel" : "") + (o.meet ? " meeting" : "") + (o.idle ? " dormant" : "");
   r.idle.textContent = o.idle ? "Idle since " + idleDate(o.idle) : "";
   if (o.idle) r.fx.hidden = true; else if (o.fx) { r.fx.src = `${A}fx/${o.fx}.webp`; r.fx.hidden = false; } else r.fx.hidden = true;
-  r.b.style.height = (o.h || CH_H) + "%";
+  r.h = o.h || CH_H; if (!r.pose) r.b.style.height = r.h + "%";
   r.tag.textContent = o.label;
   r.b.setAttribute("aria-label", o.label + (o.stateText ? ": " + o.stateText : "") + (o.meet ? " (in the meeting room)" : ""));
 }
@@ -1134,7 +1078,7 @@ function drawScene(){
     const r = figs.get(id) || makeFig(id), a = agentById(id), st = id === "owner" ? "owner" : (a?.state || "working");
     const label = id === "owner" ? "You" : (nameOf(id) === ASSISTANT ? "Office Manager" : nameOf(id));
     const dz = p.room === "idle" ? idleSince(a) : 0;
-    dress(r, {state:st, meet:meetIds.has(id), label, idle:dz, stateText:AGENT_STATE[st]?.en, h:(id === "owner" || id === ASSISTANT) ? 14 : CH_H,
+    dress(r, {state:st, meet:meetIds.has(id), label, idle:dz, stateText:AGENT_STATE[st]?.en, h:(id === "owner" || id === ASSISTANT) ? CH_H + 1 : CH_H,
       fx: meetIds.has(id) ? null : id === "owner" ? "monster-energy" : id === ASSISTANT && st === "working" ? "need-coffee" : FX[st]});
     const changed = !r.plan || r.plan.room !== p.room || r.plan.slot !== p.slot || r.plan.spot !== p.spot;
     r.plan = p;
@@ -1447,7 +1391,7 @@ function selectAgent(id){ selectedAgent = id; drawScene(); renderRoster(); go("#
 function agentPreview(){
   if (!agentOpen || !agentDraft) return;
   const img = document.querySelector("#agentBody .ag-prev img"); if (!img) return;
-  img.src = lookUrl(agentDraft.look.sprite || spriteOf(agentOpen), "front-left", agentDraft.look);
+  img.src = charImg(charOf(agentOpen, agentDraft.look), "front-left");
 }
 function openAgent(id){
   const a = agentById(id); if (!a) return false;
@@ -1467,29 +1411,20 @@ function openAgent(id){
   const grid = el("div","ag-grid");
   /* look */
   const lookBox = el("section","ag-box"); lookBox.append(el("h3", null, "Look"));
-  const sp = el("div","ag-sprites"); sp.setAttribute("role","group"); sp.setAttribute("aria-label","Character");
-  const pick = () => sp.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === (agentDraft.look.sprite || spriteOf(id)))));
-  LOOK_SPRITES.forEach(s => { const b = el("button","ag-sp"); b.type = "button"; b.dataset.s = s; b.title = CHAR_LABEL[s] || s; b.setAttribute("aria-label","Character: " + (CHAR_LABEL[s] || s));
-    b.style.backgroundImage = `url(${A}chars/${keyOf(s, looksOf(s, {}).cover)}-front-left.webp)`; b.onclick = () => { agentDraft.look.sprite = s; pick(); drawOpts(); colors(); dirty(); agentPreview(); }; sp.append(b); });
-  lookBox.append(sp);
-  const cols = el("div","ag-colors");
-  const colorRow = (key, label) => { const l = el("label","ag-color"); const i = el("input"); i.type = "color"; i.value = okHex(agentDraft.look[key]) ? agentDraft.look[key] : (key === "hair" ? "#5a3a24" : "#3b5bdb");
-    const rs = el("button","linkish","Original"); rs.type = "button";
-    const st = el("span","note"); const show = () => { st.textContent = okHex(agentDraft.look[key]) ? agentDraft.look[key] : "original"; rs.hidden = !okHex(agentDraft.look[key]); };
-    i.oninput = () => { agentDraft.look[key] = i.value; show(); dirty(); agentPreview(); };
-    rs.onclick = () => { delete agentDraft.look[key]; show(); dirty(); agentPreview(); };
-    show(); l.append(el("span", null, label), i, st); const w = el("div","ag-crow"); w.append(l, rs); w.dataset.k = key; return w; };
-  const hairRow = colorRow("hair","Hair color"), shirtRow = colorRow("shirt","Shirt color"), noHair = el("div","note","This character has no hair to color.");
-  const opts = el("div","ag-opts");
-  const curBase = () => agentDraft.look.sprite || spriteOf(id);
-  const drawOpts = () => { opts.replaceChildren(); const base = curBase(), o = optsOf(CHAR[base]), lo = looksOf(base, agentDraft.look);
-    ["beard","cover"].forEach(k => { if (!o[k]) return; const g = el("div","ag-opt"); g.setAttribute("role","group"); g.setAttribute("aria-label", k === "beard" ? "Beard" : "Covering"); g.append(el("span","lbl", k === "beard" ? "Beard" : "Covering"));
-      o[k].forEach(v => { const b = el("button","chip-btn", OPT_LABEL[k][v] || v); b.type = "button"; b.setAttribute("aria-pressed", String(lo[k] === v)); b.onclick = () => { agentDraft.look[k] = v; drawOpts(); colors(); dirty(); agentPreview(); }; g.append(b); });
-      opts.append(g); });
-    if (o.glasses) { const l = el("label","ag-opt"); const c = el("input"); c.type = "checkbox"; c.checked = lo.glasses; c.onchange = () => { agentDraft.look.glasses = c.checked; dirty(); agentPreview(); }; l.append(c, el("span", null, "Glasses")); opts.append(l); } };
-  const colors = () => { const base = curBase(), bald = !hasHair(base, agentDraft.look) && looksOf(base, agentDraft.look).beard === "none"; hairRow.hidden = bald; noHair.hidden = !bald; };
-  cols.append(hairRow, noHair, shirtRow); lookBox.append(opts, cols);
-  pick(); drawOpts(); colors();
+  /* the owner's drawings: the featured ones first, the rest behind "More characters" */
+  const charBtn = c => { const b = el("button","ag-sp"); b.type = "button"; b.dataset.s = c.id; b.title = c.label_en; b.setAttribute("aria-label","Character: " + c.label_en);
+    b.style.backgroundImage = `url(${charImg(c.id, "front-left")})`; b.onclick = () => { agentDraft.look = {char:c.id}; drawLook(); dirty(); agentPreview(); }; return b; };
+  const sp = el("div","ag-sprites"); sp.setAttribute("role","group"); sp.setAttribute("aria-label","Characters");
+  CHARS.filter(c => c.featured).forEach(c => sp.append(charBtn(c)));
+  const rest = CHARS.filter(c => !c.featured);
+  const more = el("details","ag-more"); more.append(el("summary", null, `More characters (${rest.length})`)); const sp2 = el("div","ag-sprites"); rest.forEach(c => sp2.append(charBtn(c))); more.append(sp2);
+  lookBox.append(sp); if (rest.length) lookBox.append(more);
+  function drawLook(){
+    const c = charOf(id, agentDraft.look);
+    [sp, sp2].forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === c))));
+    if (rest.some(x => x.id === c)) more.open = true;
+  }
+  drawLook();
   /* profile */
   const prof = el("section","ag-box"); prof.append(el("h3", null, "Profile"));
   PROFILE.forEach(([k, label, hint]) => { const l = el("label","ag-field"); l.append(el("span","lbl", label));
@@ -1505,7 +1440,7 @@ function openAgent(id){
   const save = el("div","row-wrap ag-save"); const sb = el("button","btn","Save"); sb.type = "submit"; const sn = el("span","note", canWrite ? "" : "You can read this page but not change it."); sb.disabled = !canWrite;
   const dirty = () => { sn.textContent = "Unsaved changes."; };
   sb.onclick = async () => { sb.disabled = true; sn.textContent = "Saving…";
-    const look = {}; if (LOOK_SPRITES.includes(agentDraft.look.sprite)) look.sprite = agentDraft.look.sprite; if (okHex(agentDraft.look.hair)) look.hair = agentDraft.look.hair; if (okHex(agentDraft.look.shirt)) look.shirt = agentDraft.look.shirt; { const o = optsOf(CHAR[look.sprite || spriteOf(id)]); ["beard","cover"].forEach(k => { if ((o[k] || []).includes(agentDraft.look[k])) look[k] = agentDraft.look[k]; }); if (o.glasses && typeof agentDraft.look.glasses === "boolean") look.glasses = agentDraft.look.glasses; }
+    const look = CHAR[agentDraft.look.char] ? {char:agentDraft.look.char} : {};
     const doc = {look, hobbies:agentDraft.hobbies, profile_updated_at:new Date().toISOString(), relayed:false}; PROFILE.forEach(([k]) => { doc[k] = agentDraft[k].trim(); });
     try { await db.doc("agents/" + id).update(doc); sn.textContent = "Saved. The Coordinator passes the changes on to " + nameOf(id) + "."; } catch (err) { sn.textContent = writeError(err); }
     sb.disabled = !canWrite; };
@@ -1873,9 +1808,8 @@ let talkBuilt = false;
 function renderTalkRoom(){
   const room = $("talkRoom"); if (!room) return;
   if (!talkBuilt) { talkBuilt = true;
-    boxSprite(room, "table", MEET.table); for (let i = 0; i < 8; i++) boxSprite(room, "mchair-" + i, MEET["mchair-" + i]);
-    furnish(room, [["monstera",77.3,71.9,6.2,720],["whiteboard",21.3,58.3,8.1,580]]); }
-  room.style.backgroundImage = `url(${A}rooms/meet-${isNight() ? "night" : "day"}.webp)`;
+  }
+  room.style.backgroundImage = `url(${A}rooms/${ROOM_BG.meet}.webp)`;
   room.querySelectorAll(".ag,.tag").forEach(x => x.remove());
   const s = chatSess && sessions.find(x => x.id === chatSess);
   let ids = [], title = "", key = "";
@@ -1890,9 +1824,11 @@ function renderTalkRoom(){
   const top = navBack[navBack.length - 1], back = top && top.tab !== "chat" ? ` Click outside the chat to go back to ${TAB_NAME[top.tab]}.` : "";
   $("talkHint").textContent = (key ? where + (ids.length ? ` · ${ids.length} ${ids.length === 1 ? "person" : "people"}.` : ".") : "Pick a conversation to see who sits with it.") + back;
   ids.sort((a, b) => (b === "owner") - (a === "owner")).slice(0, MEET.seats.length).forEach((id, i) => {
-    const sp = MEET.seats[i], b = el("button", "ag seated"); b.type = "button";
-    const img = el("img", "body"); img.alt = ""; img.src = charUrl(id, sp.f); b.append(img);
-    b.style.cssText = `left:${sp.x}%;top:${sp.y + SEAT_CUT * CH_H}%;height:${CH_H}%;z-index:${sp.z}`;
+    const sp = MEET.seats[i], P = poseFor(id, sp.k), b = el("button", P ? "ag" : "ag seated"); b.type = "button";
+    const img = el("img", "body"); img.alt = ""; b.append(img);
+    if (P) { const q = poseBox(sp, P); img.style.display = "none"; b.append(poseEl(P, q.clip));
+      b.style.cssText = `left:${q.left}%;top:${q.top}%;height:${q.h}%;z-index:${Math.round(sp.cut ?? sp.y) + 10}`; }
+    else { img.src = charUrl(id, sp.f); b.style.cssText = `left:${sp.x}%;top:${(sp.cut ?? sp.y + 4.6) + SEAT_CUT * CH_H}%;height:${CH_H}%;z-index:${Math.round(sp.cut ?? sp.y) + 10}`; }
     b.setAttribute("aria-label", nameOf(id)); if (id !== "owner") b.onclick = () => selectAgent(id);
     const tag = el("span", "tag", nameOf(id)); tag.style.cssText = `left:${sp.x}%;top:${sp.y}%`;
     room.append(b, tag);

@@ -11,4 +11,4 @@ Every requirement for the page and its data layout is in `SPEC.md`.
 - Rooms: the manager's office (owner + `office-manager` as the assistant; agents in state `waiting` visit here), the meeting room (agents talking to each other and members of open task sessions sit at the table), the main office (working and blocked agents on chairs at desks), the games room (done and not started agents), and the idle room (agents with no activity for more than 3 days sit there on chairs, still, with "Idle since <date>"). Agents walk between rooms when their state changes.
 - Task sessions: the owner opens one from a task when something isn't clear; it is private to that question and closes when it is solved.
 
-Art: rooms and furniture are drawn by the generators in `tools/art/` (see `tools/art/STYLE.md`).
+Art: the owner's own pictures, cut out with `tools/cut/` (see `SPEC.md`, "Characters and rooms"). Every picture carries the credit tag `@Abdulwahabdev`; see the root `LICENSE`.
