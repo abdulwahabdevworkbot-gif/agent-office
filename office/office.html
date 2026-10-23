@@ -110,7 +110,9 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag.sel .pose,.ag:focus-visible .pose{filter:drop-shadow(0 0 4px #7cc4ff) drop-shadow(0 0 2px #7cc4ff)}
 .ag:focus-visible{outline:none}.ag:focus-visible img.body,.ag.sel img.body{filter:drop-shadow(0 0 4px #7cc4ff) drop-shadow(0 0 2px #7cc4ff)}
 .ag .fx{position:absolute;bottom:100%;margin-bottom:2px;height:30%;min-height:14px;max-height:40px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
-.room .tag{position:absolute;z-index:5000;transform:translate(-50%,3px);pointer-events:none;white-space:nowrap;background:rgba(10,14,22,.85);color:#fff;border-radius:4px;padding:0 5px;font-size:clamp(8px,2cqi,12px);line-height:1.5}
+.room .tag{position:absolute;z-index:5000;transform:translate(-50%,2px);pointer-events:none;white-space:nowrap;background:rgba(10,14,22,.6);color:#fff;border-radius:3px;padding:0 2px;font-size:clamp(4px,.9cqi,6px);line-height:1.3;opacity:.8;transition:font-size .15s,opacity .15s}
+/* the owner's rule: names stay tiny; pointing at a person shows the name at a readable size */
+.room .ag:hover+.tag,.room .ag:focus-visible+.tag,.room .ag.sel+.tag{z-index:5001;font-size:clamp(10px,2.2cqi,13px);padding:0 5px;background:rgba(10,14,22,.88);opacity:1}
 .room{isolation:isolate}
 .sp.box{transform:none}
 .ag.seated img.body{clip-path:inset(0 0 44% 0)}
@@ -267,7 +269,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag-field textarea,.ag-field input{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:vertical;min-width:0}
 .ag-hobbies{display:flex;flex-wrap:wrap;gap:6px}.ag-hob{gap:6px}
 .ag-x{all:unset;cursor:pointer;font-weight:700;color:var(--muted);padding:0 2px}.ag-x:hover{color:var(--bad)}.ag-x:focus-visible{outline:2px solid var(--accent)}
-.ag-save{justify-content:flex-start}
+.ag-save{justify-content:flex-start;position:sticky;bottom:0;z-index:2;background:var(--panel);border-top:1px solid var(--line);padding:10px 0 2px;margin-top:4px}
 .ag-wh{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}.ag-wh h3{margin-right:auto}
 .ag-list{display:grid;gap:4px;max-height:280px;overflow:auto}
 .ag-row{all:unset;cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;min-width:0}
@@ -1533,19 +1535,22 @@ function openAgent(id){
     if (!agentDraft.hobbies.length) chips.append(el("span","note","No hobbies yet.")); };
   add.onkeydown = e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); const v = add.value.trim(); if (v && !agentDraft.hobbies.includes(v)) { agentDraft.hobbies.push(v); drawHobbies(); dirty(); } add.value = ""; } };
   drawHobbies(); hb.append(chips, add); prof.append(hb);
-  const save = el("div","row-wrap ag-save"); const sb = el("button","btn","Save"); sb.type = "submit"; const sn = el("span","note", canWrite ? "" : "You can read this page but not change it."); sb.disabled = !canWrite;
-  const dirty = () => { sn.textContent = "Unsaved changes."; };
+  /* the owner's rule: edits are a draft until Apply; closing or Cancel goes back to the saved look and profile */
+  const save = el("div","row-wrap ag-save"); const sb = el("button","btn","Apply"); sb.type = "submit";
+  const cb = el("button","btn-lite","Cancel"); cb.type = "button"; cb.onclick = () => openAgent(id);
+  const sn = el("span","note", canWrite ? "Changes are kept only after you press Apply." : "You can read this page but not change it."); sb.disabled = !canWrite;
+  const dirty = () => { sn.textContent = "Not applied yet. Press Apply to keep these changes, or Cancel to undo them."; };
   sb.onclick = async () => { sb.disabled = true; sn.textContent = "Saving…";
     const look = CHAR[agentDraft.look.char] ? {char:agentDraft.look.char} : {};
     if (heightOf(id, agentDraft.look) !== 1) look.height = heightOf(id, agentDraft.look);
     const doc = {look, hobbies:agentDraft.hobbies, profile_updated_at:new Date().toISOString(), relayed:false}; PROFILE.forEach(([k]) => { doc[k] = agentDraft[k].trim(); });
-    try { await db.doc("agents/" + id).update(doc); sn.textContent = "Saved. The Coordinator passes the changes on to " + nameOf(id) + "."; } catch (err) { sn.textContent = writeError(err); }
+    try { await db.doc("agents/" + id).update(doc); sn.textContent = "Applied. The Coordinator passes the changes on to " + nameOf(id) + "."; } catch (err) { sn.textContent = writeError(err); }
     sb.disabled = !canWrite; };
-  save.append(sb, sn); prof.append(save);
+  save.append(sb, cb, sn);
   grid.append(lookBox, prof);
   /* linked work */
   const work = el("section","ag-box ag-work"); work.id = "agentWork"; grid.append(work);
-  body.append(grid);
+  body.append(grid, save);
   renderAgentWork(); agentPreview();
   if (!$("agentDlg").open) $("agentDlg").showModal();
   return true;
