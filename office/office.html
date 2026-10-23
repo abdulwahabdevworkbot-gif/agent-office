@@ -1490,11 +1490,16 @@ function renderSince(){
     done = tasks.filter(t => t.state === "done" && after(t.done_at || t.updated_at)).length,
     added = tasks.filter(t => after(t.created_at)).length,
     blocked = agents.filter(a => a.state === "blocked" && after(a.updated_at)).length,
-    meets = sessions.filter(x => after(x.opened_at || x.scheduled_at)).length;
-  const parts = [[newMsgs, "new message", () => showTab("chat")], [done, "task done", () => showTab("board")], [added, "new task", () => showTab("board")],
-    [blocked, "newly blocked", () => $("inbox").scrollIntoView({block:"start"}), true], [meets, "new meeting", () => showTab("chat")]].filter(x => x[0]);
+    meets = sessions.filter(x => after(x.opened_at || x.scheduled_at)).length,
+    sentBack = reviews.filter(r => r.outcome === "changes" && after(r.at)).length,
+    late = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).length,
+    closedM = sessions.filter(x => isDone(x) && after(x.closed_at)).length;
+  const stat = k => () => { showTab("office"); statKind = k; renderStats(); $("deptStats").scrollIntoView({block:"center"}); };
+  const parts = [[newMsgs, "new message|new messages", () => showTab("chat")], [done, "task done|tasks done", stat("done")], [added, "new task|new tasks", () => showTab("board")],
+    [blocked, "newly blocked", () => $("inbox").scrollIntoView({block:"start"})], [late, "running late", stat("late")], [sentBack, "sent back by review", () => showTab("reviews")],
+    [meets, "new meeting|new meetings", () => showTab("chat")], [closedM, "meeting closed|meetings closed", () => showTab("chat")]].filter(x => x[0]);
   if (!parts.length) { box.hidden = true; return; }
-  const chip = ([n, w, fn, fixed]) => { const b = el("button", "chip go", `${n} ${w}${fixed || n === 1 ? "" : "s"}`); b.type = "button"; b.onclick = fn; return b; };
+  const chip = ([n, w, fn]) => { const [one, many] = w.split("|"); const b = el("button", "chip go", `${n} ${n === 1 ? one : many || one}`); b.type = "button"; b.onclick = fn; return b; };
   const ok = el("button", "btn-lite", "Got it"); ok.type = "button"; ok.onclick = () => { seenAt = Date.now(); saveSeen(); renderSince(); };
   box.replaceChildren(el("b", null, `Since you left (${ago(new Date(seenAt).toISOString())}):`), ...parts.map(chip), ok); box.hidden = false;
 }
