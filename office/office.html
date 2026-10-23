@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Product Office</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -331,6 +332,25 @@ h2{font-weight:700;font-size:19px;margin:0}
 .inbox-empty{color:var(--muted);font-size:13.5px}
 .inbox-more{justify-self:start}
 .chip.go{cursor:pointer;border:0;font:inherit;font-size:13px}.chip.go:hover{box-shadow:0 0 0 1px var(--accent) inset}.chip.go:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* calendar (the owner's rule, 2026-10-23): each agent's tasks and meetings, with estimates and dependencies */
+.cal-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}.cal-head h2{margin:0}.cal-nav{display:flex;gap:4px}
+.cal-week{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px;overflow-x:auto;padding-bottom:4px}
+.cal-day{border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:120px;display:flex;flex-direction:column;gap:6px;padding:8px}
+.cal-day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.cal-day.off{opacity:.6}
+.cal-dh{font-size:12.5px;font-weight:700;color:var(--muted);display:flex;justify-content:space-between}
+.cal-ev{all:unset;cursor:pointer;display:grid;gap:1px;border-radius:6px;padding:5px 7px;font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));overflow-wrap:anywhere}
+.cal-ev:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cal-ev.meet{background:repeating-linear-gradient(135deg,var(--panel) 0 6px,var(--doing-bg) 6px 12px)}
+.cal-ev.late{border-left-color:var(--bad)}.cal-ev.done{opacity:.55}
+.cal-ev b{font-weight:600}.cal-ev .tm{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.cal-ev .why{color:var(--bad);font-size:11.5px}
+.cal-all{display:grid;gap:6px}
+.cal-row{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%;display:grid;grid-template-columns:minmax(160px,220px) minmax(0,1fr) minmax(0,1.3fr) 190px;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--bg)}
+.cal-row:hover{border-color:var(--accent)}.cal-row .who{display:flex;gap:8px;align-items:center}.cal-row .note{overflow-wrap:anywhere}
+@media (max-width:760px){.cal-row{grid-template-columns:1fr}}
+.t-time{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.t-warn{color:var(--bad);font-weight:600}
+.card .est{font-size:11.5px;color:var(--muted)}.card .late-tag{font-size:11.5px;color:var(--bad);font-weight:600}
 .office-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.office-split{grid-template-columns:1fr}}
 .chat{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;min-height:460px;min-width:0;overflow:hidden}
@@ -488,6 +508,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <button role="tab" id="tab-board" aria-controls="panel-board" aria-selected="false" tabindex="-1">Task board<span class="count" id="taskCount"></span></button>
     <button role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" tabindex="-1">Reviews<span class="count" id="revCount"></span></button>
     <button role="tab" id="tab-team" aria-controls="panel-team" aria-selected="false" tabindex="-1">Team</button>
+    <button role="tab" id="tab-calendar" aria-controls="panel-calendar" aria-selected="false" tabindex="-1">Calendar<span class="count" id="calCount"></span></button>
     <button role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1">Settings</button>
   </div>
 
@@ -593,6 +614,17 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     </div>
   </section>
 
+  <section role="tabpanel" id="panel-calendar" aria-labelledby="tab-calendar" class="stack" hidden>
+    <div class="panel">
+      <div class="cal-head"><h2>Calendar</h2>
+        <label>Person <select id="calWho"></select></label>
+        <span class="cal-nav"><button class="btn-lite" type="button" id="calPrev" aria-label="Previous week">&larr;</button><button class="btn-lite" type="button" id="calToday">This week</button><button class="btn-lite" type="button" id="calNext" aria-label="Next week">&rarr;</button></span>
+        <span class="note" id="calNote"></span></div>
+      <p class="note">Each task takes its estimate (agents work around the clock unless Settings say otherwise), after the tasks it depends on. When one of those runs late, everything after it moves, and the calendar shows why.</p>
+      <div id="calBody"></div>
+    </div>
+  </section>
+
   <section role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" class="stack" hidden>
     <div class="panel">
       <h2>Room sizes</h2>
@@ -644,7 +676,7 @@ const fmt = iso => { try { return new Date(iso).toLocaleString("en-GB", {day:"nu
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- tabs ---------- */
-const TABS = ["office","roadmap","chat","board","reviews","team","settings"];
+const TABS = ["office","roadmap","chat","board","calendar","reviews","team","settings"];
 const TAB_NAME = {office:"Office", roadmap:"Roadmap", chat:"Chat", board:"Task board"};
 let curTab = null, restoring = false;
 const navBack = [];
@@ -690,7 +722,7 @@ TABS.forEach((t, i) => {
   $("tab-"+t).onkeydown = e => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { showTab(TABS[(i + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length], true); e.preventDefault(); } };
 });
 const startHash = location.hash;
-showTab(/^#board/.test(startHash) ? "board" : /^#team/.test(startHash) ? "team" : /^#reviews/.test(startHash) ? "reviews" : /^#chat/.test(startHash) ? "chat" : /^#roadmap/.test(startHash) ? "roadmap" : "office");
+showTab(/^#board/.test(startHash) ? "board" : /^#team/.test(startHash) ? "team" : /^#reviews/.test(startHash) ? "reviews" : /^#chat/.test(startHash) ? "chat" : /^#roadmap/.test(startHash) ? "roadmap" : /^#calendar/.test(startHash) ? "calendar" : "office");
 navBack.length = 0;
 if (/^#(task|session|board|agent)\//.test(startHash)) try { history.replaceState(null, "", startHash); } catch {}
 
@@ -1334,6 +1366,122 @@ function renderInbox(){
     c.append(avatar(it.who, 34), k, el("div","ib-t", it.t), el("div","ib-s", it.s), a); box.append(c); });
   if (items.length > 6) { const m = el("button","linkish inbox-more", inboxAll ? "Show fewer" : `Show all ${items.length}`); m.type = "button"; m.onclick = () => { inboxAll = !inboxAll; renderInbox(); }; box.append(m); }
 }
+/* ---------- calendar: estimates, dependencies and the agents' working hours ---------- */
+const EST_DEF = 60, DAY = 864e5;
+const estOf = t => Math.max(5, Number(t.estimate_min) || EST_DEF);
+const depsOf = t => (Array.isArray(t.depends_on) ? t.depends_on : []).filter(d => d !== t.id && tasks.some(x => x.id === d));
+const fmtDur = m => m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`;
+const workday = () => { const w = metaOffice?.workday || {}; const s = Number.isFinite(+w.start) ? +w.start : 0, e = Number.isFinite(+w.end) ? +w.end : 24;
+  return {start:s, end:e > s ? e : 24, days:Array.isArray(w.days) && w.days.length ? w.days.map(Number) : [0,1,2,3,4,5,6]}; };   // agents work around the clock unless meta/office.workday says otherwise
+function nextWork(t, wd){ const d = new Date(t); for (let i = 0; i < 400; i++) {
+    const s = new Date(d); s.setHours(wd.start, 0, 0, 0); const e = new Date(d); e.setHours(wd.end, 0, 0, 0);
+    if (wd.days.includes(d.getDay()) && d < e) return Math.max(+d, +s);
+    d.setDate(d.getDate() + 1); d.setHours(0, 0, 0, 0); } return +t; }
+function addWork(t, min, wd, busy){   // walk forward through working hours, skipping meetings, until min minutes are spent
+  let cur = nextWork(t, wd), left = min * 6e4;
+  for (let i = 0; i < 2000 && left > 0; i++) {
+    const e = new Date(cur); e.setHours(wd.end, 0, 0, 0);
+    const m = busy.find(b => b.s <= cur && b.e > cur); if (m) { cur = nextWork(m.e, wd); continue; }
+    const nb = busy.filter(b => b.s > cur).reduce((a, b) => Math.min(a, b.s), Infinity);
+    const stop = Math.min(+e, nb, cur + left); left -= stop - cur; cur = stop;
+    if (left > 0 && cur >= +e) cur = nextWork(cur + 1, wd); }
+  return cur; }
+const meetSpan = s => { const st = Date.parse(s.at || s.opened_at || ""); if (!st) return null; const end = Date.parse(s.closed_at || "") || st + (Number(s.duration_min) || 30) * 6e4; return {s:st, e:Math.max(end, st + 5 * 6e4)}; };
+let sched = {byTask:{}, byAgent:{}};
+function buildSchedule(){
+  const wd = workday(), now = Date.now(), byTask = {}, byAgent = {}, busy = {};
+  sessions.forEach(s => { if (s.state === "closed" && !s.at) return; const sp = meetSpan(s); if (!sp) return;
+    (s.members || []).forEach(m => { (busy[m] ||= []).push(sp); (byAgent[m] ||= []).push({kind:"meet", s:sp.s, e:sp.e, sess:s}); }); });
+  const queue = {}; tasks.forEach(t => (queue[t.session || "-"] ||= []).push(t));
+  const rank = t => t.state === "doing" || t.state === "review" ? 0 : t.state === "blocked" ? 1 : 2;
+  Object.values(queue).forEach(q => q.sort((a, b) => rank(a) - rank(b) || byOrder(a, b)));
+  const free = {}, done = t => isClosed(t);
+  tasks.filter(done).forEach(t => { const e = Date.parse(t.done_at || t.updated_at || "") || now; byTask[t.id] = {s:e - estOf(t) * 6e4, e, done:true}; });
+  let left = tasks.filter(t => !done(t)), guard = 0;
+  while (left.length && guard++ < 500) {
+    let moved = false;
+    for (const [who, q] of Object.entries(queue)) {
+      const t = q.find(x => !byTask[x.id]); if (!t) continue;
+      const deps = depsOf(t), ready = deps.every(d => byTask[d]);
+      if (!ready && guard < 400) continue;          // a dependency cycle falls back to ignoring the missing ones
+      const depEnd = deps.reduce((a, d) => Math.max(a, byTask[d]?.e || 0), 0);
+      const started = (t.state === "doing" || t.state === "review") ? Date.parse(t.started_at || t.updated_at || "") || now : 0;
+      const base = Math.max(free[who] || 0, started ? Math.min(started, now) : now, Date.parse(t.start_at || "") || 0);
+      const s = started ? Math.max(base, depEnd && depEnd > started ? depEnd : 0) : Math.max(base, depEnd);
+      const b = busy[who] || [];
+      let e = addWork(s, estOf(t), wd, b); if (started && e < now + 5 * 6e4) e = now + 5 * 6e4;   // still open: it ends no sooner than now
+      const late = deps.filter(d => { const x = tasks.find(y => y.id === d), due = Date.parse(x?.due_at || (x?.due ? x.due + "T23:59:00" : "")); return byTask[d] && !byTask[d].done && due && byTask[d].e > due; });
+      const due = Date.parse(t.due_at || (t.due ? t.due + "T23:59:00" : ""));
+      byTask[t.id] = {s:nextWork(s, wd), e, deps, depEnd, lateDeps:late, due:due || 0, lateBy:due && e > due ? e - due : 0, waits:depEnd > base};
+      free[who] = e; (byAgent[who] ||= []).push({kind:"task", s:byTask[t.id].s, e, t}); moved = true;
+    }
+    left = tasks.filter(t => !byTask[t.id]); if (!moved && guard < 400) guard = 400;
+  }
+  tasks.filter(done).forEach(t => (byAgent[t.session || "-"] ||= []).push({kind:"task", s:byTask[t.id].s, e:byTask[t.id].e, t, done:true}));
+  Object.values(byAgent).forEach(l => l.sort((a, b) => a.s - b.s));
+  sched = {byTask, byAgent};
+}
+const fmtWhen = ms => new Date(ms).toLocaleString("en-GB", {weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
+const fmtHM = ms => new Date(ms).toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
+const lateText = p => p.lateBy ? `Late by ${fmtDur(Math.round(p.lateBy / 6e4))}` : "";
+const whyText = p => p.lateDeps?.length ? `Moved: waits for ${p.lateDeps.join(", ")}, which ${p.lateDeps.length === 1 ? "runs" : "run"} late` : p.waits && p.deps?.length ? `Starts after ${p.deps.join(", ")}` : "";
+function timeBox(t){   // the task dialog's Time row
+  const p = sched.byTask[t.id]; const d = el("div"); d.append(el("div","lbl","Time"));
+  const r = el("div","t-time"); r.append(el("span", null, `Takes ${fmtDur(estOf(t))}${t.estimate_min ? "" : " (default)"}`));
+  if (p) r.append(el("span", null, p.done ? `Finished ${fmtWhen(p.e)}` : `Planned ${fmtWhen(p.s)} to ${fmtWhen(p.e)}`));
+  if (p?.due) r.append(el("span","note", `Due ${fmtWhen(p.due)}`));
+  d.append(r);
+  const deps = depsOf(t); if (deps.length) { const q = el("div","t-time"); q.append(el("span","note","Needs first:")); deps.forEach(x => { const pp = sched.byTask[x]; q.append(taskLink(x), el("span","note", pp ? (pp.done ? "done" : "ends " + fmtWhen(pp.e)) : "")); }); d.append(q); }
+  const after = tasks.filter(x => depsOf(x).includes(t.id)); if (after.length) { const q = el("div","t-time"); q.append(el("span","note","Then:")); after.forEach(x => q.append(taskLink(x.id))); d.append(q); }
+  if (p && (p.lateBy || p.lateDeps?.length)) d.append(el("div","t-warn", [lateText(p), p.lateDeps?.length ? whyText(p) : ""].filter(Boolean).join(". ")));
+  return d; }
+let calWho = "", calWeek = 0;
+function calEvent(ev){
+  const b = el("button","cal-ev" + (ev.kind === "meet" ? " meet" : "") + (ev.done ? " done" : ""));
+  b.type = "button";
+  if (ev.kind === "meet") { const s = ev.sess; b.style.setProperty("--c", "var(--warn)");
+    b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)}`), el("b", null, (isMeeting(s) ? "Meeting: " : "Session: ") + (s.title_en || s.task || "")), el("span","note", `${(s.members || []).length} people`));
+    b.onclick = () => go("#session/" + encodeURIComponent(s.id)); return b; }
+  const t = ev.t, p = sched.byTask[t.id] || {}; if (t.feature) b.style.setProperty("--c", featColor(t.feature));
+  if (p.lateBy) b.classList.add("late");
+  b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)} · ${fmtDur(estOf(t))}`), el("b", null, `${t.id} · ${t.title_en || ""}`));
+  const w = [lateText(p), whyText(p)].filter(Boolean).join(". "); if (w) b.append(el("span","why", w));
+  b.onclick = () => go("#task/" + encodeURIComponent(t.id)); return b; }
+function weekStart(off){ const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay() + off * 7); return d; }
+function weekGrid(evs){
+  const wd = workday(), g = el("div","cal-week"), d0 = weekStart(calWeek), today = new Date().toDateString();
+  for (let i = 0; i < 7; i++) { const d = new Date(d0); d.setDate(d0.getDate() + i); const s = +d, e = s + DAY;
+    const col = el("div","cal-day" + (d.toDateString() === today ? " today" : "") + (wd.days.includes(d.getDay()) ? "" : " off"));
+    const list = evs.filter(x => x.s < e && x.e > s);
+    const h = el("div","cal-dh"); h.append(el("span", null, d.toLocaleDateString("en-GB", {weekday:"short", day:"numeric", month:"short"})), el("span", null, list.length ? String(list.length) : "")); col.append(h);
+    list.forEach(x => col.append(calEvent({...x, s:Math.max(x.s, s), e:Math.min(x.e, e)})));
+    if (!list.length) col.append(el("span","note", wd.days.includes(d.getDay()) ? "Free" : "Day off"));
+    g.append(col); }
+  return g; }
+function renderCalendar(){
+  const sel = $("calWho"); if (!sel) return;
+  const people = agents.filter(a => a.id !== "owner").sort((a, b) => nameOf(a.id).localeCompare(nameOf(b.id)));
+  const keep = calWho; sel.replaceChildren(new Option("Everyone", "")); people.forEach(a => sel.append(new Option(nameOf(a.id), a.id))); sel.value = people.some(a => a.id === keep) ? keep : ""; calWho = sel.value;
+  const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : "";
+  const box = $("calBody"); box.replaceChildren();
+  const d0 = weekStart(calWeek), d6 = new Date(+d0 + 6 * DAY);
+  $("calNote").textContent = `${d0.toLocaleDateString("en-GB", {day:"numeric", month:"short"})} – ${d6.toLocaleDateString("en-GB", {day:"numeric", month:"short"})}` + (lateN ? ` · ${lateN} late` : "");
+  if (calWho) { box.append(weekGrid(sched.byAgent[calWho] || [])); return; }
+  const now = Date.now(), all = el("div","cal-all");
+  people.map(a => ({a, l:(sched.byAgent[a.id] || []).filter(x => !x.done && x.e > now)})).filter(x => x.l.length)
+    .sort((x, y) => (y.l.some(e => sched.byTask[e.t?.id]?.lateBy) - x.l.some(e => sched.byTask[e.t?.id]?.lateBy)) || x.l[0].s - y.l[0].s)
+    .forEach(({a, l}) => { const r = el("button","cal-row"); r.type = "button"; const w = el("span","who"); w.append(avatar(a.id, 28), el("b", null, nameOf(a.id)));
+      const cur = l.find(x => x.s <= now) || null, nx = l.find(x => x.s > now) || null, lastT = [...l].reverse().find(x => x.kind === "task");
+      const lab = x => x ? (x.kind === "meet" ? `${x.sess.title_en || "Meeting"}` : `${x.t.id} ${x.t.title_en || ""}`) : "—";
+      const late = l.filter(x => x.kind === "task" && sched.byTask[x.t.id]?.lateBy).length;
+      r.append(w, el("span","note", "Now: " + lab(cur)), el("span","note", "Next: " + (nx ? fmtWhen(nx.s).replace(/^\w+ /, "") + " · " + lab(nx) : "—")),
+        el("span", late ? "t-warn" : "note", late ? `${late} late` : lastT ? "Free from " + fmtWhen(lastT.e) : ""));
+      r.onclick = () => { calWho = a.id; renderCalendar(); }; all.append(r); });
+  if (!all.childNodes.length) all.append(el("div","empty","Nothing planned. Tasks show here once they have an owner."));
+  box.append(all);
+}
+$("calWho").onchange = e => { calWho = e.target.value; renderCalendar(); };
+$("calPrev").onclick = () => { calWeek--; renderCalendar(); }; $("calNext").onclick = () => { calWeek++; renderCalendar(); }; $("calToday").onclick = () => { calWeek = 0; renderCalendar(); };
 function avatar(id, size){ const av = el("span","av"); av.dataset.id = id; av.style.backgroundImage = `url(${charUrl(id,"front-left")})`; av.style.borderColor = id === "owner" ? "var(--accent)" : colorFor(id); if (size) { av.style.width = av.style.height = size + "px"; } return av; }
 function stateChip(st){ const s = AGENT_STATE[st] || AGENT_STATE.idle; const c = el("span","chip "+s.cls); c.append(el("span","dot"), s.en); return c; }
 function renderRoster(){
@@ -1436,6 +1584,7 @@ function renderBoard(){
         b.append(el("span","t", t.title_en || t.id), el("span","ph-tag ph-" + phaseOf(t), phaseName(phaseOf(t))));
         const os = openSessionFor(t.id);
         if (os) { const q = el("span","qbadge go","Question open"); q.title = "Go to the session"; q.dataset.session = os.id; b.append(q); }
+        const pl = sched.byTask[t.id]; if (pl && !pl.done) { const tm = el("span","est", `${fmtDur(estOf(t))} · ends ${fmtWhen(pl.e)}`); b.append(tm); if (pl.lateBy || pl.lateDeps?.length) b.append(el("span","late-tag", [lateText(pl), pl.lateDeps?.length ? "after " + pl.lateDeps.join(", ") : ""].filter(Boolean).join(" · "))); }
         const m = el("span","meta"); m.append(el("span","mono", t.id), el("span","note", (Array.isArray(t.test_cases) && t.test_cases.length) ? `${t.test_cases.length} test case${t.test_cases.length === 1 ? "" : "s"}` : ""));
         b.append(m); b.onclick = e => e.target.dataset.session ? go("#session/" + encodeURIComponent(e.target.dataset.session)) : go("#task/" + encodeURIComponent(t.id)); cell.append(b);
       });
@@ -1449,6 +1598,7 @@ function openTask(id){
   const top = el("div"); top.append(el("span","mono", `${t.id} · ${nameOf(t.session)}`), el("h3", null, t.title_en || t.id)); body.append(top);
   const st = STATES.find(s => s.k === t.state); const sr = el("div"); sr.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center"; const sc = el("span","chip"); sc.textContent = st ? st.en : (t.state || ""); sr.append(sc); if (t.feature) sr.append(flabel(t.feature)); if (versions().length) sr.append(el("span","chip", verName(verOf(t)))); sr.append(el("span","chip", "Phase: " + phaseName(phaseOf(t)))); body.append(sr);
   if (t.summary_en) { const d = el("div"); d.append(el("div","lbl","Summary"), el("div", null, t.summary_en)); body.append(d); }
+  body.append(timeBox(t));
   if (t.description_en) { const d = el("div"); d.append(el("div","lbl","Description")); String(t.description_en).split(/\n{2,}/).forEach(x => d.append(el("p", null, x))); body.append(d); }
   if (Array.isArray(t.acceptance_en) && t.acceptance_en.length) { const d = el("div"); d.append(el("div","lbl","Acceptance criteria")); const ul = el("ul"); t.acceptance_en.forEach(a => ul.append(el("li", null, a))); d.append(ul); body.append(d); }
   const tcs = Array.isArray(t.test_cases) ? t.test_cases : [];
@@ -1656,6 +1806,9 @@ function renderAgentWork(){
     b.onclick = () => go("#task/" + encodeURIComponent(t.id)); tl.append(b); });
   if (!shownT.length) tl.append(el("div","note", mine.length ? "None here." : "No tasks yet."));
   box.append(tl);
+  const cw = el("div","ag-wh"); cw.append(el("h3", null, "Calendar"));
+  const cb = el("button","btn-lite","Open in Calendar"); cb.type = "button"; cb.onclick = () => { $("agentDlg").close(); calWho = id; calWeek = 0; renderCalendar(); showTab("calendar"); }; cw.append(cb);
+  box.append(cw, weekGrid(sched.byAgent[id] || []));
   const conv = sessions.filter(s => (s.members || []).includes(id)).sort(sortByLast), openC = conv.filter(s => s.state === "open");
   const ch = el("div","ag-wh"); ch.append(el("h3", null, `Conversations (${openC.length} open of ${conv.length})`),
     viewChips(agentConvView, [["open","Open"],["done","Archive"],["all","All"]], v => agentConvView = v));
@@ -2464,7 +2617,7 @@ $("rsSave").onclick = async () => { const rooms = {};
   try { await db.doc("meta/office").update({rooms}); $("rsNote").textContent = "Saved. Rooms open and close by the new sizes."; } catch (err) { $("rsNote").textContent = writeError(err); } };
 $("rsReset").onclick = async () => { $("rsNote").textContent = "Saving…";
   try { await db.doc("meta/office").update({rooms:{}}); document.activeElement.blur(); renderSettings(); $("rsNote").textContent = "Back to the defaults."; } catch (err) { $("rsNote").textContent = writeError(err); } };
-function renderAll(){ renderSettings(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+function renderAll(){ buildSchedule(); renderSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);

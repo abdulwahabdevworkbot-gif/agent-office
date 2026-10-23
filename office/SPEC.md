@@ -9,7 +9,7 @@ The owner's requirements for the office page. Keep all of them when publishing o
 - **Everyone stands** (the owner's rule, 2026-10-23): the rooms are the owner's drawings without chairs, every agent stands at its spot (a desk, a table, a game) and every character keeps the direction it was drawn in; nobody sits or turns. Walking still goes around the furniture. Near-identical characters (c22, c29, c30, c32, c33, c34) are not offered in the picker.
 - **Room sizes** (the owner's rule, Settings tab): for the Open office, the Games & lounge and the Idle room, the owner sets the most people a room holds and how full it gets (50 to 100%) before an exact copy opens for the next person; extra copies close once fewer people need them. Saved in `meta/office.rooms` as `{main|game|idle: {max, at}}`; defaults are every spot in the picture, at 100% for the Open office and 80% for the others.
 - **Open office** (the owner's picture, 2026-10-23): the work room is a large open-plan office (L desk, two desks, shelves); rooms show two per row.
-- Four tabs: **Office**, **Roadmap**, **Chat** (with the count of open conversations) and **Task board**.
+- Tabs: **Office** (with **Needs you** on top: who waits for the owner, who is blocked, tasks to approve and questions, each with its answer button), **Roadmap**, **Chat**, **Task board**, **Calendar**, **Reviews**, **Team** and **Settings**. The header counts open where they point.
 - Office tab: six rooms (Manager's office and Main office, then Meeting room and Huddle room, then Games & lounge and Idle room); hovering a room zooms it (stacked, no zoom, on phones).
   - Manager's office: the owner ("You") and `office-manager` as the assistant, seated at the desk; agents in state `waiting` come and stand here.
   - Meeting room: a conference table with chairs. Agents who are talking to each other (an agent-to-agent message in the last 15 minutes) and the members of every open conversation walk here and sit at the table; the owner takes the head seat. The room label names each open conversation.
@@ -53,6 +53,14 @@ The owner's requirements for the office page. Keep all of them when publishing o
 - **You join a talk** (the owner's rule): when two agents are talking and you write in their talk, you join it: the composer says "Join in", your message and their answers stay in that talk (`messages.pair`), and in the office you walk over and sit with them ("... & You"). Writing in a session you weren't in adds you to its members. You sit with the talk you wrote in last.
 - **Rooms size by who is in them** (the owner's rule): an empty room is smaller, a room with people is normal, and a room with 4 or more people is a little bigger; rooms resize smoothly as people move.
 - **Text stays inside its box:** long messages, links and task titles wrap inside the discussion panel and the dialogs, and the composer's drop-downs never widen the panel, at any window size.
+
+## Calendar (the owner's rule, 2026-10-23)
+
+- Every agent has its own calendar of its tasks and meetings: the **Calendar** tab (`#calendar`; "Everyone" lists each agent's now, next and when it is free, lates first; picking a person shows a 7-day week), a week on the agent page, a **Time** row in the task dialog and a time line on each board card.
+- Each task has `estimate_min` (default 60) and `depends_on[]` (task ids that must finish first). The plan is computed in the page, never stored: per agent, tasks run one after another (in progress first, then by order), each starting no sooner than the end of its dependencies; meetings and sessions (`at` or `opened_at`, `duration_min`, default 30) are busy time that tasks flow around. An open task ends no sooner than now, so a late dependency pushes everything after it.
+- `due_at` (or `due`) marks a deadline: a task planned past it shows "Late by ...", and a task pushed by a late dependency shows "Moved: waits for X, which runs late". The Calendar tab's count is the number of late tasks.
+- Agents work around the clock by default; `meta/office.workday` (`start`, `end` hours, `days` 0-6) sets working hours.
+- A meeting set for later is a session with `state: "scheduled"`, `at` and `duration_min`; it shows in its members' calendars, not in the rooms.
 
 ## Data (the page's `db`)
 - `agents/<session-id>` also keeps the agent page fields: `instructions_en`, `personality_en`, `notes_en`, `hobbies[]`, `look` (`sprite`, `hair`, `shirt` as #rrggbb), `profile_updated_at`, `relayed`.
