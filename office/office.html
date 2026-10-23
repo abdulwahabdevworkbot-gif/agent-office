@@ -321,6 +321,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .inbox-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
 .inbox-head h2{margin:0}
 .inbox-head .row-wrap{margin-left:auto}
+.sum-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);align-self:center;margin-left:6px}
 .since{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:13px}
 .since b{margin-right:4px}
 .since .chip.go{cursor:pointer}
@@ -1020,7 +1021,7 @@ function renderStats(){
   const view = depts().some(d => d.id === curDept) ? curDept : "hq", now = new Date(), day = localDay(now), list = deptTasks(view);
   const when = el("span","when");
   when.append(el("b", null, now.toLocaleDateString("en-GB", {calendar:"gregory", weekday:"short", day:"numeric", month:"short", year:"numeric"})), el("span","tm", now.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"})));
-  bar.replaceChildren(when);
+  bar.replaceChildren(when, el("span","sum-lbl","Tasks"));
   ST_KINDS.forEach(s => { const n = list.filter(t => s.f(t, day)).length; const b = el("button","st-chip"); b.type = "button"; b.style.setProperty("--c", s.c);
     b.append(el("span","dot"), s.en, el("b", null, String(n))); b.disabled = !n; b.setAttribute("aria-expanded", String(statKind === s.k && !!n)); b.setAttribute("aria-controls","statsPop");
     b.onclick = () => { statKind = statKind === s.k ? "" : s.k; renderStats(); }; bar.append(b); });
@@ -1664,9 +1665,11 @@ function renderSummary(){
   const counts = {}; agents.forEach(a => counts[a.state||"idle"] = (counts[a.state||"idle"]||0)+1);
   const goChip = (c, fn, tip) => { const b = el("button", c.className + " go"); b.type = "button"; b.append(...c.childNodes); b.title = tip; b.onclick = fn; return b; };
   const toInbox = () => { showTab("office"); $("inbox").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"}); };
+  box.append(el("span","sum-lbl","Agents"));
   ["waiting","working","blocked","done","idle"].forEach(k => { if (counts[k]) { const c = stateChip(k); c.lastChild.textContent = `${AGENT_STATE[k].en}: ${counts[k]}`;
     box.append(k === "waiting" || k === "blocked" ? goChip(c, toInbox, "Show them in Needs you") : c); } });
   const open = tasks.filter(t => t.state !== "done").length;
+  box.append(el("span","sum-lbl","Work"));
   box.append(goChip(el("span","chip", `Open tasks: ${open}`), () => showTab("board"), "Open the task board"));
   const os = sessions.filter(x => x.state === "open").length; if (os) { const c = stateChip("waiting"); c.lastChild.textContent = `Open sessions: ${os}`; box.append(goChip(c, () => showTab("chat"), "Open the chat")); }
   $("taskCount").textContent = tasks.length ? String(tasks.length) : "";
