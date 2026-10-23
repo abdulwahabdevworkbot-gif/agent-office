@@ -202,7 +202,7 @@ Forty-one characters from different cultures. Pick one for each agent in its pag
 
 ![Call a meeting](docs/images/meeting-call.webp)
 
-**The meeting:** the discussion, with its room beside it and the attendees seated.
+**The meeting:** the discussion, with its room beside it and the attendees standing at the table.
 
 ![The meeting and its room](docs/images/chat.webp)
 
