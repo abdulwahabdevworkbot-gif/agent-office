@@ -351,6 +351,26 @@ h2{font-weight:700;font-size:19px;margin:0}
 @media (max-width:760px){.cal-row{grid-template-columns:1fr}}
 .t-time{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.t-warn{color:var(--bad);font-weight:600}
 .card .est{font-size:11.5px;color:var(--muted)}.card .late-tag{font-size:11.5px;color:var(--bad);font-weight:600}
+/* Call a meeting: topic, when, people, room */
+#meetDlg{width:min(860px,calc(100% - 24px))}
+.dlg.mt{padding-bottom:0}
+.mt-topic{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;resize:vertical;min-height:56px}
+.mt-chips{display:flex;flex-wrap:wrap;gap:6px}
+.mt-when,.mt-ph{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.mt-when .lbl,.mt-ph .lbl{margin:0 4px 0 0}.mt-when .lbl:not(:first-child){margin-left:10px}
+.mt-when input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+.mt-ph input{margin-left:auto;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 9px;min-width:0;width:min(240px,100%)}
+.mt-sug{display:flex;flex-wrap:wrap;gap:6px}
+.mt-p{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--accent);background:var(--doing-bg);border-radius:999px;padding:2px 4px 2px 3px;font-size:13px}
+.mt-x{all:unset;cursor:pointer;width:18px;height:18px;border-radius:50%;text-align:center;line-height:18px;color:var(--muted)}.mt-x:hover,.mt-x:focus-visible{background:var(--line);color:var(--ink)}
+.mt-list{max-height:min(34vh,320px);overflow:auto;padding:2px}
+.mt-warn{font-size:13px;color:var(--warn)}.mt-ok{color:var(--ok)}
+.mt-foot{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);margin:0 -20px;padding:10px 20px 14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.mt-info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:600}
+.mt-thumb{width:64px;height:44px;border-radius:6px;background:#10151c center/contain no-repeat;border:1px solid var(--line)}
+.up-row{all:unset;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr);gap:2px 8px;padding:7px 9px;border:1px dashed var(--line);border-radius:8px}
+.up-row:hover,.up-row:focus-visible{border-color:var(--accent)}
+.up-row .tm{font-family:var(--font-mono);font-size:12px;color:var(--warn)}
 .office-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.office-split{grid-template-columns:1fr}}
 .chat{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;min-height:460px;min-width:0;overflow:hidden}
@@ -1089,11 +1109,13 @@ function meetingGroups(){
     if (m.pair && m.pair.split("|").every(x => ids.has(x))) { const was = pairs.get(m.pair); pairs.set(m.pair, was || m.from === "owner"); return; }
     if (ids.has(m.from) && ids.has(m.to) && m.from !== m.to) { const k = [m.from, m.to].sort().join("|"); pairs.set(k, pairs.get(k) || false); } });
   /* when you write in two agents' talk you join it: you sit with them in the room */
+  groups.forEach(g => { const s = g.key.startsWith("s:") && sessions.find(x => x.id === g.key.slice(2)); g.meeting = isMeeting(s) ? 1 : 0; g.prefer = s?.room === "huddle" ? "huddle" : ""; });
   pairs.forEach((withOwner, k) => groups.push({key:"p:" + k, label:k.split("|").map(nameOf).join(" & ") + (withOwner ? " & You" : ""), ids:[...(withOwner ? ["owner"] : []), ...k.split("|")]}));
   /* you sit with the talk you wrote in last */
   const lastOwner = msgs.filter(m => m.from === "owner" && (m.session || m.pair)).sort((x, y) => String(y.at).localeCompare(String(x.at)))[0];
   const mine = lastOwner && groups.find(g => g.key === (lastOwner.session ? "s:" + lastOwner.session : "p:" + lastOwner.pair) && g.ids.includes("owner"));
   if (mine) groups.forEach(g => { if (g !== mine) g.ids = g.ids.filter(x => x !== "owner"); });
+  groups.sort((a, b) => (b.meeting || 0) - (a.meeting || 0) || (a.prefer === "huddle") - (b.prefer === "huddle") || b.ids.length - a.ids.length);
   return groups;
 }
 /* where everyone should be: Map id -> {room, spot}
@@ -1109,7 +1131,7 @@ function plan(){
     const ids = g.ids.filter(id => !place.has(id)).sort((a, b) => (b === "owner") - (a === "owner"));
     if (!ids.length) { const p = place.get(g.ids[0]); g.where = p?.room; g.table = p?.table; return; }
     let room = "meet", p;
-    if (big) { const g2 = tables.length, local = g2 % N_TABLES; room = roomKey("huddle", Math.floor(g2 / N_TABLES) + 1); ensureRoom(room); tables.push(true);
+    if (big || g.prefer === "huddle") { const g2 = tables.length, local = g2 % N_TABLES; room = roomKey("huddle", Math.floor(g2 / N_TABLES) + 1); ensureRoom(room); tables.push(true);
       p = {room, table:local, slots:tableSlots(local)}; }
     else { big = true; p = {room, table:null, slots:SLOTS.meet.map((_, i) => i)}; }
     g.where = room; g.table = p.table;
@@ -1258,7 +1280,8 @@ function drawScene(){
   const roomLabel = (room, list, empty) => { const sm = ROOMS[room].querySelector(".label small"); sm.replaceChildren();   // each title isolated, so Arabic and English don't mix up
     if (!list.length) { sm.textContent = empty; return; }
     list.forEach(([pre, t], i) => { if (i) sm.append(" · "); if (pre) sm.append(pre); sm.append(el("bdi", null, t)); }); };
-  roomLabel("meet", big.map(g => ["", g.label]), "Free");
+  const nextUp = sessions.filter(s => s.state === "scheduled" && s.room !== "huddle").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0];
+  roomLabel("meet", big.map(g => ["", g.label]), nextUp ? `Free · next ${fmtWhen(Date.parse(nextUp.at))}: ${nextUp.title_en || "Meeting"}` : "Free");
   renderTalkRoom();
   roomsOf("huddle").forEach(k => roomLabel(k, groups.filter(g => g.where === k).map(g => [`Table ${g.table + 1}: `, g.label]), `${N_TABLES} free tables`));
   Object.keys(ROOMS).filter(k => typeOf(k) === "main" && k !== "main").forEach(k => { const n = [...out.values()].filter(p => p.room === k).length; ROOMS[k].querySelector(".label small").textContent = n ? `Working · ${n}` : "Free desks"; });
@@ -1356,6 +1379,12 @@ function renderInbox(){
     if (!last || last.from === "owner" || !(last.kind === "question" || last.to === "owner")) return;
     items.push({k:isMeeting(x) ? "Question in a meeting" : "Question for you", c:"var(--warn)", who:last.from, t:x.title_en || x.task || "Conversation", s:`${nameOf(last.from)}: ${last.text || ""}`, at:last.at,
       acts:[["Answer", () => { viewSession(x.id); showTab("chat"); $("text").focus(); }, true]]}); });
+  sessions.filter(x => x.state === "scheduled" && Date.parse(x.at || "") - Date.now() < 60 * 6e4).forEach(x => {
+    items.push({k:"Meeting soon", c:"var(--accent)", who:"coordinator", t:x.title_en || "Meeting", s:`${fmtWhen(Date.parse(x.at))} · ${(x.members || []).length} people · ${x.duration_min || 30} min`, at:x.scheduled_at,
+      acts:[["Start now", () => { db?.doc("sessions/" + x.id).update({state:"open", opened_at:new Date().toISOString(), at:new Date().toISOString()}); }, true], ["Open", () => go("#session/" + encodeURIComponent(x.id))]]}); });
+  sessions.filter(x => x.state === "open" && isMeeting(x) && x.duration_min && Date.parse(x.opened_at || x.at || "") + x.duration_min * 6e4 < Date.now()).forEach(x => {
+    items.push({k:"Time is up", c:"var(--ok)", who:"coordinator", t:x.title_en || "Meeting", s:`Planned for ${x.duration_min} min. Wrap it up, or keep going.`, at:x.opened_at,
+      acts:[["Wrap up", () => closeSession(x.id, "owner"), true], ["Open", () => go("#session/" + encodeURIComponent(x.id))]]}); });
   const w = agents.filter(a => a.state === "working").length;
   $("inboxSum").textContent = items.length ? `${items.length} thing${items.length === 1 ? "" : "s"} for you · ${w} agents working` : "";
   if (!items.length) { box.append(el("div","inbox-empty", `Nothing needs you right now. ${w} agents are working.`)); return; }
@@ -1635,13 +1664,13 @@ const lastOf = id => { let l = null; msgs.forEach(m => { if (id ? m.session === 
 const fmtShort = iso => { try { const d = new Date(iso), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"}) : d.toLocaleDateString("en-GB", {day:"numeric", month:"short"}); } catch { return ""; } };
 function convRow(s){
   const on = s ? chatSess === s.id : (!chatSess && !chatPair);
-  const b = el("button","conv-row" + (on ? " on" : "") + (s && s.state !== "open" ? " closed" : "")); b.type = "button";
+  const b = el("button","conv-row" + (on ? " on" : "") + (isDone(s) ? " closed" : "")); b.type = "button";
   if (on) b.setAttribute("aria-current","true");
   const last = lastOf(s ? s.id : null);
   const top = el("span","cr-top"); top.append(el("b", null, s ? (s.title_en || "Conversation") : "Team discussion"), el("span","note", last ? fmtShort(last.at) : ""));
   const mid = el("span","cr-mid"); mid.append(el("span","meet-tag", s ? convKind(s) : "Everyone"));
-  if (s) { const f = el("span","faces"); (s.members || []).slice(0, 7).forEach(m => f.append(avatar(m, 18))); mid.append(f); if (s.state !== "open") mid.append(el("span","tp-tag closed","Done")); }
-  const pv = el("span","cr-prev", s && s.state !== "open" && s.resolution_en ? s.resolution_en : last ? `${nameOf(last.from)}: ${last.text || ""}` : "No messages yet");
+  if (s) { const f = el("span","faces"); (s.members || []).slice(0, 7).forEach(m => f.append(avatar(m, 18))); mid.append(f); if (s.state === "scheduled") mid.append(el("span","tp-tag", "Scheduled " + fmtWhen(Date.parse(s.at)))); if (isDone(s)) mid.append(el("span","tp-tag closed","Done")); }
+  const pv = el("span","cr-prev", isDone(s) && s.resolution_en ? s.resolution_en : last ? `${nameOf(last.from)}: ${last.text || ""}` : "No messages yet");
   b.append(top, mid, pv);
   b.onclick = () => { s ? viewSession(s.id) : filterChat(""); if (matchMedia("(max-width:900px)").matches) $("h-chat").scrollIntoView({behavior: reduce ? "auto" : "smooth"}); };
   return b;
@@ -1650,10 +1679,15 @@ const sortByLast = (a, b) => String(lastOf(b.id)?.at || b.opened_at || "").local
 function renderSessions(){
   const box = $("sessList"); box.replaceChildren(convRow(null));
   const open = sessions.filter(s => s.state === "open").sort(sortByLast);
+  const up = sessions.filter(s => s.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")));
+  if (up.length) { box.append(el("div","lbl","Coming up")); up.forEach(s => { const b = el("button","up-row"); b.type = "button";
+    b.append(el("span","tm", fmtWhen(Date.parse(s.at))), el("b", null, s.title_en || "Meeting"), el("span"), el("span","note", `${(s.members || []).length} people · ${s.duration_min || 30} min · ${s.room === "huddle" ? "Huddle table" : "Meeting room"}`));
+    b.onclick = () => go("#session/" + encodeURIComponent(s.id)); box.append(b); }); }
+  if (up.length && open.length) box.append(el("div","lbl","Open now"));
   open.forEach(s => box.append(convRow(s)));
   if (!open.length) box.append(el("div","note","No open conversations. Call a meeting, or ask about a task."));
   $("chatCount").textContent = open.length || "";
-  const closed = sessions.filter(s => s.state !== "open").sort((a, b) => String(b.closed_at || b.opened_at || "").localeCompare(String(a.closed_at || a.opened_at || "")));
+  const closed = sessions.filter(s => s.state !== "open" && s.state !== "scheduled").sort((a, b) => String(b.closed_at || b.opened_at || "").localeCompare(String(a.closed_at || a.opened_at || "")));
   $("archCount").textContent = closed.length;
   const q = archQ.trim().toLowerCase(), ab = $("archList"); ab.replaceChildren();
   const hits = closed.filter(s => !q || [s.title_en, s.resolution_en, convKind(s), s.task, ...(s.members || []).map(nameOf)].some(x => String(x || "").toLowerCase().includes(q)) || msgs.some(m => m.session === s.id && String(m.text || "").toLowerCase().includes(q)));
@@ -2091,49 +2125,110 @@ function askForm(t, host){
   };
 }
 let openSessAfter = null;
+/* Call a meeting (journey review + council, 2026-10-23): topic first, then the people it needs (suggested ones ticked, Everyone one
+   click away), when (now or later, with a free-time finder), how long, and the room it will take. A later meeting is a
+   session with state "scheduled": it sits in its members' calendars and opens by itself at its time. */
+const MEET_PURPOSE = [["discuss","Discussion"],["decide","Decision needed"],["follow","Follow-up"]];
+const roomForCount = n => n <= 6 ? {key:"huddle", name:"Huddle table", bg:"huddle"} : {key:"meet", name:`Meeting room (${meetBg(n).split("-")[1]} seats)`, bg:meetBg(n)};
+const busyAt = (id, s, e, skip) => (sched.byAgent[id] || []).find(x => x.kind === "meet" && x.sess.id !== skip && x.s < e && x.e > s);
+function suggestFor(topic, taskId){
+  const score = new Map(), add = (id, n) => { if (id && id !== "owner" && agentById(id)) score.set(id, (score.get(id) || 0) + n); };
+  const t = taskId && tasks.find(x => x.id === taskId);
+  if (t) { add(t.session, 10); add(t.author || "business-analyst", 5); depsOf(t).forEach(d => add(tasks.find(x => x.id === d)?.session, 4));
+    tasks.filter(x => depsOf(x).includes(t.id)).forEach(x => add(x.session, 3)); if (t.feature) tasks.filter(x => x.feature === t.feature && !isClosed(x)).forEach(x => add(x.session, 1)); }
+  const words = String(topic || "").toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 2);
+  if (words.length) agents.forEach(a => { const hay = `${nameOf(a.id)} ${roleOf(a) || ""} ${a.id}`.toLowerCase(); const hits = words.filter(w => hay.includes(w)).length; if (hits) add(a.id, 3 * hits); });
+  const cs = chatSess && sessions.find(x => x.id === chatSess); if (cs) (cs.members || []).forEach(m => add(m, 2));
+  score.delete("coordinator");
+  return [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([id]) => id);
+}
 function callMeeting(){
-  const body = $("meetBody"); body.replaceChildren();
-  body.append(el("h3", null, "Call a meeting"), el("div","note","Everyone on this product is ticked. Untick who you don't need. Each one answers from their own role; the Coordinator runs the meeting."));
-  const list = agents.filter(a => a.id !== "owner");
-  const head = el("div","row-wrap"), count = el("span","note");
-  const allB = el("button","linkish","Everyone"), noneB = el("button","linkish","Only the Coordinator"); allB.type = noneB.type = "button";
-  head.append(allB, noneB, count);
-  const grid = el("div","picks"), boxes = [];
-  list.forEach(a => { const lab = el("label","pick"); const cb = el("input"); cb.type = "checkbox"; cb.value = a.id; cb.checked = true;
-    if (a.id === "coordinator") { cb.disabled = true; lab.title = "The Coordinator runs every meeting"; }
-    const tx = el("span"); tx.append(el("b", null, nameOf(a.id)), el("small", null, a.id === "coordinator" ? "Runs the meeting" : roleOf(a) || a.id));
-    lab.append(cb, avatar(a.id, 30), tx); grid.append(lab); boxes.push(cb); cb.onchange = upd; });
-  function upd(){ const n = boxes.filter(b => b.checked).length; count.textContent = `${n} of ${boxes.length} invited`; }
-  allB.onclick = () => { boxes.forEach(b => b.checked = true); upd(); };
-  noneB.onclick = () => { boxes.forEach(b => b.checked = b.disabled); upd(); };
-  upd();
-  const about = chatTask && tasks.find(t => t.id === chatTask);
-  let aboutId = about ? about.id : null;
+  const body = $("meetBody"); body.replaceChildren(); body.classList.add("mt");
+  const about = chatTask && tasks.find(t => t.id === chatTask); let aboutId = about ? about.id : null;
+  const list = agents.filter(a => a.id !== "owner").sort((a, b) => (a.id !== "coordinator") - (b.id !== "coordinator") || nameOf(a.id).localeCompare(nameOf(b.id)));
+  const picked = new Set(["coordinator"]); let touched = false, purpose = "discuss", when = "now", dur = 30, atVal = "", q = "", dept = "";
+  body.append(el("h3", null, "Call a meeting"));
+  /* 1. topic */
+  const ta = el("textarea"); ta.placeholder = "What do you want to talk about?"; ta.setAttribute("aria-label","Meeting topic"); ta.rows = 2; ta.className = "mt-topic";
   const ab = el("div","row-wrap");
-  if (about) { ab.append(el("span","note","About"), taskLink(about.id), el("span", null, about.title_en || "")); const x = el("button","linkish","Not about a task"); x.type = "button"; x.onclick = () => { aboutId = null; ab.remove(); }; ab.append(x); }
-  const ta = el("textarea"); ta.placeholder = "What do you want to talk about?"; ta.setAttribute("aria-label","Meeting topic"); enterSends(ta, () => start.click());
-  ta.style.cssText = "font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:6px 9px;min-height:80px;resize:vertical";
-  const r = el("div","row-wrap"); r.style.justifyContent = "space-between";
-  const note = el("span","note","");
-  const btns = el("span","row-wrap"); const cancel = el("button","btn-lite","Cancel"), start = el("button","btn","Start meeting"); cancel.type = start.type = "button"; btns.append(cancel, start);
-  r.append(note, btns);
-  body.append(head, grid); if (about) body.append(ab); body.append(ta, r);
+  if (about) { ab.append(el("span","note","About"), taskLink(about.id), el("span", null, about.title_en || "")); const x = el("button","linkish","Not about a task"); x.type = "button"; x.onclick = () => { aboutId = null; ab.remove(); resuggest(); }; ab.append(x); }
+  const pur = el("div","mt-chips"); MEET_PURPOSE.forEach(([k, l]) => { const b = el("button","chip-btn", l); b.type = "button"; b.setAttribute("aria-pressed", String(k === purpose)); b.onclick = () => { purpose = k; [...pur.children].forEach(c => c.setAttribute("aria-pressed", String(c === b))); }; pur.append(b); });
+  /* 2. when and how long */
+  const wh = el("div","mt-when"); const nowB = el("button","chip-btn","Now"), laterB = el("button","chip-btn","Later"); nowB.type = laterB.type = "button";
+  const at = el("input"); at.type = "datetime-local"; at.hidden = true; at.setAttribute("aria-label","Meeting time");
+  const freeB = el("button","linkish","Find a free time"); freeB.type = "button"; freeB.hidden = true;
+  const durs = el("span","mt-chips"); [15, 30, 45, 60].forEach(m => { const b = el("button","chip-btn", `${m} min`); b.type = "button"; b.setAttribute("aria-pressed", String(m === dur)); b.onclick = () => { dur = m; [...durs.children].forEach(c => c.setAttribute("aria-pressed", String(c === b))); upd(); }; durs.append(b); });
+  const setWhen = w => { when = w; nowB.setAttribute("aria-pressed", String(w === "now")); laterB.setAttribute("aria-pressed", String(w === "later")); at.hidden = freeB.hidden = w !== "later"; if (w === "later" && !at.value) findFree(); upd(); };
+  nowB.onclick = () => setWhen("now"); laterB.onclick = () => setWhen("later"); at.onchange = () => upd();
+  const toLocal = ms => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 6e4); return d.toISOString().slice(0, 16); };
+  function findFree(){ const step = 15 * 6e4; let t = Math.ceil((Date.now() + 10 * 6e4) / step) * step;
+    for (let i = 0; i < 7 * 96; i++, t += step) if (![...picked].some(id => busyAt(id, t, t + dur * 6e4))) break;
+    at.value = toLocal(t); upd(); }
+  freeB.onclick = findFree;
+  wh.append(el("span","lbl","When"), nowB, laterB, at, freeB, el("span","lbl","How long"), durs);
+  /* 3. people */
+  const ph = el("div","mt-ph"); const cnt = el("b"); const sugB = el("button","chip-btn","Suggested"), allB = el("button","chip-btn", `Everyone (${list.length})`), clrB = el("button","linkish","Only the Coordinator"); sugB.type = allB.type = clrB.type = "button";
+  const search = el("input"); search.type = "search"; search.placeholder = "Search people or roles"; search.setAttribute("aria-label","Search people"); search.autocomplete = "off";
+  ph.append(el("span","lbl","People"), cnt, sugB, allB, clrB, search);
+  const dch = el("div","mt-chips"); const dl = depts(); if (dl.length) [["", "All"], ["hq","HQ"], ...dl.map(d => [d.id, d.code])].forEach(([k, l]) => { const b = el("button","chip-btn", l); b.type = "button"; b.setAttribute("aria-pressed", String(k === dept)); b.onclick = () => { dept = k; [...dch.children].forEach(c => c.setAttribute("aria-pressed", String(c === b))); drawList(); }; dch.append(b); });
+  const sug = el("div","mt-sug"), grid = el("div","picks mt-list");
+  function drawSug(){ sug.replaceChildren(); [...picked].forEach(id => { const c = el("span","mt-p"); c.append(avatar(id, 22), el("span", null, nameOf(id)));
+      if (id !== "coordinator") { const x = el("button","mt-x","×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + nameOf(id)); x.onclick = () => { picked.delete(id); touched = true; drawSug(); drawList(); upd(); }; c.append(x); } else c.title = "The Coordinator runs every meeting";
+      sug.append(c); }); }
+  function drawList(){ grid.replaceChildren(); const qq = q.trim().toLowerCase();
+    list.filter(a => (!dept || (deptOf(a.id) || "hq") === dept) && (!qq || `${nameOf(a.id)} ${roleOf(a) || ""} ${a.id}`.toLowerCase().includes(qq))).forEach(a => {
+      const lab = el("label","pick"); const cb = el("input"); cb.type = "checkbox"; cb.checked = picked.has(a.id); cb.disabled = a.id === "coordinator";
+      const tx = el("span"); tx.append(el("b", null, nameOf(a.id)), el("small", null, a.id === "coordinator" ? "Runs the meeting" : roleOf(a) || ""));
+      cb.onchange = () => { cb.checked ? picked.add(a.id) : picked.delete(a.id); touched = true; drawSug(); upd(); };
+      lab.append(cb, avatar(a.id, 26), tx); grid.append(lab); });
+    if (!grid.children.length) grid.append(el("div","note","Nobody matches.")); }
+  function resuggest(){ if (touched) return; picked.clear(); picked.add("coordinator"); suggestFor(ta.value, aboutId).forEach(id => picked.add(id)); drawSug(); drawList(); upd(); }
+  sugB.onclick = () => { touched = false; resuggest(); };
+  allB.onclick = () => { list.forEach(a => picked.add(a.id)); touched = true; drawSug(); drawList(); upd(); };
+  clrB.onclick = () => { picked.clear(); picked.add("coordinator"); touched = true; drawSug(); drawList(); upd(); };
+  search.oninput = () => { q = search.value; drawList(); };
+  let sugT = 0; ta.oninput = () => { clearTimeout(sugT); sugT = setTimeout(resuggest, 350); };
+  enterSends(ta, () => start.click());
+  /* footer: count, room, warnings, start */
+  const foot = el("div","mt-foot"), info = el("div","mt-info"), thumb = el("span","mt-thumb"), note = el("span","note"), warn = el("div","mt-warn");
+  const cancel = el("button","btn-lite","Cancel"), start = el("button","btn","Start meeting"); cancel.type = start.type = "button";
+  info.append(thumb, el("span"), note); const btns = el("span","row-wrap"); btns.append(cancel, start); foot.append(info, btns);
+  function upd(){ const n = picked.size + 1, r = roomForCount(n); cnt.textContent = `${picked.size} invited`;
+    thumb.style.backgroundImage = `url(${A}rooms/${r.bg}.webp)`; info.children[1].textContent = `${n} people with you · ${r.name}`;
+    start.textContent = when === "later" ? "Schedule meeting" : "Start meeting";
+    warn.replaceChildren();
+    if (when === "later") { const s = Date.parse(at.value), e = s + dur * 6e4;
+      if (s) { const busy = [...picked].map(id => [id, busyAt(id, s, e)]).filter(([, b]) => b);
+        if (busy.length) warn.append(el("span", null, `Busy then: ${busy.slice(0, 4).map(([id, b]) => `${nameOf(id)} (${b.sess.title_en || "a meeting"})`).join(", ")}${busy.length > 4 ? ` and ${busy.length - 4} more` : ""}. `), Object.assign(el("button","linkish","Find a free time"), {type:"button", onclick:findFree}));
+        else warn.append(el("span","mt-ok", `Everyone is free ${fmtWhen(s)}–${fmtHM(e)}.`)); } } }
+  body.append(ta, ab, pur, wh, ph, dch, sug, grid, warn, foot);
   cancel.onclick = () => $("meetDlg").close();
   start.onclick = async () => {
     const text = ta.value.trim(); if (!text) { ta.focus(); note.textContent = "Write what the meeting is about."; return; }
     if (!db) { note.textContent = "Can't reach the office data right now."; return; }
+    const later = when === "later", s = later ? Date.parse(at.value) : Date.now();
+    if (later && (!s || s < Date.now() - 6e4)) { note.textContent = "Pick a time from now on."; at.focus(); return; }
     start.disabled = true;
     try {
-      const now = new Date().toISOString();
-      const members = ["owner", ...boxes.filter(b => b.checked).map(b => b.value)];
-      const ref = await db.collection("sessions").add({kind:"meeting", task:aboutId, title_en:text.length > 70 ? text.slice(0, 67) + "…" : text, opened_by:"owner", author_id:me, opened_at:now, members, state:"open", relayed:false});
-      await db.collection("messages").add({at:now, from:"owner", to:"session", session:ref.id, task:aboutId, kind:"question", text, decided_by:null, author_id:me, relayed:false});
-      quickReplies({session:ref.id, members, task:aboutId, text});
+      const now = new Date().toISOString(), atIso = new Date(s).toISOString(), members = ["owner", ...picked], r = roomForCount(members.length);
+      const doc = {kind:"meeting", task:aboutId, title_en:text.length > 70 ? text.slice(0, 67) + "…" : text, opened_by:"owner", author_id:me, members, relayed:false,
+        purpose, duration_min:dur, room:r.key, at:atIso, ...(later ? {state:"scheduled", scheduled_at:now} : {state:"open", opened_at:now})};
+      const ref = await db.collection("sessions").add(doc);
+      await db.collection("messages").add({at:now, from:"owner", to:"session", session:ref.id, task:aboutId, kind:purpose === "decide" ? "question" : "note", text:(purpose === "decide" ? "Decision needed: " : purpose === "follow" ? "Follow-up: " : "") + text, decided_by:null, author_id:me, relayed:false});
+      if (!later) quickReplies({session:ref.id, members, task:aboutId, text});
       $("meetDlg").close(); showTab("chat"); viewSession(ref.id); $("h-chat").scrollIntoView();
     } catch (err) { note.textContent = writeError(err); start.disabled = false; }
   };
+  setWhen("now"); resuggest();
   closeDialogs(); $("meetDlg").showModal(); ta.focus();
 }
+/* a scheduled meeting opens by itself at its time, and walks its people into the room */
+function openDueMeetings(){
+  if (!db || !canWrite) return;
+  sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now()).forEach(s => { s.state = "open";
+    db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at}).catch(() => {}); });
+}
+setInterval(() => { if (sessions.some(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now())) { openDueMeetings(); renderAll(); } }, 30000);
 $("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
 function writeError(err){
   if (err && err.code === "quota_exceeded") return "The office data is full. Ask the Office Manager to archive old messages.";
@@ -2459,10 +2554,11 @@ function filterChat(id){ chatTask = id || ""; chatSess = chatPair = ""; if (id) 
 function viewSession(id){ chatSess = id; chatTask = chatPair = ""; chatJump = true; pickers.forEach(p => p.refresh()); renderMsgs(); renderCompose(); renderSessions(); }
 function viewPair(key){ chatPair = key; chatTask = chatSess = ""; chatJump = true; const other = key.split("|").find(x => x !== "coordinator"); if (other && [...$("to").options].some(o => o.value === other)) $("to").value = other; pickers.forEach(p => p.refresh()); renderMsgs(); renderCompose(); }
 const isMeeting = s => s?.kind === "meeting";
+const isDone = s => !!s && s.state !== "open" && s.state !== "scheduled";
 /* the composer follows the view: inside a session or meeting it posts there */
 function renderCompose(){
   const s = chatSess && sessions.find(x => x.id === chatSess);
-  const inS = !!chatSess, open = !inS || !s || s.state === "open";
+  const inS = !!chatSess, open = !inS || !s || s.state === "open" || s.state === "scheduled";
   $("to").closest("label").hidden = inS || !!chatPair; $("composePickHost").closest(".field").hidden = inS;
   $("text").disabled = !open; $("send").disabled = !open || !canWrite;
   $("text").placeholder = !open ? "This conversation is done. Everyone is back at work." : inS ? "Write to everyone in this " + (isMeeting(s) ? "meeting…" : "session…") : chatPair ? "Join in: write to " + chatPair.split("|").map(nameOf).join(" & ") + "…" : "Write your reply or decision…";
@@ -2474,13 +2570,14 @@ function renderChatInfo(n){
   if (chatSess) { const s = sessions.find(x => x.id === chatSess);
     const h = el("span","view-head"); h.append(el("span","meet-tag", convKind(s)), el("b", null, s?.title_en || "Question"));
     const f = el("span","faces"); (s?.members || []).forEach(m => f.append(avatar(m, 20))); h.append(f);
-    if (s && s.state !== "open") h.append(el("span","tp-tag closed", "Done"));
+    if (s?.state === "scheduled") h.append(el("span","tp-tag", "Scheduled " + fmtWhen(Date.parse(s.at)) + ` · ${s.duration_min || 30} min`));
+    if (isDone(s)) h.append(el("span","tp-tag closed", "Done"));
     box.append(h, el("span","note", `${n} message${n === 1 ? "" : "s"}`));
     if (s?.task) box.append(taskLink(s.task));
     const w = el("button","linkish","Open in a window"); w.type = "button"; w.onclick = () => go("#session/" + encodeURIComponent(chatSess)); box.append(w, all());
     if (s && s.state === "open") box.append(peopleButton(s));
     if (s && s.state === "open" && canWrite) box.append(doneButton(s));
-    if (s && s.state !== "open" && s.resolution_en) box.append(el("span","note", s.resolution_en));
+    if (isDone(s) && s.resolution_en) box.append(el("span","note", s.resolution_en));
     return; }
   if (chatPair) { const ids = chatPair.split("|"); const h = el("span","view-head"); const f = el("span","faces"); ids.forEach(m => f.append(avatar(m, 20))); h.append(f, el("b", null, ids.map(nameOf).join(" & ")));
     box.append(h, el("span","note", `${n} message${n === 1 ? "" : "s"}`), all()); return; }
@@ -2617,7 +2714,7 @@ $("rsSave").onclick = async () => { const rooms = {};
   try { await db.doc("meta/office").update({rooms}); $("rsNote").textContent = "Saved. Rooms open and close by the new sizes."; } catch (err) { $("rsNote").textContent = writeError(err); } };
 $("rsReset").onclick = async () => { $("rsNote").textContent = "Saving…";
   try { await db.doc("meta/office").update({rooms:{}}); document.activeElement.blur(); renderSettings(); $("rsNote").textContent = "Back to the defaults."; } catch (err) { $("rsNote").textContent = writeError(err); } };
-function renderAll(){ buildSchedule(); renderSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+function renderAll(){ openDueMeetings(); buildSchedule(); renderSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);
@@ -2628,9 +2725,13 @@ renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderSt
   try { const w = user ? await user.can("data.write") : null; if (w === false) { canWrite = false; $("send").disabled = true; $("composeNote").textContent = "You can read this page but not post."; } } catch {}
   const onErr = () => { $("conn").textContent = "Live updates stopped. Reload the page."; };
   db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); $("conn").textContent = "Connected. Updates appear live."; renderAll(); }, onErr);
-  db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; if (tasks.length) renderAll(); const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {});
+  db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; renderAll(); const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {});
   db.collection("tasks").onSnapshot(s => { tasks = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
-  db.collection("messages").orderBy("at").limit(500).onSnapshot(s => { msgs = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
+  /* the newest 500 messages (an ascending query with a limit would keep the oldest); falls back if the db can't sort descending */
+  const subMsgs = desc => { try { (desc ? db.collection("messages").orderBy("at", "desc") : db.collection("messages").orderBy("at")).limit(500).onSnapshot(s => {
+      msgs = s.docs.map(d => ({id:d.id, ...d.data()})).sort((a, b) => String(a.at || "").localeCompare(String(b.at || ""))); renderAll(); }, err => desc ? subMsgs(false) : onErr(err)); }
+    catch (err) { if (desc) subMsgs(false); else onErr(err); } };
+  subMsgs(true);
   db.collection("sessions").onSnapshot(s => { sessions = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
   db.collection("reviews").onSnapshot(s => { reviews = s.docs.map(d => ({id:d.id, ...d.data()})); renderReviews(); }, () => {});
 })();
