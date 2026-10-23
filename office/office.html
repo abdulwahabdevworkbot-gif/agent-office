@@ -1375,7 +1375,11 @@ function play(){
   const r = lounge[Math.floor(Math.random() * lounge.length)];
   r.b.classList.add("playing"); setTimeout(() => r.b.classList.remove("playing"), 3600);
 }
-setInterval(play, 4100); setInterval(wander, 5200); setInterval(coffeeRun, 17000); setInterval(takeTurns, 2200); setInterval(drawScene, 30000);
+/* the little life only runs while someone can see the office (B11, council 2026-10-23); the chat's talk room keeps its turns */
+const seen = () => !document.hidden && curTab === "office";
+setInterval(() => seen() && play(), 4100); setInterval(() => seen() && wander(), 5200); setInterval(() => seen() && coffeeRun(), 17000);
+setInterval(() => !document.hidden && (curTab === "office" || curTab === "chat") && takeTurns(), 2200); setInterval(() => !document.hidden && drawScene(), 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) drawScene(); });
 function renderAssistant(){
   if (!agents.length) { $("assistantSay").textContent = "The office is empty. Agents move in when the product starts."; return; }
   const c = s => agents.filter(a => (a.state||"idle") === s).length;
@@ -1408,10 +1412,12 @@ function inlineReply(key, target, ph){
       quickReplies({session:doc.session || null, task:doc.task || null, to:doc.to, text, decision}); renderInbox(); }
     catch (err) { note.textContent = writeError(err); send.disabled = dec.disabled = false; } };
   send.onclick = () => go1(false); dec.onclick = () => go1(true); enterSends(ta, () => go1(false));
-  const r = el("div","row-wrap"); r.append(send, dec, note); w.append(ta, r); setTimeout(() => ta.focus(), 0); return w; }
+  const r = el("div","row-wrap"); r.append(send, dec, note); w.append(ta, r);
+  if (inboxOpen.get(key)?.focus) { inboxOpen.set(key, {draft:ta.value}); setTimeout(() => ta.focus(), 0); }   // focus only when the owner opens it, never on a redraw
+  return w; }
 /* the "!" over a character opens its card in Needs you, ready to answer */
 function openNeed(id){ const a = agentById(id); const key = (a?.state === "blocked" ? "b:" : "w:") + id;
-  inboxOpen.set(key, inboxOpen.get(key) || {}); inboxSent.delete(key); inboxAll = true; showTab("office"); renderInbox();
+  inboxOpen.set(key, {...(inboxOpen.get(key) || {}), focus:true}); inboxSent.delete(key); inboxAll = true; showTab("office"); renderInbox();
   $("inbox").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"}); }
 function renderInbox(){
   const box = $("inboxList"); if (!box) return;
@@ -1446,7 +1452,7 @@ function renderInbox(){
     items.push({k:"Time is up", c:"var(--ok)", who:"coordinator", t:x.title_en || "Meeting", s:`Planned for ${x.duration_min} min. Wrap it up, or keep going.`, at:x.opened_at,
       acts:[["Wrap up", () => closeSession(x.id, "owner"), true], ["Open", () => go("#session/" + encodeURIComponent(x.id))]]}); });
   tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).forEach(t => { const p = sched.byTask[t.id];
-    items.push({k:"Will be late", c:"var(--bad)", who:t.session || "coordinator", t:`${t.id} · ${t.title_en || ""}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), at:t.updated_at,
+    items.push({k:"Will be late", c:"var(--bad)", who:t.session || "coordinator", t:`${t.id} · ${t.title_en || ""}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), rel:p.due > Date.now() ? "due in " + fmtDur(Math.round((p.due - Date.now()) / 6e4)) : "past due",
       key:"l:" + t.id, inline:() => inlineReply("l:" + t.id, {to:t.session || "coordinator", task:t.id}, `Ask ${nameOf(t.session)} about ${t.id}…`),
       acts:[["Talk", "inline", true], ["Move the deadline", async () => { try { await db.doc("tasks/" + t.id).update({due_at:new Date(p.e).toISOString(), due_moved_by:"owner", updated_at:new Date().toISOString()}); } catch {} }], ["Task", () => openTask(t.id)]]}); });
   const w = agents.filter(a => a.state === "working").length;
@@ -1455,10 +1461,10 @@ function renderInbox(){
   if (!items.length) { box.append(el("div","inbox-empty", `Nothing needs you right now. ${w} agents are working.`)); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
     const c = el("div","ib"); c.style.setProperty("--c", it.c);
-    const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", ago(it.at)));
+    const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", it.rel || ago(it.at)));
     const a = el("div","ib-a"), open = it.key && inboxOpen.has(it.key), sent = it.key && inboxSent.get(it.key);
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
-      b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
+      b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
     if (sent) a.append(el("span","ib-sent", sent + " ✓"));
     c.append(avatar(it.who, 34), k, el("div","ib-t", it.t), el("div","ib-s", it.s), a);
     if (open && it.inline) { const x = el("div","ib-x"); x.append(it.inline()); c.append(x); c.classList.add("wide"); }
@@ -1500,9 +1506,9 @@ function buildSchedule(){
   while (left.length && guard++ < 500) {
     let moved = false;
     for (const [who, q] of Object.entries(queue)) {
-      const t = q.find(x => !byTask[x.id]); if (!t) continue;
+      /* the first task in this agent's order whose dependencies are planned; only a real cycle falls back to ignoring them */
+      const t = q.find(x => !byTask[x.id] && depsOf(x).every(d => byTask[d])) || (guard >= 400 ? q.find(x => !byTask[x.id]) : null); if (!t) continue;
       const deps = depsOf(t), ready = deps.every(d => byTask[d]);
-      if (!ready && guard < 400) continue;          // a dependency cycle falls back to ignoring the missing ones
       const depEnd = deps.reduce((a, d) => Math.max(a, byTask[d]?.e || 0), 0);
       const started = (t.state === "doing" || t.state === "review") ? Date.parse(t.started_at || t.updated_at || "") || now : 0;
       const base = Math.max(free[who] || 0, started ? Math.min(started, now) : now, Date.parse(t.start_at || "") || 0);
@@ -1511,7 +1517,7 @@ function buildSchedule(){
       let e = addWork(s, estOf(t), wd, b); if (started && e < now + 5 * 6e4) e = now + 5 * 6e4;   // still open: it ends no sooner than now
       const late = deps.filter(d => { const x = tasks.find(y => y.id === d), due = Date.parse(x?.due_at || (x?.due ? x.due + "T23:59:00" : "")); return byTask[d] && !byTask[d].done && due && byTask[d].e > due; });
       const due = Date.parse(t.due_at || (t.due ? t.due + "T23:59:00" : ""));
-      byTask[t.id] = {s:nextWork(s, wd), e, deps, depEnd, lateDeps:late, due:due || 0, lateBy:due && e > due ? e - due : 0, waits:depEnd > base};
+      byTask[t.id] = {s:nextWork(s, wd), e, deps, depEnd, cycle:!ready, lateDeps:late, due:due || 0, lateBy:due && e > due ? e - due : 0, waits:depEnd > base};
       free[who] = e; (byAgent[who] ||= []).push({kind:"task", s:byTask[t.id].s, e, t}); moved = true;
     }
     left = tasks.filter(t => !byTask[t.id]); if (!moved && guard < 400) guard = 400;
@@ -1523,7 +1529,7 @@ function buildSchedule(){
 const fmtWhen = ms => new Date(ms).toLocaleString("en-GB", {weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
 const fmtHM = ms => new Date(ms).toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
 const lateText = p => p.lateBy ? `Late by ${fmtDur(Math.round(p.lateBy / 6e4))}` : "";
-const whyText = p => p.lateDeps?.length ? `Moved: waits for ${p.lateDeps.join(", ")}, which ${p.lateDeps.length === 1 ? "runs" : "run"} late` : p.waits && p.deps?.length ? `Starts after ${p.deps.join(", ")}` : "";
+const whyText = p => p.cycle ? "Its dependencies loop back to it: check Needs first" : p.lateDeps?.length ? `Moved: waits for ${p.lateDeps.join(", ")}, which ${p.lateDeps.length === 1 ? "runs" : "run"} late` : p.waits && p.deps?.length ? `Starts after ${p.deps.join(", ")}` : "";
 function timeBox(t){   // the task dialog's Time row
   const p = sched.byTask[t.id]; const d = el("div"); d.append(el("div","lbl","Time"));
   const r = el("div","t-time"); r.append(el("span", null, `Takes ${fmtDur(estOf(t))}${t.estimate_min ? "" : " (default)"}`));
@@ -1543,7 +1549,7 @@ function calEvent(ev){
     b.onclick = () => go("#session/" + encodeURIComponent(s.id)); return b; }
   const t = ev.t, p = sched.byTask[t.id] || {}; if (t.feature) b.style.setProperty("--c", featColor(t.feature));
   if (p.lateBy) b.classList.add("late");
-  b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)} · ${fmtDur(estOf(t))}`), el("b", null, `${t.id} · ${t.title_en || ""}`));
+  b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)} · ${ev.part ? fmtDur(Math.max(1, Math.round((ev.e - ev.s) / 6e4))) + " of " : ""}${fmtDur(estOf(t))}`), el("b", null, `${t.id} · ${t.title_en || ""}`));
   const w = [lateText(p), whyText(p)].filter(Boolean).join(". "); if (w) b.append(el("span","why", w));
   b.onclick = () => go("#task/" + encodeURIComponent(t.id)); return b; }
 function weekStart(off){ const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay() + off * 7); return d; }
@@ -1553,7 +1559,7 @@ function weekGrid(evs){
     const col = el("div","cal-day" + (d.toDateString() === today ? " today" : "") + (wd.days.includes(d.getDay()) ? "" : " off"));
     const list = evs.filter(x => x.s < e && x.e > s);
     const h = el("div","cal-dh"); h.append(el("span", null, d.toLocaleDateString("en-GB", {weekday:"short", day:"numeric", month:"short"})), el("span", null, list.length ? String(list.length) : "")); col.append(h);
-    list.forEach(x => col.append(calEvent({...x, s:Math.max(x.s, s), e:Math.min(x.e, e)})));
+    list.forEach(x => col.append(calEvent({...x, s:Math.max(x.s, s), e:Math.min(x.e, e), part:x.s < s || x.e > e})));
     if (!list.length) col.append(el("span","note", wd.days.includes(d.getDay()) ? "Free" : "Day off"));
     g.append(col); }
   return g; }
@@ -1696,6 +1702,7 @@ function renderBoard(){
         const b = el("button","card s-"+s.k); b.type = "button"; b.dataset.task = t.id;
         if (t.feature) b.append(flabel(t.feature));
         b.append(el("span","t", t.title_en || t.id), el("span","ph-tag ph-" + phaseOf(t), phaseName(phaseOf(t))));
+        if (t.state !== "blocked" && !isClosed(t) && agentById(t.session)?.state === "blocked") b.append(el("span","late-tag", "Agent blocked"));
         const os = openSessionFor(t.id);
         if (os) { const q = el("span","qbadge go","Question open"); q.title = "Go to the session"; q.dataset.session = os.id; b.append(q); }
         const pl = sched.byTask[t.id]; if (pl && !pl.done) { const tm = el("span","est", `${fmtDur(estOf(t))} · ends ${fmtWhen(pl.e)}`); b.append(tm); if (pl.lateBy || pl.lateDeps?.length) b.append(el("span","late-tag", [lateText(pl), pl.lateDeps?.length ? "after " + pl.lateDeps.join(", ") : ""].filter(Boolean).join(" · "))); }
@@ -2261,7 +2268,7 @@ function callMeeting(){
       if (id !== "coordinator") { const x = el("button","mt-x","×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + nameOf(id)); x.onclick = () => { picked.delete(id); touched = true; drawSug(); drawList(); upd(); }; c.append(x); } else c.title = "The Coordinator runs every meeting";
       sug.append(c); }); }
   function drawList(){ grid.replaceChildren(); const qq = q.trim().toLowerCase();
-    list.filter(a => (!dept || (deptOf(a.id) || "hq") === dept) && (!qq || `${nameOf(a.id)} ${roleOf(a) || ""} ${a.id}`.toLowerCase().includes(qq))).forEach(a => {
+    list.filter(a => a.id !== "coordinator" && (!dept || (deptOf(a.id) || "hq") === dept) && (!qq || `${nameOf(a.id)} ${roleOf(a) || ""} ${a.id}`.toLowerCase().includes(qq))).forEach(a => {
       const lab = el("label","pick"); const cb = el("input"); cb.type = "checkbox"; cb.checked = picked.has(a.id); cb.disabled = a.id === "coordinator";
       const tx = el("span"); tx.append(el("b", null, nameOf(a.id)), el("small", null, a.id === "coordinator" ? "Runs the meeting" : roleOf(a) || ""));
       cb.onchange = () => { cb.checked ? picked.add(a.id) : picked.delete(a.id); touched = true; drawSug(); upd(); };
@@ -2278,7 +2285,7 @@ function callMeeting(){
   const foot = el("div","mt-foot"), info = el("div","mt-info"), thumb = el("span","mt-thumb"), note = el("span","note"), warn = el("div","mt-warn");
   const cancel = el("button","btn-lite","Cancel"), start = el("button","btn","Start meeting"); cancel.type = start.type = "button";
   info.append(thumb, el("span"), note); const btns = el("span","row-wrap"); btns.append(cancel, start); foot.append(info, btns);
-  function upd(){ const n = picked.size + 1, r = roomForCount(n); cnt.textContent = `${picked.size} invited`;
+  function upd(){ const n = picked.size + 1, r = roomForCount(n); cnt.textContent = `${picked.size} invited + you`;
     thumb.style.backgroundImage = `url(${A}rooms/${r.bg}.webp)`; info.children[1].textContent = `${n} people with you · ${r.name}`;
     start.textContent = when === "later" ? "Schedule meeting" : "Start meeting";
     warn.replaceChildren();
@@ -2310,10 +2317,9 @@ function callMeeting(){
 /* a scheduled meeting opens by itself at its time, and walks its people into the room */
 function openDueMeetings(){
   if (!db || !canWrite) return;
-  sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now()).forEach(s => { s.state = "open";
-    db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at}).catch(() => {}); });
-}
-setInterval(() => { if (sessions.some(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now())) { openDueMeetings(); renderAll(); } }, 30000);
+  sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now()).forEach(s => db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at}).catch(() => {}));
+}   // the snapshot that follows moves people into the room
+setInterval(openDueMeetings, 30000); setTimeout(openDueMeetings, 5000);
 $("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
 function writeError(err){
   if (err && err.code === "quota_exceeded") return "The office data is full. Ask the Office Manager to archive old messages.";
@@ -2816,7 +2822,7 @@ $("rsSave").onclick = async () => { const rooms = {};
   try { await db.doc("meta/office").update({rooms}); $("rsNote").textContent = "Saved. Rooms open and close by the new sizes."; } catch (err) { $("rsNote").textContent = writeError(err); } };
 $("rsReset").onclick = async () => { $("rsNote").textContent = "Saving…";
   try { await db.doc("meta/office").update({rooms:{}}); document.activeElement.blur(); renderSettings(); $("rsNote").textContent = "Back to the defaults."; } catch (err) { $("rsNote").textContent = writeError(err); } };
-function renderAll(){ openDueMeetings(); buildSchedule(); renderSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderDecisions(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+function renderAll(){ buildSchedule(); renderSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderDecisions(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);
