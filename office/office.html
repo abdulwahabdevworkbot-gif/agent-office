@@ -283,7 +283,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .arch summary::before{content:"▸";font-size:12px;color:var(--muted);width:12px}.arch[open] summary::before{content:"▾"}
 .arch summary:hover{background:var(--bg)}.arch summary:focus{outline:none}.arch summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 /* chat */
-.chat-layout{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr) minmax(300px,420px);gap:18px;align-items:start}
+.chat-layout{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr) minmax(260px,340px);gap:18px;align-items:start}
 .talk-side{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .talk-side h2{margin:0;font-size:16px}.talk-side .hint{margin:0}
 .talk-side .room{width:100%}
@@ -375,6 +375,17 @@ h2{font-weight:700;font-size:19px;margin:0}
 .up-row{all:unset;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr);gap:2px 8px;padding:7px 9px;border:1px dashed var(--line);border-radius:8px}
 .up-row:hover,.up-row:focus-visible{border-color:var(--accent)}
 .up-row .tm{font-family:var(--font-mono);font-size:12px;color:var(--warn)}
+/* chat (B6, council 2026-10-23): bubbles, your messages on the right, the composer writes first */
+.msg .body{background:var(--bg);border-radius:4px 10px 10px 10px;padding:7px 10px;justify-self:start;max-width:100%}
+.msg.owner{grid-template-columns:minmax(0,1fr) 36px}.msg.owner>.av{order:2}.msg.owner .who{justify-content:flex-end}
+.msg.owner .body{border-radius:10px 4px 10px 10px;justify-self:end}
+.msg.owner>div{display:grid}
+.msg:has(.k-decision) .body{box-shadow:inset 3px 0 0 var(--ok)}
+.c-row{justify-content:space-between}.c-btns{display:flex;gap:6px;margin-left:auto}
+.compose textarea{min-height:44px}
+.dec-log{border-top:1px solid var(--line);padding-top:8px;display:grid;gap:6px}.dec-log h2{font-size:15px;margin:0}
+.dec{border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:6px;padding:6px 8px;display:grid;gap:3px;font-size:13px}
+.dec.reopened{border-left-color:var(--idle);opacity:.75}.dec-top{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}.dec-t{overflow-wrap:anywhere}
 .office-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.office-split{grid-template-columns:1fr}}
 .chat{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;min-height:460px;min-width:0;overflow:hidden}
@@ -594,22 +605,21 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
         <div class="chat-filter"><span class="field">Show <span class="tp-host" id="chatPickHost"></span></span><span class="links" id="chatInfo"></span></div>
         <div class="msgs" id="msgs" aria-live="polite"></div>
         <form class="compose" id="compose">
-          <div class="row">
+          <textarea id="text" placeholder="Write your reply or decision…" aria-label="Message" rows="2"></textarea>
+          <div class="row c-row">
             <label for="to">To <select id="to"></select></label>
             <span class="field">Task <span class="tp-host" id="composePickHost"></span></span>
-            <label for="isDecision"><input type="checkbox" id="isDecision"> This is a decision</label>
+            <input type="checkbox" id="isDecision" hidden>
+            <span class="c-btns"><button class="btn-lite" id="sendDecision" type="button" title="Send it as your decision: the Coordinator restates it and turns it into tasks">Send as decision</button><button class="btn" id="send" type="submit">Send</button></span>
           </div>
-          <textarea id="text" placeholder="Write your reply or decision…" aria-label="Message"></textarea>
-          <div class="row" style="justify-content:space-between">
-            <span class="note" id="composeNote">Your message goes to the Coordinator, who passes it on.</span>
-            <button class="btn" id="send" type="submit">Send</button>
-          </div>
+          <span class="note" id="composeNote">Your message goes to the Coordinator, who passes it on.</span>
         </form>
       </div>
       <aside class="talk-side" id="talkSide" aria-label="Where this conversation sits">
         <h2 id="talkTitle">Meeting room</h2>
         <div class="room" id="talkRoom" aria-label="The room of this conversation"><span class="label">Meeting room<small></small></span></div>
         <p class="hint" id="talkHint"></p>
+        <div class="dec-log"><h2>Your decisions</h2><div id="decList"></div></div>
       </aside>
     </div>
   </section>
@@ -2389,6 +2399,23 @@ function renderSelects(){
   if (keep) to.value = keep;
   pickers.forEach(p => p.refresh());
 }
+$("sendDecision").onclick = () => { if (!$("text").value.trim()) { $("text").focus(); return; } $("isDecision").checked = true; $("compose").requestSubmit(); };
+/* the owner's decisions, newest first, each with where it was said and Reopen (B9, council 2026-10-23) */
+function renderDecisions(){
+  const box = $("decList"); if (!box) return; box.replaceChildren();
+  const list = msgs.filter(m => m.from === "owner" && m.kind === "decision").sort((a, b) => String(b.at || "").localeCompare(String(a.at || ""))).slice(0, 8);
+  if (!list.length) { box.append(el("div","note","None yet. Press \u201cSend as decision\u201d and it is kept here.")); return; }
+  list.forEach(m => { const r = el("div","dec" + (m.reopened ? " reopened" : "")); const s = m.session && sessions.find(x => x.id === m.session);
+    const where = s ? (s.title_en || "Conversation") : m.pair ? m.pair.split("|").map(nameOf).join(" & ") : m.to && m.to !== "session" ? "To " + nameOf(m.to) : "Team discussion";
+    const top = el("div","dec-top"); top.append(el("span","note", fmt(m.at)), el("span","note", where)); if (m.task) top.append(taskLink(m.task));
+    const acts = el("div","row-wrap"); const open = el("button","linkish","Open"); open.type = "button";
+    open.onclick = () => { if (m.session) viewSession(m.session); else if (m.pair) viewPair(m.pair); else { chatSess = chatPair = chatTask = ""; renderMsgs(); renderSessions(); renderCompose(); } };
+    acts.append(open);
+    if (!m.reopened && canWrite) { const re = el("button","linkish","Reopen"); re.type = "button"; re.title = "Take this decision back: the agents are told it is open again";
+      re.onclick = async () => { try { await db.doc("messages/" + m.id).update({reopened:true}); await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:m.to || "coordinator", session:m.session || null, pair:m.pair || null, task:m.task || null, kind:"owner", text:"I'm reopening my decision: \u201c" + m.text + "\u201d. Let's look at it again.", author_id:me, relayed:false}); } catch {} };
+      acts.append(re); } else if (m.reopened) acts.append(el("span","tp-tag closed","Reopened"));
+    r.append(top, el("div","dec-t", m.text || ""), acts); box.append(r); });
+}
 $("compose").addEventListener("submit", async e => {
   e.preventDefault();
   const text = $("text").value.trim(); if (!text) return;
@@ -2744,7 +2771,7 @@ $("rsSave").onclick = async () => { const rooms = {};
   try { await db.doc("meta/office").update({rooms}); $("rsNote").textContent = "Saved. Rooms open and close by the new sizes."; } catch (err) { $("rsNote").textContent = writeError(err); } };
 $("rsReset").onclick = async () => { $("rsNote").textContent = "Saving…";
   try { await db.doc("meta/office").update({rooms:{}}); document.activeElement.blur(); renderSettings(); $("rsNote").textContent = "Back to the defaults."; } catch (err) { $("rsNote").textContent = writeError(err); } };
-function renderAll(){ openDueMeetings(); buildSchedule(); renderSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+function renderAll(){ openDueMeetings(); buildSchedule(); renderSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderDecisions(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);
