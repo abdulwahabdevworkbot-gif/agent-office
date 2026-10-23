@@ -45,3 +45,12 @@ shawl). Shared part functions draw them in two views:
 - I kept the page's drop shadow and drew no contact shadow, so feet stay on the bottom row.
 - Point for the art director: the page gives agents without a saved look a random shirt colour, which also
   recolours a thobe, abaya or sari. You may want to skip that auto-tint for robe characters.
+
+## Batch 2 (Arab set)
+- I added 8 Arab characters, so 18 are active now. The first 10 stay featured.
+- New parts:
+  - `headwear_niqab`: a black hijab and a veil, with only the eye strip showing;
+  - `agal=False`: a shemagh draped over the head with no cord;
+  - a `long` beard.
+- The agal now sits lower, on the crown, and the ghutra crown is flatter. Thobes and abayas flare wider at the hem.
+- `ROBE_IDS` in chars.py lists the robe characters for the page's `ROBES` set.

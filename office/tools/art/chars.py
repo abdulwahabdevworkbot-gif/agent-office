@@ -521,7 +521,7 @@ def facial_hair(fig, ch, view, kind, c, role="hair"):
         fig.fill("M21.6 44 C23 52 30 59.6 39.8 60.4 C46 60.4 51.6 56 54.4 49 C52 53 47 55.4 43 55 C40 56.4 37 56 35 55 "
                  "C29 54 25 50 21.6 44Z", t["sh"], op=0.35)
         return
-    if kind in ("mustache", "goatee", "full", "short"):
+    if kind in ("mustache", "goatee", "full", "short", "long"):
         md = "M36.2 50.4 C37.6 48.4 40 48.2 41.2 49.2 C42.6 48.2 45 48.4 46.0 50.2 C44.6 50.8 43 50.6 41.2 50.0 C39.4 50.8 37.8 51.0 36.2 50.4Z"
     if kind == "goatee":
         fig.shape(md, c, role=role, lw=0.8, lc=shade(c, 0.6))
@@ -529,8 +529,8 @@ def facial_hair(fig, ch, view, kind, c, role="hair"):
                   lw=0.8, lc=shade(c, 0.6))
     elif kind == "mustache":
         fig.shape(md, c, role=role, lw=0.8, lc=shade(c, 0.6))
-    elif kind in ("short", "full"):
-        drop = 3.4 if kind == "full" else 0.8
+    elif kind in ("short", "full", "long"):
+        drop = {"full": 3.4, "long": 9.0}.get(kind, 0.8)
         d = ("M19.4 36 C19 44 21 50 25 55 C29 60 34 %s 39.8 %s C46 %s 52 58 55 50 C56.4 46 57 41 57.4 36.6 "
              "L54.4 40 C53.6 45 51 49 47 50.4 C44 48.4 39 47.6 35.6 49 C31 49 27.6 46 25.4 41 L23 35.4Z" % (
                  f(62 + drop), f(63 + drop), f(62.6 + drop)))
@@ -945,7 +945,7 @@ def top_thobe(color, collar="mandarin", pocket=True, cuff=True, hem=ROBE_HEM):
             else:
                 band_collar(fig, color, y=60.8, h=3.0)
                 fig.line("M30 118 C30 150 29.4 176 28.6 %s" % f(hem - 2), lc, 0.7, op=0.8)
-        upper(fig, ch, view, color, sleeve="long", hem=hem, flare=3.4, details=det, cuff=color if cuff else None)
+        upper(fig, ch, view, color, sleeve="long", hem=hem, flare=6.0, wide=0.8, details=det, cuff=color if cuff else None)
     return draw
 
 
@@ -1026,7 +1026,7 @@ def top_abaya(color, trim, hem=ROBE_HEM + 2):
             b = BUILD[ch["build"]]
             cx = arm_geo(b, side)[0] + (-0.9 if side == "n" else 0.9)
             fig.line("M%s 101.6 L%s 101.6" % (f(cx - b["wrist"] / 2 - 2.2), f(cx + b["wrist"] / 2 + 2.2)), trim, 1.2)
-        upper(fig, ch, view, color, sleeve="wide", wide=2.2, hem=hem, flare=5.6, details=det, arm_details=ad)
+        upper(fig, ch, view, color, sleeve="wide", wide=2.8, hem=hem, flare=8.0, details=det, arm_details=ad)
     return draw
 
 
@@ -1769,14 +1769,14 @@ def checks_pattern(fig, pid, base, ink):
     return "url(#%s)" % pid
 
 
-GHUTRA_FACE = ("M24.2 31 C24.6 25.6 27.4 21.6 32 20.4 C38 19 46 19 51.2 20.6 C55 21.8 57 25 57.2 30 "
+GHUTRA_FACE = ("M24.2 31 C24.6 26.6 27.4 23 32 22 C38 20.8 46 20.8 51.2 22.2 C55 23.4 57 26 57.2 31 "
                "C57.6 38 57.4 46 56 56 L55 62 L49.6 62 C46 64 42 64.6 39 64 C33 63.4 27 60 24.8 56 C24 48 23.8 38 24.2 31Z")
 
 
 def headwear_ghutra(fig, ch, view, cloth_c=None, pattern=None, agal=None):
     """Gulf ghutra (white) or shemagh (red-and-white checks), held by the black double-cord agal."""
     c = cloth_c or PAL["thobe"]
-    ag = agal or PAL["agal"]
+    ag = agal or PAL["agal"]   # agal=False: cloth simply draped, no cord
     if pattern:
         fill = checks_pattern(fig, "shm" + view, c, pattern)
         lc, sh, fold = shade(pattern, 0.58), None, shade(pattern, 0.6)
@@ -1790,12 +1790,12 @@ def headwear_ghutra(fig, ch, view, cloth_c=None, pattern=None, agal=None):
             fig.line(d, lc, LW)
     if view == "front":
         fig.at(64, head=True)
-        outer = ("M44.6 1.2 C52.6 3.4 58.4 8.6 60.6 16 C62.6 23 62.4 34 61.6 46 L61 58 L56 58 L55 62 L49.6 62 "
+        outer = ("M44.6 4.2 C52.6 5.6 58.4 9.6 60.6 16 C62.6 23 62.4 34 61.6 46 L61 58 L56 58 L55 62 L49.6 62 "
                  "C46 64 42 64.6 39 64 C33 63.4 27 60 24.8 56 L22.4 58 L11.6 58 C9.6 48 9 36 10 26 C11 16 16.6 9 25 5 "
-                 "C31 2.4 38 1 44.6 1.2Z")
+                 "C31 5 38 4 44.6 4.2Z")
         part(outer + " " + GHUTRA_FACE, shadow=["M6 22 C13 30 18 42 21 60 L6 60Z"], hi=["M22 8.6 C28 4.6 35 3 41 3.2 C34 5 28 7.4 24 10.6Z"], rule=True)
         fig.shape(outer + " " + GHUTRA_FACE, "none", lc=lc, lw=0, rule=True, mask=True) if False else None
-        fig.line("M44.6 1.6 C43.4 5 42.6 8.6 42.4 12.6", fold, 0.8)
+        fig.line("M44.6 4.6 C43.6 7.4 43 10.4 42.8 13.4", fold, 0.8)
         fig.line(GHUTRA_FACE, lc, LW)
         fig.at(78)
         lf = "M11.4 56 L22.6 56 C24 66 25.2 78 25.6 96 L13.6 98.6 C12.6 84 11.6 70 11.4 56Z"
@@ -1808,14 +1808,14 @@ def headwear_ghutra(fig, ch, view, cloth_c=None, pattern=None, agal=None):
             for d in ("M13.6 95.6 L25.6 93.2", "M53 90.6 L59.6 91.2"):
                 fig.line(d, pattern, 1.6)
         fig.at(67, head=True)
-        for dy in (0.0, 3.0):
+        for dy in (0.0, 2.6):
             fig.line("M10.6 %s C16 %s 28 %s 40 %s C49.4 %s 56.6 %s 61.2 %s" % tuple(map(f, (
-                12.6 + dy, 15.6 + dy, 17.8 + dy, 17.6 + dy, 17.2 + dy, 14.8 + dy, 12.6 + dy))), ag, 2.3, role="o")
-        fig.line("M12 12.2 C17 14.8 28 16.6 39 16.4", mix(ag, "#ffffff", 0.35), 0.6)
-        fig.line("M14 11.2 C20 8.4 28 7.2 36 7.2 C44 7.2 52 8.4 58 11.2", ag, 1.2, op=0.9)
+                14.6 + dy, 17.4 + dy, 19.4 + dy, 19.2 + dy, 18.8 + dy, 16.8 + dy, 14.6 + dy))), ag, 2.3, role="o") if agal is not False else None
+        if agal is not False:
+            fig.line("M11.4 14.2 C17 16.8 28 18.6 39 18.4", mix(ag, "#ffffff", 0.35), 0.6)
     else:
         fig.at(64, head=True)
-        d = "M36 1.4 C24 1.4 13.4 7.6 10.4 19.6 C8.2 30 9 44 11.4 58 L60.6 58 C62.8 44 63 30 61 19.6 C58.2 8 48 1.4 36 1.4Z"
+        d = "M36 4.2 C24 4.2 13.4 9.4 10.4 19.6 C8.2 30 9 44 11.4 58 L60.6 58 C62.8 44 63 30 61 19.6 C58.2 9.6 48 4.2 36 4.2Z"
         part(d, shadow=["M0 0 L22 0 C18 20 18 40 20 60 L0 60Z"], hi=["M24 8.6 C30 4.8 40 4.2 46 6.6 C40 6.8 32 7.8 27 10.4Z"])
         fig.at(78)
         tail = "M11.2 52 C11 70 13.6 88 19 102 C27 109 45 109 53 102 C58.4 88 61 70 60.8 52Z"
@@ -1828,8 +1828,9 @@ def headwear_ghutra(fig, ch, view, cloth_c=None, pattern=None, agal=None):
         fig.at(67, head=True)
         for dy in (0.0, 3.0):
             fig.line("M10.2 %s C16 %s 28 %s 38 %s C48 %s 56 %s 61.6 %s" % tuple(map(f, (
-                13.6 + dy, 16.8 + dy, 18.8 + dy, 18.6 + dy, 18.2 + dy, 16.2 + dy, 13.4 + dy))), ag, 2.3, role="o")
-        fig.line("M12 13.4 C18 16.2 28 17.8 38 17.6", mix(ag, "#ffffff", 0.35), 0.6)
+                15.4 + dy, 18.4 + dy, 20.4 + dy, 20.2 + dy, 19.8 + dy, 17.8 + dy, 15.2 + dy))), ag, 2.3, role="o") if agal is not False else None
+        if agal is not False:
+            fig.line("M11.2 15.2 C18 18 28 19.6 38 19.4", mix(ag, "#ffffff", 0.35), 0.6)
 
 
 HIJAB_OUT = ("M41 66.6 C50 66.6 57.4 61.4 60.4 52 C63 42 63.2 26 58.4 16 C54 7.4 45.4 3.2 36.4 3.2 C24.4 3.2 12.8 10.8 10.6 25 "
@@ -1890,6 +1891,21 @@ def headwear_hijab(fig, ch, view, c, drape=88.0, pin=None, long_=False, brim=Fal
         if side_drape:
             fig.at(81)
             fig.shape("M14 60 C11 74 11 92 12 108 L20 108 C20 94 21 78 24 64Z", c, sc=sc, shadow=["M0 0 L16 0 L16 120 L0 120Z"])
+
+
+def headwear_niqab(fig, ch, view, c):
+    """Black hijab with a niqab: only a strip around the eyes shows."""
+    headwear_hijab(fig, ch, view, c, drape=86)
+    if view != "front":
+        return
+    fig.at(68, head=True)
+    lc = shade(c, OUTLINE) if c != "#000000" else "#555"
+    top = "M24 18 L58 18 L58 33.2 C50 32.4 32 32.4 24 33.6Z"
+    clip_fill(fig, HIJAB_FACE, '<path d="%s" fill="%s"/>' % (top, c))
+    fig.line("M24.6 33.6 C32 32.4 50 32.4 56.6 33.2", lc, LW)
+    veil = ("M24.4 46.4 C32 47.4 48 47.4 56.8 46.2 C57.4 54 56.4 62 53.6 70 C51.6 76 49 80 46 82 L33 82 "
+            "C29 78 26.4 70 25.4 62 C24.8 56 24.4 51 24.4 46.4Z")
+    fig.shape(veil, c, shadow=["M10 40 L30 40 L32 90 L10 90Z"], hi=["M44 49 C48 49 52 48.6 55 48 C53 49.6 49 50.4 45 50.4Z"])
 
 
 def headwear_roosari(fig, ch, view, c, pattern_c=None):
@@ -2370,6 +2386,29 @@ ALL_CHARACTERS = [
     C("sudan-imma", "Sudanese man in jalabiya and imma", "Sudanese", "m", skin=SK["deep"], age="old",
       face=dict(beard=("short", HR["white"])), top=top_jalabiya(CL["thobe"]), headwear=Part(headwear_imma, CL["thobe"]),
       shoes=("sandal", CL["leather"])),
+    C("arab-thobe-goatee", "Arab man in thobe with goatee", "Arab", "m", skin=SK["tan"],
+      hair=(hair_short, HR["black"]), face=dict(beard=("goatee", HR["black"])), top=top_thobe(CL["thobe"]),
+      shoes=("sandal", CL["leather"])),
+    C("arab-blazer-goatee", "Arab man in blazer with goatee", "Arab", "m", skin=SK["warm"],
+      hair=(hair_short, HR["dark_brown"], dict(style="side")), face=dict(beard=("goatee", HR["dark_brown"])),
+      top=top_blazer(CL["slate"], inner=CL["shirt_white"]), bottom=("trousers", CL["charcoal"]), shoes=("shoe", CL["leather"])),
+    C("arab-young", "Young Arab man, smart casual", "Arab", "m", skin=SK["olive_l"],
+      hair=(hair_short, HR["black"], dict(style="wavy")), top=top_sweater(CL["sage"], collar=CL["shirt_white"]),
+      bottom=("jeans", CL["denim"]), shoes=("sneaker", CL["sneaker"])),
+    C("arab-thobe", "Arab man in white thobe", "Arab", "m", skin=SK["warm"],
+      hair=(hair_short, HR["black"], dict(style="side")), top=top_thobe(CL["thobe"]), shoes=("sandal", CL["leather_dk"])),
+    C("arab-black-hijab", "Arab woman in black hijab and abaya", "Arab", "f", skin=SK["olive_l"],
+      face=dict(lips=CL["lip_rose"]), top=top_abaya(CL["abaya"], shade(CL["abaya"], 1.6)),
+      headwear=Part(headwear_hijab, CL["abaya"], drape=84), shoes=("flat", CL["abaya"])),
+    C("arab-niqab", "Arab woman in niqab and abaya", "Arab", "f", skin=SK["warm"],
+      top=top_abaya(CL["abaya"], shade(CL["abaya"], 1.6)), headwear=Part(headwear_niqab, CL["abaya"]),
+      shoes=("flat", CL["abaya"])),
+    C("saudi-mutawa", "Saudi man in shemagh without agal", "Saudi", "m", skin=SK["tan"],
+      face=dict(beard=("long", HR["black"])), top=top_thobe(CL["thobe"], hem=186.0),
+      headwear=Part(headwear_ghutra, pattern=CL["shemagh"], agal=False), shoes=("sandal", CL["leather_dk"])),
+    C("saudi-agal-beard", "Saudi man in shemagh with full beard", "Saudi", "m", skin=SK["medium"],
+      face=dict(beard=("long", HR["dark_brown"])), top=top_thobe(CL["thobe_warm"]),
+      headwear=Part(headwear_ghutra, pattern=CL["shemagh"]), shoes=("sandal", CL["leather"])),
     # South Asian
     C("india-sari", "Indian woman in sari", "Indian", "f", skin=SK["medium"], featured=True,
       hair=(hair_bun, HR["black"], dict(where="low", flowers=CL["jasmine"])), earring=("stud", CL["gold"]),
@@ -2481,7 +2520,13 @@ ALL_CHARACTERS = [
 # The first release ships these 10 (all featured); the rest are drafted above and switched on later by adding their id.
 ACTIVE = ["gulf-thobe", "saudi-shemagh", "gulf-abaya", "arab-hijab", "india-sari", "sikh-dastar", "china-qipao",
           "japan-suit", "nigeria-gele", "brazil-curls"]
-CHARACTERS = [dict(c, featured=True) for c in ALL_CHARACTERS if c["id"] in ACTIVE]
+ACTIVE += ["arab-thobe-goatee", "arab-blazer-goatee", "arab-young", "arab-thobe", "arab-black-hijab", "arab-niqab",
+           "saudi-mutawa", "saudi-agal-beard"]
+FEATURED = set(ACTIVE[:10])
+# long robes and cultural dress (the page's ROBES set: no automatic shirt tint)
+ROBE_IDS = ["gulf-thobe", "saudi-shemagh", "gulf-abaya", "india-sari", "nigeria-gele", "arab-thobe-goatee", "arab-thobe",
+            "arab-black-hijab", "arab-niqab", "saudi-mutawa", "saudi-agal-beard"]
+CHARACTERS = [dict(c, featured=c["id"] in FEATURED) for c in ALL_CHARACTERS if c["id"] in ACTIVE]
 
 
 # ----------------------------------------------------------------------------------------------- main

@@ -32,6 +32,70 @@
   "featured": true
  },
  {
+  "id": "arab-thobe-goatee",
+  "label_en": "Arab man in thobe with goatee",
+  "culture_en": "Arab",
+  "gender": "m",
+  "hair": true,
+  "featured": false
+ },
+ {
+  "id": "arab-blazer-goatee",
+  "label_en": "Arab man in blazer with goatee",
+  "culture_en": "Arab",
+  "gender": "m",
+  "hair": true,
+  "featured": false
+ },
+ {
+  "id": "arab-young",
+  "label_en": "Young Arab man, smart casual",
+  "culture_en": "Arab",
+  "gender": "m",
+  "hair": true,
+  "featured": false
+ },
+ {
+  "id": "arab-thobe",
+  "label_en": "Arab man in white thobe",
+  "culture_en": "Arab",
+  "gender": "m",
+  "hair": true,
+  "featured": false
+ },
+ {
+  "id": "arab-black-hijab",
+  "label_en": "Arab woman in black hijab and abaya",
+  "culture_en": "Arab",
+  "gender": "f",
+  "hair": false,
+  "featured": false
+ },
+ {
+  "id": "arab-niqab",
+  "label_en": "Arab woman in niqab and abaya",
+  "culture_en": "Arab",
+  "gender": "f",
+  "hair": false,
+  "featured": false
+ },
+ {
+  "id": "saudi-mutawa",
+  "label_en": "Saudi man in shemagh without agal",
+  "culture_en": "Saudi",
+  "gender": "m",
+  "hair": false,
+  "featured": false
+ },
+ {
+  "id": "saudi-agal-beard",
+  "label_en": "Saudi man in shemagh with full beard",
+  "culture_en": "Saudi",
+  "gender": "m",
+  "hair": false,
+  "featured": false
+ },
+ {
   "id": "india-sari",
   "label_en": "Indian woman in sari",
   "culture_en": "Indian",

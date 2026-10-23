@@ -51,7 +51,7 @@ The Agent Designer fills every agent from the project's direction. The owner onl
 | Role and goals | What it owns, its goals for the start, and what "done" means for it. |
 | First tasks | Its first tasks for the board (section 7, Task format). |
 | Personality, hobbies, notes | Short, fitting the role; they show on its agent page in the office. |
-| Look | A **random** character from the office's set (`office/assets/chars/characters.json`: ten characters from many cultures; pick one that fits the agent and the project, and prefer variety), with its own shirt color (`look.sprite`, `look.shirt` as `#rrggbb`) so no two agents look the same. If the owner asks for another character, colors or gender, change it. |
+| Look | A **random** character from the office's set (`office/assets/chars/characters.json`: characters from many cultures, with ten featured; pick one that fits the agent and the project, and prefer variety), with its own shirt color (`look.sprite`, `look.shirt` as `#rrggbb`) so no two agents look the same. If the owner asks for another character, colors or gender, change it. |
 | Tools and access | What it needs: repos, connectors, API keys (section 2), browser, desktop folders (section 7, Desktop access). |
 | Depends on | Which agents must finish something first. |
 | Lifetime | `core`, `project` (stays for the project) or `temporary` (one small, special task). |

@@ -57,11 +57,11 @@ Intern ← Developer / Analyst ← Senior ← Consultant ← Senior Consultant �
 
 ## الشخصيات
 
-١٠ شخصيات من ثقافات مختلفة، ومصمم الوكلاء يختار منها لكل وكيل. الشعر ولون القميص يتغيرون، واللبس التقليدي يبقى بألوانه.
+١٨ شخصية من ثقافات مختلفة (منها ٨ عربية زيادة)، ومصمم الوكلاء يختار منها لكل وكيل. هذي أفضل ١٠: الشعر ولون القميص يتغيرون، واللبس التقليدي يبقى بألوانه.
 
 ![الشخصيات](docs/images/characters-top10.webp)
 
-ومعها ٣٠ شخصية ثانية مكتوبة في المولّد وبتنضاف قريب.
+كل الشخصيات: [characters-all](docs/images/characters-all.webp). وفيه ٣٠ شخصية ثانية مكتوبة في المولّد وبتنضاف قريب.
 
 ## التبويبات
 
@@ -133,11 +133,11 @@ Positions, lowest to highest: Intern → Developer / Analyst → Senior → Cons
 
 ## Characters
 
-Ten characters from different cultures, and the Agent Designer picks one for each agent. Hair and shirt colors can change; traditional dress keeps its own colors. The list is in `office/assets/chars/characters.json`.
+Eighteen characters from different cultures (including eight more Arab looks), and the Agent Designer picks one for each agent. These are the top ten: Hair and shirt colors can change; traditional dress keeps its own colors. The list is in `office/assets/chars/characters.json`.
 
 ![Characters](docs/images/characters-top10.webp)
 
-Thirty more are already written in the generator and are coming soon.
+All of them: [characters-all](docs/images/characters-all.webp). Thirty more are already written in the generator and are coming soon.
 
 ## Tabs
 
