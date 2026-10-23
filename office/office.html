@@ -479,6 +479,16 @@ form.compose{grid-template-columns:minmax(0,1fr)}
 .filters button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:1px 11px;cursor:pointer}
 .filters button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .board-scroll{overflow-x:auto;padding-bottom:6px}
+/* board (B4, council 2026-10-23): one filter line that opens, a Conversations lane that folds */
+.bf-more{border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.bf-more>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px}
+.bf-more>summary::-webkit-details-marker{display:none}
+.bf-lbl{font-weight:700;font-size:13.5px}.bf-sum{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.bf-sum span{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:1px 9px;background:var(--bg)}
+.bf-edit{margin-left:auto;font-size:13px;color:var(--accent)}.bf-more[open] .bf-edit::after{content:" ▴"}.bf-more:not([open]) .bf-edit::after{content:" ▾"}
+.bf-body{display:grid;gap:10px;padding:4px 12px 12px;border-top:1px solid var(--line)}
+.conv-fold{all:unset;cursor:pointer;font-weight:600;display:flex;gap:6px;align-items:center}.conv-fold small{font-weight:400;color:var(--muted)}
+.cell .conv-n{font-size:12.5px;color:var(--muted)}
 .lanes{display:grid;grid-template-columns:170px repeat(5,minmax(190px,1fr));min-width:1140px;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden}
 .lanes>div{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:8px;min-width:0}
 .lanes .hd{border-top:0;background:var(--bg);font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;gap:6px;position:sticky;top:0}
@@ -677,9 +687,12 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   <section role="tabpanel" id="panel-board" aria-labelledby="tab-board" class="stack" hidden>
     <div class="board-head">
       <h2>Tasks by stage and agent</h2>
-      <div class="filters" id="filters"></div>
+      <span class="field">Find <span class="tp-host" id="boardPickHost"></span></span>
     </div>
-    <div class="ver-row"><div id="boardFilters"></div><span class="field">Find <span class="tp-host" id="boardPickHost"></span></span></div>
+    <details class="bf-more" id="bfMore"><summary><span class="bf-lbl">Filters</span><span id="bfSum" class="bf-sum"></span><span class="bf-edit">Change</span></summary>
+      <div class="bf-body"><div class="filters" id="filters"></div>
+      <div class="ver-row"><div id="boardFilters"></div></div></div>
+    </details>
     <div class="feat-sum" id="featSum" hidden></div>
     <div class="board-scroll"><div class="lanes" id="lanes"></div></div>
   </section>
@@ -1645,11 +1658,22 @@ function convCard(s){
   if (s.task) { const tl = el("span","mono", s.task); b.append(tl); }
   b.onclick = () => go("#session/" + encodeURIComponent(s.id)); return b;
 }
+const convFolded = () => { try { return localStorage.getItem("office.convFold") !== "0"; } catch { return true; } };
+const setConvFolded = v => { try { localStorage.setItem("office.convFold", v ? "1" : "0"); } catch {} };
+function renderBfSum(){ const box = $("bfSum"); if (!box) return; box.replaceChildren();
+  const add = t => box.append(el("span", null, t));
+  if (versions().length) add(verName(boardVer()));
+  const st = STAGES().filter(s => bf.states.has(s.k)).map(s => s.en); add(st.length === STAGES().length ? "All stages" : st.length ? st.join(", ") : "No stage");
+  if (bf.phases.size) add([...bf.phases].map(phaseName).join(", "));
+  if (bf.feats.size) add(`${bf.feats.size} feature${bf.feats.size === 1 ? "" : "s"}`);
+  add(filter ? nameOf(filter) : "All agents"); }
 function renderBoard(){
   renderFilters(); renderFeatures();
   const cols = STAGES().filter(s => bf.states.has(s.k));
   const grid = $("lanes"); grid.replaceChildren();
-  grid.style.gridTemplateColumns = `170px repeat(${Math.max(1, cols.length)}, minmax(190px,1fr))`; grid.style.minWidth = (170 + 190 * Math.max(1, cols.length)) + "px";
+  const colN = k => tasks.filter(t => (t.state || "todo") === k && shown(t)).length + (k === "doing" || k === "done" ? 1 : 0);   // a stage with no cards gets a narrow column
+  grid.style.gridTemplateColumns = `170px ${cols.map(s => colN(s.k) ? "minmax(190px,1fr)" : "minmax(110px,.45fr)").join(" ")}`; grid.style.minWidth = (170 + cols.reduce((n, s) => n + (colN(s.k) ? 190 : 110), 0)) + "px";
+  renderBfSum();
   if (!cols.length) { const e = el("div","empty","Tick at least one stage to see tasks."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
   grid.append(Object.assign(el("div","hd hd0"), {textContent:"Agent"}));
   const convs = items(true).filter(it => it.type === "conv" && itemIn(it, bf) && (!filter || it.members.includes(filter))).map(it => it.s);
@@ -1657,8 +1681,12 @@ function renderBoard(){
   const lanes = laneIds().filter(id => (!filter || id === filter) && tasks.some(t => t.session === id && shown(t)));
   if (!lanes.length && !convs.length) { const e = el("div","empty", tasks.length ? "Nothing here with these filters. Change the version, stage or feature, or use Find." : "No tasks yet. The Business Analyst adds them here."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
   if (convs.length) {
-    const ln = el("div","lane-name"); const nm = el("span","nm","Conversations"); nm.append(el("small", null, `${convs.filter(c => c.state === "open").length} open`)); ln.append(nm); grid.append(ln);
-    cols.forEach(s => { const cell = el("div","cell"); convs.filter(c => convState(c) === s.k).sort((a, b) => String(b.opened_at).localeCompare(String(a.opened_at))).forEach(c => cell.append(convCard(c))); grid.append(cell); });
+    const folded = convFolded(), ln = el("div","lane-name"); const fb = el("button","conv-fold"); fb.type = "button"; fb.setAttribute("aria-expanded", String(!folded));
+    fb.append(folded ? "▸" : "▾", "Conversations", el("small", null, `${convs.filter(c => c.state === "open").length} open`)); fb.onclick = () => { setConvFolded(!folded); renderBoard(); }; ln.append(fb); grid.append(ln);
+    cols.forEach(s => { const cell = el("div","cell"), cs = convs.filter(c => convState(c) === s.k).sort((a, b) => String(b.opened_at).localeCompare(String(a.opened_at)));
+      if (folded) { if (cs.length) { const n = el("button","linkish conv-n", `${cs.length} conversation${cs.length === 1 ? "" : "s"}`); n.type = "button"; n.onclick = () => { setConvFolded(false); renderBoard(); }; cell.append(n); } }
+      else cs.forEach(c => cell.append(convCard(c)));
+      grid.append(cell); });
   }
   lanes.forEach(id => {
     const ln = el("div","lane-name"); const nm = el("span","nm", nameOf(id)); nm.append(el("small", null, `${verTasks().filter(t => t.session === id && !isClosed(t)).length} open`)); ln.append(avatar(id, 28), nm); grid.append(ln);
