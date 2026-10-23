@@ -2907,10 +2907,13 @@ function roomsWeek(){
       add.onclick = () => { const t = new Date(d); if (d.toDateString() === today) { const n = new Date(); n.setMinutes(0, 0, 0); n.setHours(n.getHours() + 1); callMeeting({at:+n}); } else { t.setHours(10, 0, 0, 0); callMeeting({at:+t}); } }; col.append(add); }
     g.append(col); }
   return g; }
-function renderAll(){ buildSchedule(); renderSettings(); renderMeetSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderDecisions(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+// Live snapshots arrive in bursts: draw once per frame, and replan the calendars only when tasks, sessions, agents or settings changed.
+let renderQueued = false, planDirty = true;
+function renderAll(plan = true){ if (plan) planDirty = true; if (renderQueued) return; renderQueued = true; const go = () => { renderQueued = false; renderAllNow(); }; if (document.hidden) setTimeout(go, 0); else requestAnimationFrame(go); }
+function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } renderSettings(); renderMeetSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderDecisions(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
-renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);
+renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000); setInterval(() => renderAll(), 60000); setInterval(renderStats, 30000);
 (async () => {
   db = await claude.use("db"); user = await claude.use("user");
   if (!db) { $("conn").textContent = "Couldn't open the office data in this view. Open the page while signed in."; $("send").disabled = true; return; }
@@ -2922,7 +2925,7 @@ renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderSt
   db.collection("tasks").onSnapshot(s => { tasks = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
   /* the newest 500 messages (an ascending query with a limit would keep the oldest); falls back if the db can't sort descending */
   const subMsgs = desc => { try { (desc ? db.collection("messages").orderBy("at", "desc") : db.collection("messages").orderBy("at")).limit(500).onSnapshot(s => {
-      msgs = s.docs.map(d => ({id:d.id, ...d.data()})).sort((a, b) => String(a.at || "").localeCompare(String(b.at || ""))); renderAll(); }, err => desc ? subMsgs(false) : onErr(err)); }
+      msgs = s.docs.map(d => ({id:d.id, ...d.data()})).sort((a, b) => String(a.at || "").localeCompare(String(b.at || ""))); renderAll(false); }, err => desc ? subMsgs(false) : onErr(err)); }
     catch (err) { if (desc) subMsgs(false); else onErr(err); } };
   subMsgs(true);
   db.collection("sessions").onSnapshot(s => { sessions = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
