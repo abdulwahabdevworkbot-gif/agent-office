@@ -646,8 +646,8 @@ const F_MAIN = [
   ["desk-lr",42.4,50.4,10.5],["desk-lf",46.7,53,10.5],["desk-rf",39.9,55.2,10.5],
   ["desk-lr",31.4,64.8,10.5],["desk-lf",35.4,67.5,10.5],["desk-rf",27.9,70,10.5],
   ["desk-lr",59,73.7,10.5],["desk-lf",62.6,76,10.5],["desk-rf",55.4,78.7,10.5],["desk-rr",66.6,71.1,10.5],
-  ["coffee",78.5,50.2,5],["filing",45,56.5,5.2],["monstera",91.9,64.7,6.2],["snake",43.2,37.9,5],
-  ["money",32,71.2,5.2],["money",89.2,65.7,5.2],["monstera",60.2,80.4,6.2],["printer",85.4,56.8,6.9]];
+  ["coffee",69.6,57.1,5],["filing",45,56.5,5.2],["monstera",8.7,64.2,6.2],["snake",48.5,43.4,5],
+  ["money",32,71.2,5.2],["money",78.0,71.5,5.2],["monstera",60.2,80.4,6.2],["printer",83.5,67.0,6.9]];
 const S_MAIN = [
   {x:25.8,y:71,f:"rear-left",z:85},{x:52.7,y:78.8,f:"rear-left",z:95},{x:48.9,y:52.9,f:"rear-right",z:70},
   {x:37.9,y:68.2,f:"rear-right",z:85},{x:65.9,y:75.8,f:"rear-right",z:95},{x:38.5,y:55.2,f:"rear-left",z:58},
@@ -655,8 +655,8 @@ const S_MAIN = [
   {x:73.5,y:56.7,f:"rear-left"},{x:76.2,y:58.4,f:"front-right"},{x:53.3,y:46.6,f:"rear-left"},{x:56,y:47.7,f:"front-right"},{x:81,y:63,f:"rear-left"},{x:47.8,y:57.6,f:"front-right",z:70}];
 const F_BOSS = [
   ["desk-lr",47,63.7,10.5],["desk-lf",50.6,66,10.5],["desk-rf",43.4,68.7,10.5],["desk-rr",54.6,61.1,10.5],
-  ["whiteboard",30,47,8.1],["coffee",78.5,50.2,5],["filing",86,57,5.2],["filing",82,55,5.2],
-  ["monstera",91.9,64.7,6.2],["monstera",14,66,6.2],["snake",40,40.5,5],["money",70,84,5.2],["money",22,73,5.2]];
+  ["whiteboard",35.8,50.8,8.1],["coffee",69.6,57.1,5],["filing",77.9,62.1,5.2],["filing",81.0,64.1,5.2],
+  ["monstera",78.4,71.6,6.2],["monstera",14,66,6.2],["snake",48.5,43.4,5],["money",64.7,82.3,5.2],["money",22,73,5.2]];
 const S_BOSS_OWNER = {x:43.2,y:56.8,f:"front-left",z:50}, S_BOSS_ASSIST = {x:56.7,y:56.2,f:"front-right",z:50};
 const S_BOSS_VISIT = [{x:40.7,y:76,f:"rear-right"},{x:53.9,y:74,f:"rear-left"},{x:33,y:70,f:"rear-right"},{x:62,y:79,f:"rear-left"},{x:27,y:63,f:"rear-right"},{x:68,y:72,f:"rear-left"}];
 const S_GAME = [
@@ -737,7 +737,7 @@ function ensureRoom(key){
   else (ROOMS[roomKey(base, n - 1)] || ensureRoom(roomKey(base, n - 1))).after(r);
   ROOMS[key] = r;
   if (typeOf(key) === "main") { furnish(r, F_MAIN); DESKS.forEach(sp => deskChair(r, sp)); }
-  else { HUDDLE.tables.forEach(t => { boxSprite(r, "table", t.table); t.chairs.forEach(c => boxSprite(r, c.k, c)); }); furnish(r, [["monstera",90,70,6.2,4700],["snake",14,58,5,1580]]); }
+  else { HUDDLE.tables.forEach(t => { boxSprite(r, "table", t.table); t.chairs.forEach(c => boxSprite(r, c.k, c)); }); furnish(r, [["monstera",77.3,71.9,6.2,4700],["snake",14,58,5,1580]]); }
   setRoomBg(); return r;
 }
 const roomsOf = base => Object.keys(ROOMS).filter(k => baseOf(k) === base).sort((a, b) => (+a.split("-").pop() || 1) - (+b.split("-").pop() || 1));
@@ -917,9 +917,9 @@ function buildRooms(){
   DESKS.forEach(s => deskChair(ROOMS.main, s));
   boxSprite(ROOMS.meet, "table", MEET.table);
   for (let i = 0; i < 8; i++) boxSprite(ROOMS.meet, "mchair-" + i, MEET["mchair-" + i]);
-  furnish(ROOMS.meet, [["monstera",88,66,6.2,660],["monstera",14,60,6.2,600],["snake",70,40,5,400],["whiteboard",27,44,8.1,440]]);
+  furnish(ROOMS.meet, [["monstera",77.3,71.9,6.2,720],["monstera",14,60,6.2,600],["snake",84.2,66.3,5,660],["whiteboard",21.3,58.3,8.1,580]]);
   HUDDLE.tables.forEach(t => { boxSprite(ROOMS.huddle, "table", t.table); t.chairs.forEach(c => boxSprite(ROOMS.huddle, c.k, c)); });
-  furnish(ROOMS.huddle, [["monstera",90,70,6.2,4700],["snake",14,58,5,1580]]);
+  furnish(ROOMS.huddle, [["monstera",77.3,71.9,6.2,4700],["snake",14,58,5,1580]]);
   IDLE_SEATS.forEach(s => boxSprite(ROOMS.idle, "mchair-3", {x:s.x - 2.95, y:s.y - 6.94, w:5.57, z:s.z - 5}));   // chairs only
 }
 
@@ -1707,7 +1707,7 @@ function renderTalkRoom(){
   const room = $("talkRoom"); if (!room) return;
   if (!talkBuilt) { talkBuilt = true;
     boxSprite(room, "table", MEET.table); for (let i = 0; i < 8; i++) boxSprite(room, "mchair-" + i, MEET["mchair-" + i]);
-    furnish(room, [["monstera",88,66,6.2,660],["whiteboard",27,44,8.1,440]]); }
+    furnish(room, [["monstera",77.3,71.9,6.2,720],["whiteboard",21.3,58.3,8.1,580]]); }
   room.style.backgroundImage = `url(${A}rooms/meet-${isNight() ? "night" : "day"}.webp)`;
   room.querySelectorAll(".ag,.tag").forEach(x => x.remove());
   const s = chatSess && sessions.find(x => x.id === chatSess);
