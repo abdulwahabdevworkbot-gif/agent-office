@@ -36,7 +36,7 @@
 | الألعاب | اللي خلصوا |
 | الانتظار | الخاملين ٣ أيام وأكثر |
 
-غرف العمل والهادل تزيد وتنقص حسب الضغط. لما يقعد الوكيل ينرسم بجلسة تناسب لبسه والكرسي اللي قاعد عليه.
+كل الغرف تتكرر: لما الغرفة تقرب تمتلي تنفتح نسخة ثانية، ولما يقل العدد تختفي. غرفة الاجتماع تنختار حسب عدد الحضور (١٠ أو ٢٠ أو ٣٠). لما يقعد الوكيل ينرسم بجلسة تناسب لبسه والكرسي اللي قاعد عليه، ولما يمشي يلف حول الطاولات والأثاث. وتقدر تحدد طول كل وكيل من إعدادات شكله.
 
 كل نوع غرفة مرة وحدة، وتحت كل وحدة وش يميزها:
 
@@ -148,7 +148,7 @@ It fits any project: software, a store, marketing, research, content.
 | Games & lounge | Agents that are done |
 | Waiting room | No activity for 3 days |
 
-Work and huddle rooms grow and shrink with the load. A seated agent is drawn in a pose that fits its outfit and its seat.
+Every room repeats: when one is nearly full a copy opens, and extra copies close when fewer people need them. The meeting room picture follows the meeting size (10, 20 or 30). A seated agent is drawn in a pose that fits its outfit and its seat, and walking agents go around tables and furniture. Each agent's height can be set in its look settings.
 
 Each kind of room once, with what sets it apart:
 

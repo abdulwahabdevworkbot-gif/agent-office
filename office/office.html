@@ -704,16 +704,17 @@ const ASSISTANT = "office-manager";
 const FACINGS = ["front-left","front-right","rear-left","rear-right"];
 /* rooms are the owner's own pictures, cut from the reference sheets, with the furniture drawn in (assets/rooms).
    Seats: y is the line where a seated body disappears behind a desk edge or a chair back. Standing spots: y is the feet. */
-const ROOM_BG = {boss:"boss", main:["main-b","main-a"], meet:"meet-10", huddle:"huddle", game:"game", idle:"idle"};
+const ROOM_BG = {boss:"boss", main:"main-b", meet:"meet-10", huddle:"huddle", game:"game", idle:"idle"};   // main-a has fewer desks; seats are set for main-b
 /* main office (the owner's rule): S-shaped benches, and the manager's glass office in the corner */
-const S_MAIN = [{"x":20.5,"y":54.3,"f":"front-left","seat":true,"k":1,"cut":60.5},{"x":32,"y":50.3,"f":"front-right","seat":true,"k":1,"cut":56.5},{"x":42,"y":46.3,"f":"front-left","seat":true,"k":1,"cut":52.5},{"x":50.5,"y":45.3,"f":"front-right","seat":true,"k":1,"cut":51.5},{"x":58.5,"y":46.3,"f":"front-left","seat":true,"k":1,"cut":52.5},{"x":62.5,"y":54.8,"f":"front-right","seat":true,"k":1,"cut":61},{"x":34.5,"y":64.7,"f":"rear-right","seat":true,"k":2},{"x":44.5,"y":59.2,"f":"rear-left","seat":true,"k":2},{"x":55,"y":58.6,"f":"rear-right","seat":true,"k":2},{"x":80.5,"y":31.3,"f":"front-left","seat":true,"k":3,"cut":37.5},{"x":75,"y":63,"f":"front-left"},{"x":86,"y":58,"f":"front-right"},{"x":68,"y":76,"f":"front-left"},{"x":42,"y":82,"f":"front-right"},{"x":55,"y":87,"f":"front-left"},{"x":28,"y":76,"f":"front-right"}];
-const MGR_SEAT = 9;
-const S_BOSS_OWNER = {"x":61,"y":50.8,"f":"front-left","k":3,"cut":57}, S_BOSS_ASSIST = {"x":37.5,"y":44.8,"f":"front-right","k":1,"cut":51};
+const S_MAIN = [{"x": 27.9, "y": 50.6, "f": "front-right", "k": 1, "seat": true, "cut": 55}, {"x": 42.7, "y": 39, "f": "front-right", "k": 1, "seat": true, "cut": 43.5}, {"x": 56, "y": 41.3, "f": "front-left", "k": 1, "seat": true, "cut": 45.8}, {"x": 65.8, "y": 49.1, "f": "front-left", "k": 1, "seat": true, "cut": 53.6}, {"x": 32.9, "y": 60.5, "f": "rear-right", "k": 3, "seat": true}, {"x": 43.8, "y": 52.8, "f": "rear-right", "k": 3, "seat": true}, {"x": 55.5, "y": 57.5, "f": "rear-left", "k": 3, "seat": true}, {"x": 75, "y": 28, "f": "front-left", "k": 5, "seat": true, "cut": 32.5}, {"x": 75, "y": 63, "f": "front-left"}, {"x": 86, "y": 58, "f": "front-left"}, {"x": 66, "y": 80, "f": "front-left"}, {"x": 42, "y": 82, "f": "front-right"}, {"x": 55, "y": 88, "f": "front-left"}, {"x": 24, "y": 76, "f": "front-right"}, {"x": 14, "y": 62, "f": "front-right"}, {"x": 80, "y": 72, "f": "front-left"}];
+const MGR_SEAT = 7;
+const S_BOSS_OWNER = {"x":61,"y":50.8,"f":"front-left","k":5,"cut":57}, S_BOSS_ASSIST = {"x":37.5,"y":44.8,"f":"front-right","k":1,"cut":51};
 const S_BOSS_VISIT = [{"x":25,"y":72,"f":"front-right"},{"x":70,"y":76,"f":"front-left"},{"x":55,"y":84,"f":"front-left"},{"x":82,"y":68,"f":"front-left"},{"x":32,"y":86,"f":"front-right"},{"x":44,"y":90,"f":"front-left"}];
-const S_GAME = [{"x":12,"y":54.5,"f":"front-right","k":8,"seat":true},{"x":20,"y":58.5,"f":"front-left","k":8,"seat":true},{"x":24,"y":56,"f":"front-right"},{"x":52,"y":48,"f":"front-left"},{"x":41,"y":63,"f":"front-right"},{"x":56,"y":42,"f":"front-left"},{"x":64,"y":45,"f":"front-right"},{"x":57,"y":58,"f":"front-left"},{"x":92,"y":64,"f":"front-left"},{"x":36,"y":71,"f":"front-right"},{"x":64,"y":77,"f":"front-left"},{"x":82,"y":52,"f":"front-left"},{"x":14,"y":62,"f":"front-right"},{"x":72,"y":86,"f":"front-left"}];
-const MEET = {"seats":[{"x":27.5,"y":47.8,"f":"front-right","k":4,"cut":54},{"x":36,"y":43.3,"f":"front-right","k":4,"cut":49.5},{"x":44.5,"y":38.5,"f":"front-right","k":4,"cut":44.7},{"x":62,"y":40.8,"f":"front-left","k":4,"cut":47},{"x":67.5,"y":44.0,"f":"front-left","k":4,"cut":50.2},{"x":73,"y":48.8,"f":"front-left","k":4,"cut":55},{"x":28,"y":54.7,"f":"rear-right","k":4},{"x":36,"y":60.8,"f":"rear-right","k":4},{"x":51.7,"y":59.2,"f":"rear-left","k":4},{"x":61,"y":54.7,"f":"rear-left","k":4},{"x":70.5,"y":50.2,"f":"rear-left","k":4}],"stand":[{"x":18,"y":66,"f":"front-right"},{"x":88,"y":64,"f":"front-left"},{"x":30,"y":80,"f":"front-right"},{"x":70,"y":78,"f":"front-left"},{"x":50,"y":88,"f":"front-left"},{"x":82,"y":72,"f":"front-left"}],"door":{"x":90,"y":62}};
+const S_GAME = [{"x": 11.5, "y": 49.5, "f": "front-right", "k": 9, "seat": true}, {"x": 17.5, "y": 56, "f": "front-right", "k": 9, "seat": true}, {"x": 80.5, "y": 42, "f": "front-left", "k": 9, "seat": true}, {"x": 62, "y": 36.5, "f": "front-left", "k": 8, "seat": true}, {"x": 68, "y": 33.5, "f": "front-left", "k": 8, "seat": true}, {"x": 33, "y": 63, "f": "front-right"}, {"x": 53, "y": 50, "f": "front-left"}, {"x": 38, "y": 67, "f": "front-right"}, {"x": 66, "y": 72, "f": "front-left"}, {"x": 66, "y": 57, "f": "front-left"}, {"x": 95, "y": 60, "f": "front-left"}, {"x": 85, "y": 74, "f": "front-left"}, {"x": 62, "y": 82, "f": "front-left"}, {"x": 40, "y": 38, "f": "front-right"}, {"x": 55, "y": 40, "f": "front-left"}, {"x": 48, "y": 88, "f": "front-right"}, {"x": 22, "y": 62, "f": "front-right"}];
+const MEET_SETS = {"meet-10": {"seats": [{"x": 31, "y": 49.7, "f": "front-right", "k": 7, "seat": true, "cut": 54.2}, {"x": 38.2, "y": 45.3, "f": "front-right", "k": 7, "seat": true, "cut": 49.8}, {"x": 45, "y": 41.3, "f": "front-right", "k": 7, "seat": true, "cut": 45.8}, {"x": 51.3, "y": 37.5, "f": "front-right", "k": 7, "seat": true, "cut": 42.0}, {"x": 49, "y": 62, "f": "rear-left", "k": 3, "seat": true}, {"x": 57, "y": 57.5, "f": "rear-left", "k": 3, "seat": true}, {"x": 64, "y": 52.5, "f": "rear-left", "k": 3, "seat": true}, {"x": 71, "y": 48.5, "f": "rear-left", "k": 3, "seat": true}], "stand": [{"x": 18, "y": 68, "f": "front-right"}, {"x": 88, "y": 62, "f": "front-left"}, {"x": 30, "y": 82, "f": "front-right"}, {"x": 70, "y": 80, "f": "front-left"}, {"x": 50, "y": 90, "f": "front-left"}, {"x": 85, "y": 72, "f": "front-left"}]}, "meet-20": {"seats": [{"x": 25.9, "y": 46.1, "f": "front-right", "k": 7, "seat": true, "cut": 50.6}, {"x": 31.6, "y": 42.9, "f": "front-right", "k": 7, "seat": true, "cut": 47.4}, {"x": 37.5, "y": 39.5, "f": "front-right", "k": 7, "seat": true, "cut": 44.0}, {"x": 43.6, "y": 36.2, "f": "front-right", "k": 7, "seat": true, "cut": 40.7}, {"x": 49.5, "y": 33.1, "f": "front-right", "k": 7, "seat": true, "cut": 37.6}, {"x": 62, "y": 34.7, "f": "front-left", "k": 7, "seat": true, "cut": 39.2}, {"x": 67.3, "y": 40, "f": "front-left", "k": 7, "seat": true, "cut": 44.5}, {"x": 73.2, "y": 43.5, "f": "front-left", "k": 7, "seat": true, "cut": 48.0}, {"x": 78.5, "y": 47.5, "f": "front-left", "k": 7, "seat": true, "cut": 52.0}, {"x": 19, "y": 50, "f": "rear-right", "k": 3, "seat": true}, {"x": 25, "y": 54, "f": "rear-right", "k": 3, "seat": true}, {"x": 31, "y": 58, "f": "rear-right", "k": 3, "seat": true}, {"x": 37, "y": 62, "f": "rear-right", "k": 3, "seat": true}, {"x": 43, "y": 66, "f": "rear-right", "k": 3, "seat": true}, {"x": 49.8, "y": 69.1, "f": "rear-left", "k": 3, "seat": true}, {"x": 57.4, "y": 64.8, "f": "rear-left", "k": 3, "seat": true}, {"x": 64.5, "y": 60.7, "f": "rear-left", "k": 3, "seat": true}, {"x": 71.5, "y": 56.7, "f": "rear-left", "k": 3, "seat": true}, {"x": 78, "y": 53, "f": "rear-left", "k": 3, "seat": true}], "stand": [{"x": 10, "y": 62, "f": "front-right"}, {"x": 90, "y": 60, "f": "front-left"}, {"x": 50, "y": 88, "f": "front-left"}, {"x": 30, "y": 80, "f": "front-right"}, {"x": 70, "y": 82, "f": "front-left"}, {"x": 88, "y": 68, "f": "front-left"}]}, "meet-30": {"seats": [{"x": 44.3, "y": 38.0, "f": "rear-right", "k": 4, "seat": true}, {"x": 49.8, "y": 41.1, "f": "rear-right", "k": 4, "seat": true}, {"x": 36.5, "y": 42.7, "f": "rear-right", "k": 4, "seat": true}, {"x": 55.3, "y": 44.7, "f": "rear-right", "k": 4, "seat": true}, {"x": 41.8, "y": 46.0, "f": "rear-right", "k": 4, "seat": true}, {"x": 28.4, "y": 47.6, "f": "rear-right", "k": 4, "seat": true}, {"x": 60.9, "y": 48.3, "f": "rear-right", "k": 4, "seat": true}, {"x": 47.4, "y": 49.4, "f": "rear-right", "k": 4, "seat": true}, {"x": 33.6, "y": 50.9, "f": "rear-right", "k": 4, "seat": true}, {"x": 66.3, "y": 51.7, "f": "rear-right", "k": 4, "seat": true}, {"x": 19.7, "y": 52.6, "f": "rear-right", "k": 4, "seat": true}, {"x": 52.8, "y": 52.8, "f": "rear-right", "k": 4, "seat": true}, {"x": 39.2, "y": 54.3, "f": "rear-right", "k": 4, "seat": true}, {"x": 71.8, "y": 55.3, "f": "rear-right", "k": 4, "seat": true}, {"x": 25.1, "y": 56.1, "f": "rear-right", "k": 4, "seat": true}, {"x": 58.5, "y": 56.7, "f": "rear-right", "k": 4, "seat": true}, {"x": 44.6, "y": 58.1, "f": "rear-right", "k": 4, "seat": true}, {"x": 77.1, "y": 58.6, "f": "rear-right", "k": 4, "seat": true}, {"x": 30.8, "y": 59.9, "f": "rear-right", "k": 4, "seat": true}, {"x": 64.4, "y": 60.4, "f": "rear-right", "k": 4, "seat": true}, {"x": 50.2, "y": 61.8, "f": "rear-right", "k": 4, "seat": true}, {"x": 36.3, "y": 63.6, "f": "rear-right", "k": 4, "seat": true}, {"x": 69.5, "y": 63.9, "f": "rear-right", "k": 4, "seat": true}, {"x": 55.9, "y": 65.6, "f": "rear-right", "k": 4, "seat": true}, {"x": 42, "y": 67.4, "f": "rear-right", "k": 4, "seat": true}, {"x": 60, "y": 69.1, "f": "rear-right", "k": 4, "seat": true}, {"x": 47.6, "y": 71.4, "f": "rear-right", "k": 4, "seat": true}, {"x": 53.1, "y": 75.2, "f": "rear-right", "k": 4, "seat": true}], "stand": [{"x": 10, "y": 64, "f": "front-right"}, {"x": 90, "y": 62, "f": "front-left"}, {"x": 70, "y": 84, "f": "front-left"}, {"x": 30, "y": 82, "f": "front-right"}, {"x": 88, "y": 70, "f": "front-left"}]}};
+const MEET = {get seats(){ return MEET_SETS[meetBg(meetCount)].seats; }, get stand(){ return MEET_SETS[meetBg(meetCount)].stand; }, door:{x:90, y:62}};
 // huddle room: three small tables, four seats each, two standing spots per table
-const HUDDLE = {"tables":[{"seats":[{"x":23.8,"y":51.3,"f":"front-right","k":4,"cut":57.5},{"x":37.5,"y":50.2,"f":"front-left","k":4,"cut":56.4},{"x":25,"y":55.8,"f":"rear-right","k":4},{"x":40.8,"y":58.0,"f":"rear-left","k":4}],"stand":[{"x":17,"y":68,"f":"front-right"},{"x":45,"y":72,"f":"front-left"}]},{"seats":[{"x":45,"y":35.7,"f":"front-right","k":4,"cut":41.9},{"x":59.2,"y":37.3,"f":"front-left","k":4,"cut":43.5},{"x":48.5,"y":41.2,"f":"rear-right","k":4},{"x":62,"y":43.0,"f":"rear-left","k":4}],"stand":[{"x":40,"y":48,"f":"front-right"},{"x":68,"y":52,"f":"front-left"}]},{"seats":[{"x":64.6,"y":58.5,"f":"front-right","k":4,"cut":64.7},{"x":79.2,"y":56.3,"f":"front-left","k":4,"cut":62.5},{"x":67.5,"y":61.9,"f":"rear-right","k":4},{"x":82.5,"y":60.8,"f":"rear-left","k":4}],"stand":[{"x":60,"y":74,"f":"front-right"},{"x":88,"y":70,"f":"front-left"}]}]};
+const HUDDLE = {"tables": [{"seats": [{"x": 36, "y": 36.8, "f": "front-right", "k": 7, "seat": true, "cut": 41.3}, {"x": 50.5, "y": 36.8, "f": "front-right", "k": 7, "seat": true, "cut": 41.3}, {"x": 35, "y": 45.5, "f": "rear-right", "k": 3, "seat": true}, {"x": 50.5, "y": 45.5, "f": "rear-left", "k": 3, "seat": true}], "stand": [{"x": 27, "y": 47, "f": "front-right"}, {"x": 58, "y": 40, "f": "front-left"}]}, {"seats": [{"x": 64.3, "y": 47, "f": "front-left", "k": 7, "seat": true, "cut": 51.5}, {"x": 78.8, "y": 48, "f": "front-left", "k": 7, "seat": true, "cut": 52.5}, {"x": 65, "y": 56.5, "f": "rear-right", "k": 3, "seat": true}, {"x": 79, "y": 56.5, "f": "rear-left", "k": 3, "seat": true}], "stand": [{"x": 88, "y": 60, "f": "front-left"}, {"x": 72, "y": 72, "f": "front-left"}]}, {"seats": [{"x": 40, "y": 57.5, "f": "front-right", "k": 7, "seat": true, "cut": 62.0}, {"x": 55.5, "y": 58, "f": "front-left", "k": 7, "seat": true, "cut": 62.5}, {"x": 40, "y": 67, "f": "rear-right", "k": 3, "seat": true}, {"x": 55, "y": 67, "f": "rear-left", "k": 3, "seat": true}], "stand": [{"x": 32, "y": 74, "f": "front-right"}, {"x": 64, "y": 76, "f": "front-left"}]}]};
 
 /* characters (the owner's rule): the owner's own drawings, cut from the reference sheet, each with a small credit tag.
    -l faces screen left, -r is its mirror. An agent stores the one picked in its page as look.char. */
@@ -721,6 +722,10 @@ const CHARS = [{"id":"c01","label_en":"Man in white ghutra and thobe","for":"m",
 const CHAR = Object.fromEntries(CHARS.map(c => [c.id, c]));
 const hashOf = id => [...String(id)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);
 const lookOf = id => (agentById(id) || {}).look || {};
+/* height (the owner's rule): each agent may be a little shorter or taller; look.height is a scale factor, 1 is normal */
+const HEIGHTS = [[.9,"Short"],[.95,"Medium-short"],[1,"Normal"],[1.05,"Tall"],[1.1,"Very tall"]];
+const okHeight = v => { const n = +v; return v != null && v !== "" && Number.isFinite(n) ? Math.min(1.15, Math.max(.85, n)) : 1; };
+const heightOf = (id, lk) => okHeight((lk || lookOf(id)).height);
 const charOf = (id, lk) => { lk = lk || lookOf(id); return CHAR[lk.char] ? lk.char : CHAR[SPRITE[id]] ? SPRITE[id] : CHARS[(Math.imul(hashOf(id), 2654435761) >>> 0) % CHARS.length].id; };
 const charImg = (c, facing) => `${A}chars/${c}-${/right$/.test(facing || "") === /^front/.test(facing || "front") ? "r" : "l"}.webp`;
 const charUrl = (id, facing) => charImg(charOf(id), facing || "front-left");
@@ -734,25 +739,28 @@ const CH_H = 16, SEAT_CUT = .44;                     // character height, hidden
 /* seated poses (the owner's rule): when an agent sits, the owner's seated body for its outfit and seat type is drawn with the
    character's own head on its neck. k is the seat type (1 task chair front, 2 task chair side, 3 manager chair, 4 visitor chair,
    5 meeting chair, 6 sofa, 7 armchair, 8 bean bag, 9 stool). A seat's y is the neck; cut, when given, hides what is below it. */
-const SEATED = {"rows":{"1":85,"2":85,"3":85,"4":85,"5":85,"6":85,"7":85,"8":85,"9":85,"10":85,"11":85,"12":85},"bodies":{"1-1":[255,240,96.5,2],"1-2":[276,243,151.5,4],"1-3":[282,243,101.0,2],"1-4":[261,240,101.0,2],"1-5":[345,234,97.0,0],"1-6":[474,225,152.5,0],"1-7":[303,228,125.5,2],"1-8":[300,231,124.5,2],"1-9":[234,243,74.0,2],"2-1":[249,246,94.5,2],"2-2":[282,246,168.0,0],"2-3":[279,243,100.0,0],"2-4":[264,237,101.0,2],"2-5":[345,237,87.5,3],"2-6":[471,240,147.5,5],"2-7":[294,237,117.5,2],"2-8":[300,237,127.5,2],"2-9":[231,240,69.5,2],"3-1":[255,249,96.5,2],"3-2":[285,252,172.0,5],"3-3":[276,243,103.5,2],"3-4":[258,246,100.0,2],"3-5":[345,240,95.0,2],"3-6":[477,237,154.0,0],"3-7":[294,237,125.5,0],"3-8":[309,243,136.0,0],"3-9":[237,249,74.0,2],"4-1":[243,246,82.5,1],"4-2":[276,249,164.0,0],"4-3":[279,249,108.0,2],"4-4":[267,246,97.5,5],"4-5":[345,243,104.0,2],"4-6":[468,237,154.5,2],"4-7":[294,237,128.0,2],"4-8":[300,237,136.0,0],"4-9":[231,237,70.5,0],"5-1":[246,252,95.5,5],"5-2":[285,249,174.5,0],"5-3":[291,255,113.5,5],"5-4":[258,240,97.0,0],"5-5":[348,240,92.0,2],"5-6":[471,237,159.0,3],"5-7":[288,234,131.0,0],"5-8":[300,237,131.0,0],"5-9":[234,249,76.0,5],"6-1":[243,252,82.5,0],"6-2":[288,252,183.5,0],"6-3":[270,252,103.5,2],"6-4":[270,243,99.0,0],"6-5":[351,240,100.0,0],"6-6":[471,237,151.5,0],"6-7":[294,237,124.0,0],"6-8":[306,240,134.5,1],"6-9":[240,249,86.0,4],"7-1":[246,246,99.0,2],"7-2":[285,249,172.5,3],"7-3":[303,249,99.0,2],"7-4":[279,240,104.5,0],"7-5":[345,240,109.0,0],"7-6":[474,237,150.0,2],"7-7":[297,234,129.0,0],"7-8":[300,237,139.0,0],"7-9":[228,252,67.5,5],"8-1":[246,246,101.5,0],"8-2":[273,258,164.5,0],"8-3":[285,255,97.0,2],"8-4":[282,246,98.5,5],"8-5":[345,243,106.0,2],"8-6":[471,240,160.0,0],"8-7":[291,237,133.5,0],"8-8":[309,249,138.0,0],"8-9":[234,243,79.0,0],"9-1":[246,249,93.0,0],"9-2":[291,252,185.0,0],"9-3":[276,255,107.0,0],"9-4":[285,246,107.0,2],"9-5":[342,243,97.0,0],"9-6":[471,240,157.0,0],"9-7":[288,246,126.5,5],"9-8":[309,252,147.0,3],"9-9":[231,246,74.5,0],"10-1":[252,252,93.0,2],"10-2":[282,252,175.5,0],"10-3":[276,252,101.0,2],"10-4":[276,243,89.0,2],"10-5":[348,246,101.0,0],"10-6":[474,249,151.5,3],"10-7":[285,240,122.5,0],"10-8":[315,246,143.5,0],"10-9":[219,249,64.5,0],"11-1":[249,204,86.5,0],"11-2":[282,204,155.0,0],"11-3":[270,204,104.0,0],"11-4":[243,204,94.5,1],"11-5":[342,204,98.0,0],"11-6":[471,204,145.0,0],"11-7":[276,204,107.0,0],"11-8":[300,204,136.5,0],"11-9":[204,204,60.0,0],"12-1":[243,204,89.5,0],"12-2":[282,201,169.0,0],"12-3":[264,201,104.5,0],"12-4":[246,198,95.5,0],"12-5":[342,201,96.0,0],"12-6":[468,195,148.0,0],"12-7":[276,198,110.5,0],"12-8":[300,201,132.5,0],"12-9":[222,201,63.5,0]},"heads":{"c01":[96,103],"c02":[96,99],"c03":[96,120],"c04":[96,125],"c05":[96,117],"c06":[96,110],"c07":[96,105],"c08":[96,99],"c09":[96,122],"c10":[96,107],"c11":[96,112],"c12":[96,132],"c13":[96,135],"c14":[96,119],"c15":[96,121],"c16":[96,113],"c17":[96,130],"c18":[96,115],"c19":[96,100],"c20":[96,96],"c21":[96,99],"c22":[96,100],"c23":[96,105],"c24":[96,113],"c25":[96,115],"c26":[96,129],"c27":[96,128],"c28":[96,95],"c29":[96,110],"c30":[96,102],"c31":[96,91],"c32":[96,94],"c33":[96,99],"c34":[96,112],"c35":[96,104],"c36":[96,109],"c37":[96,108],"c38":[96,96],"c39":[96,87],"c40":[96,75],"c41":[96,93]},"row_of":{"c01":1,"c02":1,"c03":2,"c04":3,"c05":4,"c06":4,"c07":5,"c08":6,"c09":7,"c10":7,"c11":8,"c12":10,"c13":11,"c14":8,"c15":12,"c16":9,"c17":6,"c18":6,"c19":1,"c20":1,"c21":1,"c22":1,"c23":1,"c24":3,"c25":3,"c26":1,"c27":2,"c28":2,"c29":4,"c30":5,"c31":5,"c32":5,"c33":5,"c34":4,"c35":4,"c36":4,"c37":4,"c38":5,"c39":5,"c40":12,"c41":5}};   // copied from assets/seated/seated.json
-const HEAD_ROOM = 2.8;                     // a seated head's width, in % of the room height
+const SEATED = {"rows":{"1":85,"2":85,"3":85,"4":85,"5":85,"6":85,"7":85,"8":85,"9":85,"10":85,"11":85,"12":85,"13":85,"14":85},"bodies":{"1-1":[264,204,73.5,3],"1-2":[282,204,202.5,3],"1-3":[183,198,99.0,0],"1-4":[255,198,153.0,0],"1-5":[297,204,111.0,3],"1-6":[243,201,75.0,3],"1-7":[264,201,75.0,3],"1-8":[321,198,135.0,3],"1-9":[285,195,129.0,0],"1-10":[249,201,78.0,3],"2-1":[267,207,74.3,3],"2-2":[279,207,200.3,3],"2-3":[183,201,99.0,0],"2-4":[255,204,153.0,0],"2-5":[297,207,111.0,3],"2-6":[252,207,77.8,3],"2-7":[273,204,77.6,3],"2-8":[324,201,136.3,3],"2-9":[300,201,135.8,0],"2-10":[240,201,75.2,3],"3-1":[264,213,73.5,3],"3-2":[285,216,204.7,3],"3-3":[177,213,95.8,0],"3-4":[258,213,154.8,0],"3-5":[303,213,113.2,3],"3-6":[237,213,73.1,3],"3-7":[264,210,75.0,3],"3-8":[321,207,135.0,3],"3-9":[285,210,129.0,0],"3-10":[237,213,74.2,3],"4-1":[267,213,74.3,3],"4-2":[282,216,202.5,3],"4-3":[183,210,99.0,0],"4-4":[261,207,156.6,0],"4-5":[303,213,113.2,3],"4-6":[234,213,72.2,3],"4-7":[267,207,75.9,3],"4-8":[321,207,135.0,3],"4-9":[285,207,129.0,0],"4-10":[243,210,76.1,3],"5-1":[267,213,74.3,3],"5-2":[282,213,202.5,3],"5-3":[180,210,97.4,0],"5-4":[261,210,156.6,0],"5-5":[294,213,109.9,3],"5-6":[240,213,74.1,3],"5-7":[267,213,75.9,3],"5-8":[321,213,135.0,3],"5-9":[306,213,138.5,0],"5-10":[249,210,78.0,3],"6-1":[264,216,73.5,3],"6-2":[282,216,202.5,3],"6-3":[180,210,97.4,0],"6-4":[261,213,156.6,0],"6-5":[309,216,115.5,3],"6-6":[243,210,75.0,3],"6-7":[270,210,76.7,3],"6-8":[321,210,135.0,3],"6-9":[306,213,138.5,0],"6-10":[246,210,77.1,3],"7-1":[270,207,75.2,3],"7-2":[282,207,202.5,3],"7-3":[180,204,97.4,0],"7-4":[258,207,154.8,0],"7-5":[291,207,108.8,3],"7-6":[261,207,80.6,3],"7-7":[276,204,78.4,3],"7-8":[324,204,136.3,3],"7-9":[306,207,138.5,0],"7-10":[243,207,76.1,3],"8-1":[267,201,74.3,2],"8-2":[282,207,202.5,3],"8-3":[180,201,97.4,0],"8-4":[261,201,156.6,0],"8-5":[300,204,112.1,3],"8-6":[261,204,80.6,3],"8-7":[285,207,81.0,3],"8-8":[330,198,138.8,3],"8-9":[309,201,139.9,0],"8-10":[246,201,77.1,3],"9-1":[264,207,73.5,3],"9-2":[282,207,202.5,3],"9-3":[183,207,99.0,0],"9-4":[255,192,153.0,0],"9-5":[282,207,105.4,3],"9-6":[255,198,78.7,2],"9-7":[267,195,75.9,2],"9-8":[327,192,137.5,2],"9-9":[300,198,135.8,0],"9-10":[240,204,75.2,3],"10-1":[261,201,72.7,2],"10-2":[282,201,202.5,2],"10-3":[183,192,99.0,0],"10-4":[264,201,158.4,0],"10-5":[288,201,107.6,2],"10-6":[255,201,78.7,3],"10-7":[279,201,79.3,3],"10-8":[324,186,136.3,2],"10-9":[294,189,133.1,0],"10-10":[237,189,74.2,2],"11-1":[267,210,74.3,3],"11-2":[282,210,202.5,3],"11-3":[183,198,99.0,0],"11-4":[261,210,156.6,0],"11-5":[303,210,113.2,3],"11-6":[264,210,81.5,3],"11-7":[264,210,75.0,3],"11-8":[321,210,135.0,3],"11-9":[294,210,133.1,0],"11-10":[237,210,74.2,3],"12-1":[258,195,71.8,2],"12-2":[276,195,198.2,2],"12-3":[192,192,103.9,0],"12-4":[261,192,156.6,0],"12-5":[291,195,108.8,2],"12-6":[240,195,74.1,2],"12-7":[267,195,75.9,2],"12-8":[321,195,135.0,2],"12-9":[282,195,127.6,0],"12-10":[246,186,77.1,2],"13-1":[261,189,72.7,2],"13-2":[282,189,202.5,2],"13-3":[177,189,95.8,0],"13-4":[264,189,158.4,0],"13-5":[297,189,111.0,2],"13-6":[240,189,74.1,2],"13-7":[273,189,77.6,2],"13-8":[318,186,133.7,2],"13-9":[297,189,134.4,0],"13-10":[237,189,74.2,2],"14-1":[264,198,73.5,2],"14-2":[279,195,200.3,2],"14-3":[180,195,97.4,0],"14-4":[261,198,156.6,0],"14-5":[297,198,111.0,2],"14-6":[249,201,76.9,3],"14-7":[279,198,79.3,2],"14-8":[321,195,135.0,2],"14-9":[288,198,130.4,0],"14-10":[249,195,78.0,2]},"heads":{"c01":[96,103],"c02":[96,99],"c03":[96,120],"c04":[96,125],"c05":[96,117],"c06":[96,110],"c07":[96,105],"c08":[96,99],"c09":[96,122],"c10":[96,107],"c11":[96,112],"c12":[96,132],"c13":[96,135],"c14":[96,119],"c15":[96,121],"c16":[96,113],"c17":[96,130],"c18":[96,115],"c19":[96,100],"c20":[96,96],"c21":[96,99],"c22":[96,100],"c23":[96,105],"c24":[96,113],"c25":[96,115],"c26":[96,129],"c27":[96,128],"c28":[96,95],"c29":[96,110],"c30":[96,102],"c31":[96,91],"c32":[96,94],"c33":[96,99],"c34":[96,112],"c35":[96,104],"c36":[96,109],"c37":[96,108],"c38":[96,96],"c39":[96,87],"c40":[96,75],"c41":[96,93]},"row_of":{"c01":1,"c02":1,"c03":2,"c04":4,"c05":5,"c06":5,"c07":6,"c08":7,"c09":8,"c10":8,"c11":9,"c12":11,"c13":12,"c14":9,"c15":13,"c16":10,"c17":7,"c18":7,"c19":1,"c20":1,"c21":1,"c22":1,"c23":1,"c24":4,"c25":4,"c26":1,"c27":2,"c28":2,"c29":5,"c30":6,"c31":6,"c32":6,"c33":6,"c34":5,"c35":5,"c36":5,"c37":5,"c38":6,"c39":6,"c40":13,"c41":6}};
+const HEAD_ROOM = 3.6;                     // a seated head's width, in % of the room height
 /* the pose is built from two pictures (body, then head on its neck), so it needs no canvas */
-function poseFor(id, k){
+/* the library's bodies face right, except the 3/4 back view (k 4) which faces left; the straight back view (k 3) needs no flip */
+const flipOf = (k, f) => k === 3 ? false : k === 4 ? /right$/.test(f || "") : /left$/.test(f || "");
+function poseFor(id, k, f){
   const c = charOf(id), r = SEATED.row_of[c], bm = SEATED.bodies[r + "-" + k], hd = SEATED.heads[c]; if (!bm || !hd) return null;
   const [bw, bh, nx, ny] = bm, hw = SEATED.rows[r], hh = hd[1] * hw / hd[0];
   const W = Math.ceil(Math.max(bw, hw + 2 * Math.abs(nx - bw / 2))) + 4, top = Math.ceil(hh), H = top + bh, ox = (W - bw) / 2;
-  return {w:W, h:H, hw, ax:(ox + nx) / W, ay:(top + ny) / H, body:`${A}seated/b${String(r).padStart(2,"0")}-${k}.webp`, head:`${A}heads/${c}.webp`,
+  const flip = flipOf(k, f), ax = (ox + nx) / W;
+  return {w:W, h:H, hw, flip, hf:heightOf(id), ax:flip ? 1 - ax : ax, ay:(top + ny) / H, body:`${A}seated/b${String(r).padStart(2,"0")}-${k}.webp`, head:`${A}heads/${c}.webp`,
     bx:ox / W, by:top / H, bwf:bw / W, hx:(ox + nx - hw / 2) / W, hy:(top + ny - hh * .94) / H, hwf:hw / W};
 }
 function poseEl(P, clip){
-  const d = el("div", "pose"); d.style.aspectRatio = P.w + "/" + P.h; if (clip) d.style.clipPath = `inset(0 0 ${clip.toFixed(1)}% 0)`;
+  const d = el("div", "pose"); d.style.aspectRatio = P.w + "/" + P.h; if (P.flip) d.style.transform = "scaleX(-1)"; if (clip) d.style.clipPath = `inset(0 0 ${clip.toFixed(1)}% 0)`;
   const b = el("img"), h = el("img"); b.alt = h.alt = ""; b.src = P.body; h.src = P.head;
   b.style.cssText = `left:${P.bx * 100}%;top:${P.by * 100}%;width:${P.bwf * 100}%`; h.style.cssText = `left:${P.hx * 100}%;top:${P.hy * 100}%;width:${P.hwf * 100}%`;
   d.append(b, h); return d;
 }
 /* where a seated pose goes: left/top for the button (bottom-centre anchor), its height, and how much of the bottom to hide */
 function poseBox(p, P){
-  const h = P.h / P.hw * HEAD_ROOM, w = h * P.w / P.h * 896 / 1200, bottom = p.y + (1 - P.ay) * h;
+  const h = P.h / P.hw * HEAD_ROOM * (P.hf || 1), w = h * P.w / P.h * 896 / 1200, bottom = p.y + (1 - P.ay) * h;
   return {left:p.x + (.5 - P.ax) * w, top:bottom, h, clip:p.cut != null ? Math.max(0, (bottom - p.cut) / h * 100) : 0, head:bottom - h};
 }
 const TALK_MIN = 15;                                  // agents who messaged each other in the last 15 minutes meet in the meeting room
@@ -763,7 +771,15 @@ const baseOf = room => String(room).replace(/-\d+$/, "");
 const typeOf = room => baseOf(room).split("@")[0];            // "main@mkt-2" -> "main"
 const deptOfRoom = room => baseOf(room).split("@")[1] || "";   // "main@mkt-2" -> "mkt"
 const roomKey = (base, n) => n > 1 ? `${base}-${n}` : base;
-const ROOM_NAME = {main:"Main office", huddle:"Huddle room"};
+const ROOM_NAME = {main:"Main office", huddle:"Huddle room", game:"Games & lounge", idle:"Idle room"};   // as the first copies are titled in the page
+/* the lounge and the idle room repeat too: one more copy once the people there reach 80% of a room's places */
+const MULTI = ["game", "idle"], FULL_AT = .8;
+const roomCap = type => Math.max(1, Math.floor(SLOTS[type].length * FULL_AT));
+/* meeting room picture by the size of the meeting: the smallest room that fits everyone.
+   Each picture has its own seats (MEET_SETS). */
+const MEET_BG = [[10,"meet-10"],[20,"meet-20"],[30,"meet-30"]];
+const meetBg = n => (MEET_BG.find(([c]) => c >= n) || MEET_BG[MEET_BG.length - 1])[1];
+let meetCount = 0;   // people in the meeting room's group, set by drawScene
 const roomTitle = (key, n) => { const d = deptOfRoom(key), dp = d && deptById(d); const nm = dp ? `${dp.name_en} office` : ROOM_NAME[typeOf(key)]; return n > 1 ? `${nm} ${n}` : nm; };
 function ensureRoom(key){
   if (ROOMS[key]) return ROOMS[key];
@@ -777,7 +793,7 @@ function ensureRoom(key){
 }
 const roomsOf = base => Object.keys(ROOMS).filter(k => baseOf(k) === base).sort((a, b) => (+a.split("-").pop() || 1) - (+b.split("-").pop() || 1));
 function pruneRooms(out){   // close extra rooms nobody is planned for or still standing in
-  const bases = [...new Set(Object.keys(ROOMS).map(baseOf).filter(b => typeOf(b) === "main" || b === "huddle"))];
+  const bases = [...new Set(Object.keys(ROOMS).map(baseOf).filter(b => typeOf(b) === "main" || b === "huddle" || MULTI.includes(b)))];
   bases.forEach(base => roomsOf(base).slice(deptOfRoom(base) && !deptById(deptOfRoom(base)) ? 0 : 1).reverse().forEach(k => {
     const busy = [...out.values()].some(p => p.room === k) || [...figs.values()].some(r => r.room === k);
     if (!busy) { ROOMS[k].remove(); delete ROOMS[k]; }
@@ -895,7 +911,7 @@ function renderDepts(){
 /* idle room (the owner's rule): an agent with no activity for more than 3 days sits here on a chair and does not move,
    with "Idle since <date>" over its head. Any new message, task update or meeting brings it back. */
 const IDLE_DAYS = 3, NEVER_IDLE = new Set(["coordinator", "office-manager", "agent-designer"]);
-const IDLE_SEATS = [{"x":40,"y":37.5,"f":"front-right","seat":true,"k":7},{"x":47,"y":36.0,"f":"front-left","seat":true,"k":7},{"x":53.5,"y":34.0,"f":"front-right","seat":true,"k":7},{"x":64,"y":36.0,"f":"front-left","seat":true,"k":7},{"x":77,"y":47.5,"f":"front-right","seat":true,"k":7},{"x":84,"y":49.5,"f":"front-left","seat":true,"k":7},{"x":90.5,"y":51.5,"f":"front-left","seat":true,"k":7},{"x":38,"y":57.5,"f":"rear-right","seat":true,"k":7},{"x":45,"y":60.5,"f":"rear-left","seat":true,"k":7},{"x":51,"y":63.0,"f":"rear-right","seat":true,"k":7},{"x":30,"y":49.5,"f":"front-left","seat":true,"k":7},{"x":63,"y":66.5,"f":"front-right","seat":true,"k":7},{"x":79,"y":59.5,"f":"front-left","seat":true,"k":7},{"x":57,"y":38.5,"f":"front-left","seat":true,"k":7},{"x":25,"y":76,"f":"front-right"},{"x":70,"y":82,"f":"front-left"},{"x":86,"y":70,"f":"front-left"},{"x":18,"y":60,"f":"front-right"},{"x":46,"y":86,"f":"front-left"},{"x":60,"y":55,"f":"front-left"}];
+const IDLE_SEATS = [{"x": 37, "y": 44.5, "f": "front-right", "k": 8, "seat": true}, {"x": 43, "y": 41.5, "f": "front-right", "k": 8, "seat": true}, {"x": 49, "y": 38.5, "f": "front-right", "k": 8, "seat": true}, {"x": 21, "y": 55.5, "f": "front-right", "k": 5, "seat": true}, {"x": 36, "y": 63.5, "f": "front-right", "k": 5, "seat": true}, {"x": 64, "y": 37, "f": "front-left", "k": 5, "seat": true}, {"x": 74, "y": 44, "f": "front-left", "k": 5, "seat": true}, {"x": 87, "y": 53, "f": "front-left", "k": 10, "seat": true}, {"x": 51, "y": 79, "f": "front-right", "k": 10, "seat": true}, {"x": 66, "y": 52, "f": "front-left"}, {"x": 85, "y": 66, "f": "front-left"}, {"x": 15, "y": 66, "f": "front-right"}, {"x": 45, "y": 88, "f": "front-right"}, {"x": 30, "y": 58, "f": "front-right"}, {"x": 58, "y": 47, "f": "front-left"}];
 const lastActive = a => {
   let t = 0; const bump = v => { const n = Date.parse(v || ""); if (n > t) t = n; };
   bump(a.last_active_at); bump(a.updated_at); bump(a.profile_updated_at);
@@ -907,21 +923,78 @@ const lastActive = a => {
 const idleSince = a => { if (!a || NEVER_IDLE.has(a.id) || a.state === "waiting") return 0;
   const t = lastActive(a); return a.archived === true ? (t || 1) : (t && Date.now() - t > IDLE_DAYS * 864e5 ? t : 0); };
 const DOOR = MEET.door;
+/* walking (the owner's rule): nobody walks over a table or furniture. Each room picture has its floor and the furniture on it as
+   polygons in % of the room; a path goes around them on a 100 x 100 grid, then the last step goes into the seat */
+const NAV = {
+  "main-b":{floor:[[1,60],[57,30],[99,58],[46,98]], block:[[[17,59],[44,44],[60,42],[76,52],[74,73],[64,74],[58,58],[50,52],[38,60],[30,77],[16,70]],[[48,32],[58,24],[86,38],[86,54],[79,56],[48,40]],[[10,51],[37,38],[37,44],[13,57]],[[79,70],[93,61],[94,67],[83,75]]]},
+  huddle:{floor:[[1,60],[51,32],[99,59],[52,96]], block:[[[33,44],[43,38],[53,43],[43,50]],[[62,55],[72,49],[82,54],[72,62]],[[37,62],[48,56],[59,61],[48,68]],[[60,38],[62,35],[86,46],[86,55],[80,56]],[[8,52],[42,33],[42,38],[10,58]],[[48,30],[60,30],[60,37],[48,37]]]},
+  game:{floor:[[1,58],[60,28],[93,45],[100,62],[43,98]], block:[[[25,46],[40,40],[50,46],[50,52],[34,60],[26,56]],[[44,64],[55,58],[62,64],[62,72],[52,78],[45,73]],[[70,58],[82,50],[93,56],[93,62],[80,70],[70,63]],[[56,36],[66,30],[74,34],[80,40],[86,40],[86,48],[74,50],[57,44]],[[76,30],[94,40],[94,46],[78,36]],[[6,50],[15,48],[21,52],[24,60],[16,64],[8,56]],[[20,68],[30,64],[44,72],[44,88],[35,86],[20,74]],[[57,22],[69,22],[69,32],[57,32]]]},
+  idle:{floor:[[1,58],[58,30],[100,62],[44,96]], block:[[[27,46],[46,36],[53,33],[54,40],[33,52]],[[43,56],[52,52],[62,55],[62,60],[52,64],[43,61]],[[52,73],[78,58],[81,62],[81,68],[60,80],[52,78]],[[17,56],[26,56],[26,67],[17,67]],[[31,63],[41,63],[41,72],[31,72]],[[60,36],[68,36],[68,47],[60,47]],[[70,43],[79,43],[79,55],[70,55]],[[22,70],[30,64],[39,70],[39,84],[22,76]],[[44,70],[50,70],[50,80],[44,80]],[[83,51],[91,51],[91,60],[83,60]],[[47,77],[55,77],[55,87],[47,87]],[[68,33],[88,42],[88,52],[68,40]],[[18,50],[52,30],[52,35],[20,55]]]},
+  "meet-10":{floor:[[1,60],[52,32],[99,61],[50,98]], block:[[[27,59],[60,43],[71,48],[40,67]],[[62,36],[86,47],[86,56],[62,44]],[[8,52],[46,34],[46,40],[10,58]],[[51,22],[62,22],[62,40],[51,40]]]},
+  "meet-20":{floor:[[1,58],[52,30],[99,58],[50,98]], block:[[[20,55],[52,38],[80,52],[47,75]],[[66,35],[88,46],[88,55],[66,43]]]},
+  "meet-30":{floor:[[1,60],[55,32],[99,60],[48,97]], block:[[[17,52],[44,40],[83,58],[56,80]],[[60,30],[68,30],[68,42],[60,42]]]},
+  boss:{floor:[[1,60],[54,30],[99,62],[50,96]], block:[[[36,55],[56,48],[66,55],[66,70],[60,72],[38,62]],[[54,36],[73,44],[73,52],[54,44]],[[78,30],[92,38],[92,62],[78,56]]]}
+};
+const bgOfRoom = room => { const t = typeOf(room), b = t === "meet" ? meetBg(meetCount) : ROOM_BG[t]; return Array.isArray(b) ? b[0] : b; };
+const inPoly = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j];
+  if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+const navGrids = {};
+function navGrid(bg){
+  if (navGrids[bg] !== undefined) return navGrids[bg];
+  const n = NAV[bg]; if (!n) return navGrids[bg] = null;
+  const g = new Uint8Array(10000);
+  for (let j = 0; j < 100; j++) for (let i = 0; i < 100; i++) { const x = i + .5, y = j + .5;
+    g[j * 100 + i] = inPoly(x, y, n.floor) && !n.block.some(b => inPoly(x, y, b)) ? 1 : 0; }
+  return navGrids[bg] = g;
+}
+function nearFree(g, x, y){
+  const i0 = Math.max(0, Math.min(99, Math.floor(x))), j0 = Math.max(0, Math.min(99, Math.floor(y)));
+  for (let d = 0; d < 40; d++) for (let dj = -d; dj <= d; dj++) for (let di = -d; di <= d; di++) {
+    if (Math.max(Math.abs(di), Math.abs(dj)) !== d) continue; const i = i0 + di, j = j0 + dj;
+    if (i >= 0 && i < 100 && j >= 0 && j < 100 && g[j * 100 + i]) return j * 100 + i; }
+  return -1;
+}
+const clearLine = (g, a, b) => { const ax = a % 100 + .5, ay = Math.floor(a / 100) + .5, bx = b % 100 + .5, by = Math.floor(b / 100) + .5, n = Math.ceil(Math.hypot(bx - ax, by - ay) * 2);
+  for (let k = 0; k <= n; k++) { const x = ax + (bx - ax) * k / n, y = ay + (by - ay) * k / n; if (!g[Math.floor(y) * 100 + Math.floor(x)]) return false; } return true; };
+/* A* on the grid (y counts 3/4 because the room is seen from above at an angle), then straightened with line of sight */
+function navPath(room, from, to){
+  const g = navGrid(bgOfRoom(room)); if (!g) return [to];
+  const s = nearFree(g, from.x, from.y), t = nearFree(g, to.x, to.y); if (s < 0 || t < 0 || s === t) return [to];
+  const G = new Float32Array(10000).fill(Infinity), came = new Int32Array(10000).fill(-1), open = [s], closed = new Uint8Array(10000);
+  const tx = t % 100, ty = Math.floor(t / 100), hcost = c => Math.hypot(c % 100 - tx, (Math.floor(c / 100) - ty) * .75);
+  G[s] = 0; const F = new Float32Array(10000).fill(Infinity); F[s] = hcost(s);
+  while (open.length) {
+    let bi = 0; for (let k = 1; k < open.length; k++) if (F[open[k]] < F[open[bi]]) bi = k;
+    const c = open[bi]; open[bi] = open[open.length - 1]; open.pop();
+    if (c === t) break; if (closed[c]) continue; closed[c] = 1;
+    const cx = c % 100, cy = Math.floor(c / 100);
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue;
+      const nx = cx + dx, ny = cy + dy; if (nx < 0 || nx > 99 || ny < 0 || ny > 99) continue; const nb = ny * 100 + nx;
+      if (!g[nb] || closed[nb] || (dx && dy && (!g[cy * 100 + nx] || !g[ny * 100 + cx]))) continue;
+      const ng = G[c] + Math.hypot(dx, dy * .75); if (ng < G[nb]) { G[nb] = ng; F[nb] = ng + hcost(nb); came[nb] = c; open.push(nb); } }
+  }
+  if (came[t] < 0) return [to];
+  const cells = [t]; while (cells[0] !== s) cells.unshift(came[cells[0]]);
+  const keep = [s]; for (let k = 1; k < cells.length; k++) if (!clearLine(g, keep[keep.length - 1], cells[k])) keep.push(cells[k - 1]);
+  keep.push(t);
+  return keep.slice(1).map(c => ({x:c % 100 + .5, y:Math.floor(c / 100) + .5})).concat([to]);
+}
 const DESKS = S_MAIN.slice(0, MGR_SEAT);              // bench seats; MGR_SEAT is the manager's chair in the glass office
 const COFFEE = {x:84, y:60, f:"front-right"};
 const sitAt = s => ({...s, seat:true});
+const MEET_SLOTS = Object.fromEntries(Object.entries(MEET_SETS).map(([k, v]) => [k, v.seats.map(sitAt).concat(v.stand)]));
 const SLOTS = {
   boss: S_BOSS_VISIT,
   main: S_MAIN,
   game: S_GAME,
   idle: IDLE_SEATS,
-  meet: MEET.seats.map(sitAt).concat(MEET.stand),
+  get meet(){ return MEET_SLOTS[meetBg(meetCount)]; },
   huddle: HUDDLE.tables.flatMap(t => t.seats.map(sitAt)).concat(HUDDLE.tables.flatMap(t => t.stand))
 };
 const N_TABLES = HUDDLE.tables.length, tableSlots = ti => [0,1,2,3].map(k => ti * 4 + k).concat([N_TABLES * 4 + ti * 2, N_TABLES * 4 + ti * 2 + 1]);
 const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 18; };
 function setRoomBg(){
-  const bg = (k, n) => { const b = ROOM_BG[typeOf(k)]; return b ? `url(${A}rooms/${Array.isArray(b) ? b[(n - 1) % b.length] : b}.webp)` : ""; };
+  const bg = (k, n) => { const b = typeOf(k) === "meet" ? meetBg(meetCount) : ROOM_BG[typeOf(k)]; return b ? `url(${A}rooms/${Array.isArray(b) ? b[(n - 1) % b.length] : b}.webp)` : ""; };
   Object.entries(ROOMS).forEach(([k, r]) => { const n = k === baseOf(k) ? 1 : +k.split("-").pop() || 1; r.style.backgroundImage = bg(k, n); });
   const d = new Date(); $("clock").textContent = (isNight() ? "NIGHT " : "DAY ") + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
 }
@@ -951,6 +1024,7 @@ function plan(){
   const out = new Map(), usedSets = {}, U = room => usedSets[room] ??= new Set(), used = new Proxy({}, {get:(_, k) => U(k)});
   const slotsOf = room => SLOTS[typeOf(room)];
   const groups = meetingGroups(), place = new Map(), tables = [];
+  meetCount = groups.length ? groups[0].ids.length : 0;   // the first group takes the meeting room: its size picks the picture and the seats
   let big = false;
   groups.forEach(g => {
     const ids = g.ids.filter(id => !place.has(id)).sort((a, b) => (b === "owner") - (a === "owner"));
@@ -976,6 +1050,12 @@ function plan(){
   agents.filter(a => !place.has(a.id) && a.id !== ASSISTANT && !idleSince(a) && (a.state === "working" || a.state === "blocked")).forEach(a => { const b = deskBase(a); atDesk[b] = (atDesk[b] || 0) + 1; });
   const nMainOf = {}; ["main", ...depts().map(d => "main@" + d.id)].forEach(b => { nMainOf[b] = Math.max(1, Math.ceil((atDesk[b] || 0) / DESKS.length)); for (let k = 1; k <= nMainOf[b]; k++) ensureRoom(roomKey(b, k)); });
   const mainsOf = room => { const b = baseOf(room); return Array.from({length:nMainOf[b] || 1}, (_, k) => roomKey(b, k + 1)); };
+  /* the lounge and the idle room: enough copies that none is fuller than 80%, with the people spread evenly over them */
+  const nMulti = {}, quota = {};
+  MULTI.forEach(b => { const n = wants.filter(w => w[1] === b).length; nMulti[b] = Math.max(1, Math.ceil(n / roomCap(b))); const q = Math.ceil(n / nMulti[b]);
+    for (let k = 1; k <= nMulti[b]; k++) { ensureRoom(roomKey(b, k)); quota[roomKey(b, k)] = q; } });
+  const copiesOf = room => typeOf(room) === "main" ? mainsOf(room) : MULTI.includes(room) ? Array.from({length:nMulti[room]}, (_, k) => roomKey(room, k + 1)) : [room];
+  const roomy = rm => !(rm in quota) || used[rm].size < quota[rm];
   const free = (room, list) => { const l = list || slotsOf(room).map((_, i) => i).filter(i => typeOf(room) !== "main" || (i !== MGR_SEAT && ((nMainOf[baseOf(room)] || 1) === 1 || i < DESKS.length))); const i = l.find(k => !used[room].has(k)); return i ?? -1; };
   const pending = [];
   /* the manager's glass office: the department's Director (or its top Manager), and the Coordinator at headquarters */
@@ -984,14 +1064,16 @@ function plan(){
   wants.forEach(([id, room]) => { if (out.has(id) || typeOf(room) !== "main" || leadOf(baseOf(room)) !== id) return; const rm = mainsOf(room)[0];
     if (!used[rm].has(MGR_SEAT)) { used[rm].add(MGR_SEAT); out.set(id, {room:rm, spot:slotsOf(rm)[MGR_SEAT], slot:MGR_SEAT}); } });
   wants.forEach(([id, room, list]) => { if (out.has(id)) return; const r = figs.get(id); if (r && r.plan && typeOf(r.plan.room) === "main" && r.plan.slot === MGR_SEAT) r.plan.slot = -1;
-    if (r && r.plan && (r.plan.room === room || (typeOf(room) === "main" && mainsOf(room).includes(r.plan.room))) && r.plan.slot >= 0 && (!list || list.includes(r.plan.slot)) && !used[r.plan.room].has(r.plan.slot)) { used[r.plan.room].add(r.plan.slot); out.set(id, r.plan); }
+    if (r && r.plan && (r.plan.room === room || copiesOf(room).includes(r.plan.room)) && roomy(r.plan.room) && r.plan.slot >= 0 && (!list || list.includes(r.plan.slot)) && !used[r.plan.room].has(r.plan.slot)) { used[r.plan.room].add(r.plan.slot); out.set(id, r.plan); }
     else pending.push([id, room, list]); });
   pending.forEach(([id, room, list]) => {
     let rm = room, i = free(rm, list);
     if (typeOf(room) === "main") for (const m of mainsOf(room)) { i = free(m); if (i >= 0) { rm = m; break; } }
+    else if (MULTI.includes(room)) { i = -1; for (const m of copiesOf(room)) if (roomy(m)) { i = free(m); if (i >= 0) { rm = m; break; } } }
     if (i < 0 && list) i = free(rm);
-    if (i < 0) { rm = "game"; i = free(rm); }
-    if (i < 0) return;
+    if (i < 0 && MULTI.includes(room)) for (const m of copiesOf(room)) { i = free(m); if (i >= 0) { rm = m; break; } }
+    /* anyone left over goes to the lounge, opening one more copy when every copy is full: nobody is left out */
+    for (let k = 1; i < 0; k++) { const m = roomKey("game", k); if (k > nMulti.game) { ensureRoom(m); nMulti.game = k; } i = free(m); if (i >= 0) rm = m; }
     used[rm].add(i); out.set(id, {room:rm, spot:slotsOf(rm)[i], slot:i});
   });
   return {out, groups};
@@ -1018,7 +1100,7 @@ function makeFig(id){
 function setPos(r, p, ms){
   const t = ms ? `left ${ms}ms linear, top ${ms}ms linear` : "none";
   r.b.style.transition = r.tag.style.transition = ms ? t + ", opacity .35s" : "opacity .35s";
-  const P = p.seat && p.k ? poseFor(r.id, p.k) : null;
+  const P = p.seat && p.k ? poseFor(r.id, p.k, p.f) : null;
   if (P) { const q = poseBox(p, P); r.pose = q.h;
     r.b.style.left = q.left + "%"; r.b.style.top = q.top + "%"; r.b.style.height = q.h + "%"; r.tag.style.left = p.x + "%"; r.tag.style.top = p.y + "%";
     r.img.style.display = "none"; r.b.querySelector(".pose")?.remove(); r.img.after(poseEl(P, q.clip)); }
@@ -1033,13 +1115,17 @@ function setPos(r, p, ms){
 const idleDate = t => { try { return new Date(t).toLocaleDateString("en-GB", {day:"numeric", month:"short"}); } catch { return ""; } };
 const facingTo = (a, b) => ((b.y > a.y) ? "front-" : "rear-") + ((b.x < a.x) ? "left" : "right");
 async function walk(r, to){
-  const from = r.pos, d = Math.hypot(to.x - from.x, (to.y - from.y) * 896 / 1200);
-  if (reduce || d < .5) { setPos(r, to, 0); return; }
-  const ms = Math.min(4200, Math.max(500, d * 70));
-  setPos(r, {...from, seat:false, f:facingTo(from, to), z:Math.max(from.z ?? 0, to.z ?? 0, Math.round(Math.max(from.y, to.y)) + 10)}, 0);
-  r.b.classList.add("walking"); void r.b.offsetWidth;
-  setPos(r, {...to, seat:false, f:facingTo(from, to), z:r.b.style.zIndex}, ms);
-  await sleep(ms);
+  const from = r.pos;
+  if (reduce || Math.hypot(to.x - from.x, to.y - from.y) < .5) { setPos(r, to, 0); return; }
+  const legs = navPath(r.room, from, to); let at = from;
+  r.b.classList.add("walking");
+  for (const p of legs) {
+    const d = Math.hypot(p.x - at.x, (p.y - at.y) * 896 / 1200); if (d < .3) { at = {...at, ...p}; continue; }
+    const ms = Math.min(4200, Math.max(250, d * 70)), f = facingTo(at, p);
+    setPos(r, {x:at.x, y:at.y, f, seat:false, z:Math.round(Math.max(at.y, p.y)) + 10}, 0); void r.b.offsetWidth;
+    setPos(r, {x:p.x, y:p.y, f, seat:false, z:Math.round(Math.max(at.y, p.y)) + 10}, ms);
+    await sleep(ms); at = {x:p.x, y:p.y};
+  }
   r.b.classList.remove("walking"); setPos(r, to, 0);
 }
 async function fade(r, on){ r.b.style.opacity = r.tag.style.opacity = on ? "1" : "0"; await sleep(reduce ? 0 : 360); }
@@ -1062,7 +1148,7 @@ function dress(r, o){
   r.b.className = "ag " + o.state + (r.b.classList.contains("walking") ? " walking" : "") + (r.pos?.seat ? " seated" : "") + (selectedAgent === r.id ? " sel" : "") + (o.meet ? " meeting" : "") + (o.idle ? " dormant" : "");
   r.idle.textContent = o.idle ? "Idle since " + idleDate(o.idle) : "";
   if (o.idle) r.fx.hidden = true; else if (o.fx) { r.fx.src = `${A}fx/${o.fx}.webp`; r.fx.hidden = false; } else r.fx.hidden = true;
-  r.h = o.h || CH_H; if (!r.pose) r.b.style.height = r.h + "%";
+  r.h = (o.h || CH_H) * heightOf(r.id); if (!r.pose) r.b.style.height = r.h + "%";
   r.tag.textContent = o.label;
   r.b.setAttribute("aria-label", o.label + (o.stateText ? ": " + o.stateText : "") + (o.meet ? " (in the meeting room)" : ""));
 }
@@ -1070,6 +1156,7 @@ let lastGroups = [];
 function drawScene(){
   buildRooms(); setRoomBg();
   const {out, groups} = plan(); lastGroups = groups;
+  meetCount = groups.filter(g => g.where === "meet").reduce((n, g) => n + g.ids.length, 0); setRoomBg();
   const meetIds = new Set(groups.flatMap(g => g.ids));
   const live = new Set(["owner", ...agents.map(a => a.id)]);
   if (!agentById(ASSISTANT)) live.add(ASSISTANT);
@@ -1077,7 +1164,7 @@ function drawScene(){
   out.forEach((p, id) => {
     const r = figs.get(id) || makeFig(id), a = agentById(id), st = id === "owner" ? "owner" : (a?.state || "working");
     const label = id === "owner" ? "You" : (nameOf(id) === ASSISTANT ? "Office Manager" : nameOf(id));
-    const dz = p.room === "idle" ? idleSince(a) : 0;
+    const dz = typeOf(p.room) === "idle" ? idleSince(a) : 0;
     dress(r, {state:st, meet:meetIds.has(id), label, idle:dz, stateText:AGENT_STATE[st]?.en, h:(id === "owner" || id === ASSISTANT) ? CH_H + 1 : CH_H,
       fx: meetIds.has(id) ? null : id === "owner" ? "monster-energy" : id === ASSISTANT && st === "working" ? "need-coffee" : FX[st]});
     const changed = !r.plan || r.plan.room !== p.room || r.plan.slot !== p.slot || r.plan.spot !== p.spot;
@@ -1093,8 +1180,9 @@ function drawScene(){
   renderTalkRoom();
   roomsOf("huddle").forEach(k => roomLabel(k, groups.filter(g => g.where === k).map(g => [`Table ${g.table + 1}: `, g.label]), `${N_TABLES} free tables`));
   Object.keys(ROOMS).filter(k => typeOf(k) === "main" && k !== "main").forEach(k => { const n = [...out.values()].filter(p => p.room === k).length; ROOMS[k].querySelector(".label small").textContent = n ? `Working · ${n}` : "Free desks"; });
-  const nIdle = [...out.values()].filter(p => p.room === "idle").length;
-  ROOMS.idle.querySelector(".label small").textContent = nIdle ? `Inactive ${IDLE_DAYS}+ days · ${nIdle}` : "Nobody inactive";
+  roomsOf("idle").forEach(k => { const nIdle = [...out.values()].filter(p => p.room === k).length;
+    ROOMS[k].querySelector(".label small").textContent = nIdle ? `Inactive ${IDLE_DAYS}+ days · ${nIdle}` : "Nobody inactive"; });
+  roomsOf("game").forEach(k => { if (k !== "game") ROOMS[k].querySelector(".label small").textContent = "Done or not started"; });
 }
 /* the owner's rule: a room with nobody is smaller, a room with people is normal, a crowded one a little bigger */
 const CROWD = 4, RW = {empty:.36, some:.5, many:.6}, RP = {empty:.72, some:.88, many:1};
@@ -1102,7 +1190,7 @@ function sizeRooms(out){
   const n = {}; Object.keys(ROOMS).forEach(k => n[k] = 0);
   out.forEach(p => { if (p.room in n) n[p.room]++; });
   const kind = r => !n[r] ? "empty" : n[r] >= CROWD ? "many" : "some";
-  [["boss", ...roomsOf("main")],["meet", ...roomsOf("huddle")],["game","idle"], ...depts().map(d => roomsOf("main@" + d.id))].filter(r => r.length).forEach(row => {
+  [["boss", ...roomsOf("main")],["meet", ...roomsOf("huddle")],[...roomsOf("game"), ...roomsOf("idle")], ...depts().map(d => roomsOf("main@" + d.id))].filter(r => r.length).forEach(row => {
     const w = row.map(r => RW[kind(r)]), sum = w.reduce((a, b) => a + b, 0), k = sum > 1 ? 1 / sum : 1;
     row.forEach((r, i) => { const el2 = ROOMS[r]; el2.style.setProperty("--rw", (w[i] * k).toFixed(3)); el2.style.setProperty("--rp", RP[kind(r)]); el2.dataset.size = kind(r);
       el2.setAttribute("aria-label", el2.getAttribute("aria-label").replace(/ \(\d+ (?:people|person)\)$/, "") + ` (${n[r]} ${n[r] === 1 ? "person" : "people"})`); });
@@ -1116,14 +1204,14 @@ function openTalk(id){
 /* a little life: people in the lounge wander, people at desks fetch coffee, people in meetings take turns to talk */
 function wander(){
   if (reduce) return;
-  const lounge = [...figs.values()].filter(r => r.plan?.room === "game" && !r.busy);
+  const lounge = [...figs.values()].filter(r => typeOf(r.plan?.room) === "game" && !r.busy);
   if (!lounge.length) return;
-  const r = lounge[Math.floor(Math.random() * lounge.length)];
-  const taken = new Set([...figs.values()].filter(x => x.plan?.room === "game").map(x => x.plan.slot));
+  const r = lounge[Math.floor(Math.random() * lounge.length)], rm = r.plan.room;   // wander inside the copy of the lounge it is in
+  const taken = new Set([...figs.values()].filter(x => x.plan?.room === rm).map(x => x.plan.slot));
   const freeIdx = SLOTS.game.map((_, i) => i).filter(i => !taken.has(i));
   if (!freeIdx.length) return;
   const i = freeIdx[Math.floor(Math.random() * freeIdx.length)];
-  r.plan = {room:"game", spot:SLOTS.game[i], slot:i}; goTo(r, "game", r.plan.spot);
+  r.plan = {room:rm, spot:SLOTS.game[i], slot:i}; goTo(r, rm, r.plan.spot);
 }
 async function coffeeRun(){
   if (reduce) return;
@@ -1142,7 +1230,7 @@ function takeTurns(){
 }
 function play(){
   if (reduce) return;
-  const lounge = [...figs.values()].filter(r => r.room === "game" && r.plan?.room === "game" && !r.busy && !r.b.classList.contains("walking"));
+  const lounge = [...figs.values()].filter(r => typeOf(r.room) === "game" && r.plan?.room === r.room && !r.busy && !r.b.classList.contains("walking"));
   if (!lounge.length) return;
   const r = lounge[Math.floor(Math.random() * lounge.length)];
   r.b.classList.add("playing"); setTimeout(() => r.b.classList.remove("playing"), 3600);
@@ -1392,6 +1480,7 @@ function agentPreview(){
   if (!agentOpen || !agentDraft) return;
   const img = document.querySelector("#agentBody .ag-prev img"); if (!img) return;
   img.src = charImg(charOf(agentOpen, agentDraft.look), "front-left");
+  img.style.height = Math.round(116 * heightOf(agentOpen, agentDraft.look)) + "px";   // 116 leaves room for "Very tall" in the 132px frame
 }
 function openAgent(id){
   const a = agentById(id); if (!a) return false;
@@ -1413,16 +1502,23 @@ function openAgent(id){
   const lookBox = el("section","ag-box"); lookBox.append(el("h3", null, "Look"));
   /* the owner's drawings: the featured ones first, the rest behind "More characters" */
   const charBtn = c => { const b = el("button","ag-sp"); b.type = "button"; b.dataset.s = c.id; b.title = c.label_en; b.setAttribute("aria-label","Character: " + c.label_en);
-    b.style.backgroundImage = `url(${charImg(c.id, "front-left")})`; b.onclick = () => { agentDraft.look = {char:c.id}; drawLook(); dirty(); agentPreview(); }; return b; };
+    b.style.backgroundImage = `url(${charImg(c.id, "front-left")})`; b.onclick = () => { agentDraft.look = {...agentDraft.look, char:c.id}; drawLook(); dirty(); agentPreview(); }; return b; };
   const sp = el("div","ag-sprites"); sp.setAttribute("role","group"); sp.setAttribute("aria-label","Characters");
   CHARS.filter(c => c.featured).forEach(c => sp.append(charBtn(c)));
   const rest = CHARS.filter(c => !c.featured);
   const more = el("details","ag-more"); more.append(el("summary", null, `More characters (${rest.length})`)); const sp2 = el("div","ag-sprites"); rest.forEach(c => sp2.append(charBtn(c))); more.append(sp2);
   lookBox.append(sp); if (rest.length) lookBox.append(more);
+  const hgt = el("div","ag-field"), hLbl = el("span","lbl","Height"); hLbl.id = "agHeightLbl";
+  const hBox = el("div","filters"); hBox.setAttribute("role","group"); hBox.setAttribute("aria-labelledby","agHeightLbl");
+  HEIGHTS.forEach(([v, label]) => { const b = el("button", null, label); b.type = "button"; b.dataset.h = String(v);
+    b.onclick = () => { agentDraft.look = {...agentDraft.look, height:v}; drawLook(); dirty(); agentPreview(); }; hBox.append(b); });
+  hgt.append(hLbl, hBox); lookBox.append(hgt);
   function drawLook(){
     const c = charOf(id, agentDraft.look);
     [sp, sp2].forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === c))));
     if (rest.some(x => x.id === c)) more.open = true;
+    const hv = heightOf(id, agentDraft.look), near = HEIGHTS.reduce((m, h) => Math.abs(h[0] - hv) < Math.abs(m[0] - hv) ? h : m)[0];
+    hBox.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.h === near)));
   }
   drawLook();
   /* profile */
@@ -1441,6 +1537,7 @@ function openAgent(id){
   const dirty = () => { sn.textContent = "Unsaved changes."; };
   sb.onclick = async () => { sb.disabled = true; sn.textContent = "Saving…";
     const look = CHAR[agentDraft.look.char] ? {char:agentDraft.look.char} : {};
+    if (heightOf(id, agentDraft.look) !== 1) look.height = heightOf(id, agentDraft.look);
     const doc = {look, hobbies:agentDraft.hobbies, profile_updated_at:new Date().toISOString(), relayed:false}; PROFILE.forEach(([k]) => { doc[k] = agentDraft[k].trim(); });
     try { await db.doc("agents/" + id).update(doc); sn.textContent = "Saved. The Coordinator passes the changes on to " + nameOf(id) + "."; } catch (err) { sn.textContent = writeError(err); }
     sb.disabled = !canWrite; };
@@ -1809,13 +1906,13 @@ function renderTalkRoom(){
   const room = $("talkRoom"); if (!room) return;
   if (!talkBuilt) { talkBuilt = true;
   }
-  room.style.backgroundImage = `url(${A}rooms/${ROOM_BG.meet}.webp)`;
   room.querySelectorAll(".ag,.tag").forEach(x => x.remove());
   const s = chatSess && sessions.find(x => x.id === chatSess);
   let ids = [], title = "", key = "";
   if (s) { ids = (s.members || []).filter(m => m === "owner" || agentById(m)); title = s.title_en || convKind(s); key = "s:" + s.id; }
   else if (chatPair) { ids = chatPair.split("|"); title = ids.map(nameOf).join(" & "); key = "p:" + chatPair; if (msgs.some(m => m.pair === chatPair && m.from === "owner")) ids.unshift("owner"); }
   const g = lastGroups.find(x => x.key === key);
+  room.style.backgroundImage = `url(${A}rooms/${meetBg(ids.length)}.webp)`;
   const where = !key ? "" : !g || s?.state === "closed" ? (s?.state === "closed" ? "Closed: everyone went back to work" : "Not in a room right now")
     : g.where === "meet" ? "In the meeting room" : `${ROOM_NAME.huddle}${g.where.includes("-") ? " " + g.where.split("-").pop() : ""} · Table ${g.table + 1}`;
   $("talkTitle").textContent = key ? "Room" : "Rooms";
@@ -1823,8 +1920,8 @@ function renderTalkRoom(){
   room.querySelector(".label small").textContent = title;
   const top = navBack[navBack.length - 1], back = top && top.tab !== "chat" ? ` Click outside the chat to go back to ${TAB_NAME[top.tab]}.` : "";
   $("talkHint").textContent = (key ? where + (ids.length ? ` · ${ids.length} ${ids.length === 1 ? "person" : "people"}.` : ".") : "Pick a conversation to see who sits with it.") + back;
-  ids.sort((a, b) => (b === "owner") - (a === "owner")).slice(0, MEET.seats.length).forEach((id, i) => {
-    const sp = MEET.seats[i], P = poseFor(id, sp.k), b = el("button", P ? "ag" : "ag seated"); b.type = "button";
+  ids.sort((a, b) => (b === "owner") - (a === "owner")).slice(0, MEET_SETS[meetBg(ids.length)].seats.length).forEach((id, i) => {
+    const sp = MEET_SETS[meetBg(ids.length)].seats[i], P = poseFor(id, sp.k, sp.f), b = el("button", P ? "ag" : "ag seated"); b.type = "button";
     const img = el("img", "body"); img.alt = ""; b.append(img);
     if (P) { const q = poseBox(sp, P); img.style.display = "none"; b.append(poseEl(P, q.clip));
       b.style.cssText = `left:${q.left}%;top:${q.top}%;height:${q.h}%;z-index:${Math.round(sp.cut ?? sp.y) + 10}`; }

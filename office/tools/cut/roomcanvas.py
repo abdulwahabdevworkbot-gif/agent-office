@@ -1,7 +1,7 @@
 import os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 MAP={"boss":"manager","main-a":"office-a","main-b":"office-b","main-wide":"office-wide","meet-10":"meeting-10","meet-20":"meeting-20",
-     "meet-30":"meeting-30","huddle":"huddle","game":"games","idle":"waiting","meet-8":"meeting-1"}
+     "meet-30":"meeting-30","huddle":"huddle","game":"games-wide","idle":"waiting-wide","meet-8":"meeting-1"}
 FB=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",22)
 os.makedirs("rc",exist_ok=True); OFF={}
 for out,src in MAP.items():

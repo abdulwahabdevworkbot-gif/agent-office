@@ -106,18 +106,22 @@ An agent's `reports_to` overrides this. Cycles fall back to the owner. Each card
 The owner's rule: use the owner's drawings as they are.
 
 - **Characters:** 41 standing characters in `assets/chars/` (`cNN-l.webp`, and the mirror `cNN-r.webp`), listed in `characters.json`. The art is front-facing, so walking away mirrors the picture. The agent page shows them as a grid: featured first, the rest under "More characters". It saves `look.char`. Agents with no pick get one from their id.
-- **Seated poses:** when an agent sits, the page draws the owner's seated body for that agent's outfit and seat type (`assets/seated/bRR-K.webp`: 12 outfits × 9 seats) with the character's own head (`assets/heads/cNN.webp`) on its neck. The seat types:
-  1. task chair, front;
-  2. task chair, side;
-  3. manager chair;
-  4. visitor chair;
-  5. meeting chair;
-  6. sofa;
-  7. armchair;
-  8. bean bag;
-  9. stool.
-
-  `seated.json` holds each body's neck point and each character's outfit row. A seat in the page's room data is `{x, y, k, cut?}`: `y` is the neck, `k` the seat type, and `cut` the line below which the body is hidden (a desk or table edge).
+- **Seated poses:** when an agent sits, the page draws the owner's seated body for that agent's outfit and seat type (`assets/seated/bRR-K.webp`: 14 outfits × 10 seats) with the character's own head (`assets/heads/cNN.webp`) on its neck. The bodies face right (the 3/4 back view faces left) and are mirrored for the other side. The seat types:
+  1. office chair at a desk, front;
+  2. office chair at a desk, side;
+  3. office chair at a desk, back;
+  4. office chair at a desk, 3/4 back;
+  5. manager chair (also the lounge armchairs);
+  6. visitor chair;
+  7. meeting chair;
+  8. sofa;
+  9. bean bag;
+  10. waiting chair or stool.
+- **Seats per picture:** each room picture has its own seats (`S_MAIN`, `HUDDLE`, `S_GAME`, `IDLE_SEATS`, and `MEET_SETS` for the 10, 20 and 30 meeting rooms). The meeting room picture is the smallest that fits the meeting.
+- **Walking around furniture** (the owner's rule): `NAV` holds each picture's floor and furniture as polygons; a walk follows an A* path on a 100 × 100 grid around them, then steps into the seat.
+- **Every room repeats** (the owner's rule): games and idle rooms open a copy at 80% full, like work and huddle rooms, and close it when it is empty.
+- **Height:** the agent page has a Height choice (Short to Very tall, 0.9 to 1.1), saved as `look.height`; standing and seated figures use it.
+- **Roomier lounges:** the games and waiting room pictures were widened by cutting the owner's picture apart, stretching the floor and windows from the picture itself and putting the furniture back further apart (`tools/cut/widen.py`); nothing is drawn.
 - **Rooms:** pictures in `assets/rooms/`, with the furniture drawn in:
   - `boss`: the manager's office;
   - `main-a`, `main-b`: offices with an S bench and the manager's glass office;
