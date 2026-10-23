@@ -320,6 +320,9 @@ h2{font-weight:700;font-size:19px;margin:0}
 .inbox-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
 .inbox-head h2{margin:0}
 .inbox-head .row-wrap{margin-left:auto}
+.since{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:13px}
+.since b{margin-right:4px}
+.since .chip.go{cursor:pointer}
 .inbox-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:8px}
 .ib{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;align-items:start;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:9px 11px;background:var(--bg)}
 .ib .av{grid-row:span 3}
@@ -572,6 +575,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
       <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="row-wrap"><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
+      <div class="since" id="since" hidden></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
     <div class="scene">
@@ -1438,7 +1442,30 @@ function inlineReply(key, target, ph){
 function openNeed(id){ const a = agentById(id); const key = (a?.state === "blocked" ? "b:" : "w:") + id;
   inboxOpen.set(key, {...(inboxOpen.get(key) || {}), focus:true}); inboxSent.delete(key); inboxAll = true; showTab("office"); renderInbox();
   $("inbox").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"}); }
+// "Since you left": what changed since this viewer's last visit (kept in this browser only).
+const SEEN_KEY = "office.seen";
+let seenAt = (() => { try { return Date.parse(localStorage.getItem(SEEN_KEY) || "") || 0; } catch { return 0; } })();
+const saveSeen = () => { try { localStorage.setItem(SEEN_KEY, new Date().toISOString()); } catch {} };
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveSeen(); });
+addEventListener("pagehide", saveSeen);
+function renderSince(){
+  const box = $("since"); if (!box) return;
+  const after = iso => (Date.parse(iso || "") || 0) > seenAt;
+  if (!seenAt) { box.hidden = true; return; }
+  const newMsgs = msgs.filter(m => m.from !== "owner" && after(m.at)).length,
+    done = tasks.filter(t => t.state === "done" && after(t.done_at || t.updated_at)).length,
+    added = tasks.filter(t => after(t.created_at)).length,
+    blocked = agents.filter(a => a.state === "blocked" && after(a.updated_at)).length,
+    meets = sessions.filter(x => after(x.opened_at || x.scheduled_at)).length;
+  const parts = [[newMsgs, "new message", () => showTab("chat")], [done, "task done", () => showTab("board")], [added, "new task", () => showTab("board")],
+    [blocked, "newly blocked", () => $("inbox").scrollIntoView({block:"start"}), true], [meets, "new meeting", () => showTab("chat")]].filter(x => x[0]);
+  if (!parts.length) { box.hidden = true; return; }
+  const chip = ([n, w, fn, fixed]) => { const b = el("button", "chip go", `${n} ${w}${fixed || n === 1 ? "" : "s"}`); b.type = "button"; b.onclick = fn; return b; };
+  const ok = el("button", "btn-lite", "Got it"); ok.type = "button"; ok.onclick = () => { seenAt = Date.now(); saveSeen(); renderSince(); };
+  box.replaceChildren(el("b", null, `Since you left (${ago(new Date(seenAt).toISOString())}):`), ...parts.map(chip), ok); box.hidden = false;
+}
 function renderInbox(){
+  renderSince();
   const box = $("inboxList"); if (!box) return;
   if (box.contains(document.activeElement) && document.activeElement.matches("textarea")) return;   // never wipe what the owner is typing
   box.replaceChildren();
