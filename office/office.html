@@ -1,0 +1,1974 @@
+<title>Product Office</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+@font-face{font-family:"Dubai";src:url(assets/fonts/DubaiW23-Light.woff2) format("woff2");font-weight:300;font-display:swap}
+@font-face{font-family:"Dubai";src:url(assets/fonts/DubaiW23-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Dubai";src:url(assets/fonts/DubaiW23-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Dubai";src:url(assets/fonts/DubaiW23-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
+/* Two tabs: Office (three rooms side by side, assistant summary, team, discussion) and Task board (stage columns x agent lanes). English, left to right. */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#18212b; --muted:#5b6876; --line:#d6dde4;
+  --accent:#3b5bdb; --accent-ink:#ffffff;
+  --ok:#1f8a4c; --warn:#b26a00; --bad:#c23a3a; --idle:#7b8794;
+  --ok-bg:#e3f4ea; --warn-bg:#fff1d6; --bad-bg:#fbe3e3; --idle-bg:#eceff2; --doing-bg:#e5ebff;
+  --font:"Dubai",system-ui,"Segoe UI",Tahoma,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10151c; --panel:#18202a; --ink:#e4e9ef; --muted:#97a3b1; --line:#2a3442;
+  --accent:#8aa2ff; --accent-ink:#0e1320;
+  --ok:#4fc483; --warn:#f0a83c; --bad:#ff7a7a; --idle:#8b97a5;
+  --ok-bg:#163223; --warn-bg:#3a2a0f; --bad-bg:#3d1a1a; --idle-bg:#222a34; --doing-bg:#1d2747;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151c; --panel:#18202a; --ink:#e4e9ef; --muted:#97a3b1; --line:#2a3442;
+  --accent:#8aa2ff; --accent-ink:#0e1320;
+  --ok:#4fc483; --warn:#f0a83c; --bad:#ff7a7a; --idle:#8b97a5;
+  --ok-bg:#163223; --warn-bg:#3a2a0f; --bad-bg:#3d1a1a; --idle-bg:#222a34; --doing-bg:#1d2747;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;text-align:left}
+.wrap{direction:ltr;max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px;display:grid;gap:18px}
+.wrap>*{min-width:0}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-weight:700;font-size:30px;margin:0;line-height:1.15;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0}
+h2{font-weight:700;font-size:19px;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 11px;font-size:13px;font-weight:500;background:var(--idle-bg);color:var(--ink);white-space:nowrap}
+.chip .dot{width:8px;height:8px;border-radius:2px;background:var(--idle)}
+.st-working .dot{background:var(--accent)} .st-waiting .dot{background:var(--warn)} .st-blocked .dot{background:var(--bad)} .st-done .dot{background:var(--ok)}
+.hint,.note{color:var(--muted);font-size:13px}
+.mono{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{font:inherit;font-weight:600;font-size:15px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tabs .count{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-left:6px}
+[role="tabpanel"][hidden]{display:none}
+.stack{display:grid;gap:18px}
+/* scene */
+.scene{background:#0f1420;border-radius:10px;border:1px solid #232b3b;overflow:visible}
+.chrome{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0b0f18;border-bottom:1px solid #232b3b;border-radius:10px 10px 0 0;color:#8b95a8;font-family:var(--font-mono);font-size:11px}
+.chrome .dots{display:flex;gap:6px}.chrome .dots i{width:11px;height:11px;border-radius:50%;display:block}
+.chrome .ttl{flex:1;text-align:center;letter-spacing:.3em;text-transform:uppercase}
+.chrome .clock{border:1px solid #2c3546;border-radius:4px;padding:1px 8px;color:#f0c75e;letter-spacing:.12em}
+.rooms{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;padding:10px}
+.rooms .rbreak{flex-basis:100%;height:0;margin:-5px 0}
+.rooms .room{flex:0 0 auto;width:calc((100% - 10px) * var(--rw,.5));transition:transform .25s ease,box-shadow .25s ease,width .6s ease}
+@media (prefers-reduced-motion:reduce){.rooms .room{transition:none}}
+.room{position:relative;aspect-ratio:1200/896;background:#0f1420 center/contain no-repeat;border-radius:6px;overflow:hidden;container-type:inline-size;transition:transform .25s ease,box-shadow .25s ease;outline:none}
+@media (hover:hover) and (min-width:821px){
+  .rooms .room:hover,.rooms .room:focus-visible{transform:scale(1.5);z-index:300;box-shadow:0 18px 50px rgba(0,0,0,.6)}
+  #room-boss{transform-origin:left top}[id^=room-main]{transform-origin:right top}#room-meet{transform-origin:left center}[id^=room-huddle]{transform-origin:right center}#room-game{transform-origin:left bottom}#room-idle{transform-origin:right bottom}
+}
+.room:focus-visible{box-shadow:0 0 0 3px #7cc4ff}
+@media (max-width:820px){.rooms .room{width:calc(100% * var(--rp,1))}}
+.zoomhint{margin:0;padding:0 12px 10px;color:#8b95a8;font-size:12.5px}
+@media (max-width:820px){.zoomhint{display:none}}
+.room .label{position:absolute;top:2.5%;left:3%;z-index:6000;overflow:hidden;text-overflow:ellipsis;max-width:94%;background:rgba(10,14,22,.82);color:#e8edf5;border:1px solid #2c3546;border-radius:999px;padding:1px 11px;font-size:clamp(10px,2.6cqi,15px);font-weight:700;white-space:nowrap}
+.room .label small{color:#9aa6b8;font-weight:500;margin-left:6px}
+.sp{position:absolute;transform:translate(-50%,-100%);pointer-events:none}
+.ag{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:pointer;border:0;background:none;padding:0}
+.ag img.body{height:100%;width:auto;display:block;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.ag:focus-visible{outline:none}.ag:focus-visible img.body,.ag.sel img.body{filter:drop-shadow(0 0 4px #7cc4ff) drop-shadow(0 0 2px #7cc4ff)}
+.ag .fx{position:absolute;bottom:100%;margin-bottom:2px;height:30%;min-height:14px;max-height:40px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.room .tag{position:absolute;z-index:5000;transform:translate(-50%,3px);pointer-events:none;white-space:nowrap;background:rgba(10,14,22,.85);color:#fff;border-radius:4px;padding:0 5px;font-size:clamp(8px,2cqi,12px);line-height:1.5}
+.room{isolation:isolate}
+.sp.box{transform:none}
+.ag.seated img.body{clip-path:inset(0 0 44% 0)}
+.ag.working img.body{animation:bob 1.4s ease-in-out infinite}
+.ag.working .fx,.ag.waiting .fx{animation:pulse 1.2s ease-in-out infinite}
+.ag.walking img.body{animation:step .36s ease-in-out infinite}
+.ag.walking .fx{display:none}
+.ag .talk{position:absolute;bottom:100%;margin-bottom:2px;display:none;gap:3px;align-items:center;background:#fff;border:2px solid #222634;border-radius:9px;padding:3px 6px;transform-origin:50% 100%}
+.ag .talk i{width:5px;height:5px;border-radius:50%;background:#222634;display:block;animation:dots 1s ease-in-out infinite}
+.ag .talk i:nth-child(2){animation-delay:.15s}.ag .talk i:nth-child(3){animation-delay:.3s}
+.ag.meeting .talk{display:flex;opacity:.45;transform:scale(.8)}
+.ag.meeting.speaking .talk{opacity:1;transform:scale(1);animation:pop .3s ease-out}
+.ag.meeting.speaking img.body{animation:nod .55s ease-in-out infinite}
+.ag.meeting.walking .talk{display:none}
+@keyframes bob{50%{transform:translateY(-2%)}}@keyframes pulse{50%{transform:scale(1.12)}}
+@keyframes step{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-4%) rotate(-3deg)}75%{transform:translateY(-4%) rotate(3deg)}}
+@keyframes dots{50%{transform:translateY(-3px);opacity:.5}}@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+@keyframes nod{50%{transform:translateY(1.5%) rotate(-1.5deg)}}
+/* task sessions */
+.sess-list{display:grid;gap:6px}
+.sess-wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:stretch}
+.sess-wrap .btn-lite{align-self:center}
+.ag.playing img.body{animation:swing .5s ease-in-out infinite}
+.ag .idle{position:absolute;bottom:100%;margin-bottom:2px;white-space:nowrap;background:rgba(10,14,22,.85);color:#c9d2e0;border:1px solid #3a4458;border-radius:6px;padding:0 5px;font-size:clamp(7px,1.8cqi,11px);line-height:1.5;pointer-events:none}
+.ag:not(.dormant) .idle{display:none}
+.ag.dormant img.body{filter:grayscale(.55) brightness(.85) drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+@keyframes swing{0%,100%{transform:rotate(0) translateY(0)}30%{transform:rotate(-7deg) translateY(-3%)}70%{transform:rotate(6deg) translateY(-1%)}}
+.sess{all:unset;display:grid;gap:4px;border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:6px;padding:7px 10px;cursor:pointer}
+.sess.closed{border-left-color:var(--ok);opacity:.8}
+.sess:hover{border-color:var(--accent)}.sess:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sess-top{display:flex;gap:8px;align-items:baseline;min-width:0}.sess-top b{font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.sess-bot{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.faces{display:inline-flex}.faces .av{margin-right:-6px;border-width:2px}
+.row-wrap{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.av{display:inline-block}
+.who-list{display:flex;flex-wrap:wrap;gap:6px 14px}.who-list>span{display:inline-flex;gap:6px;align-items:center;font-size:13.5px}
+.sess-msgs{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:12px;max-height:44vh;overflow:auto}
+.ask{display:grid;gap:8px;border:1px dashed var(--line);border-radius:8px;padding:10px 12px}
+.ask textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:5px 8px;min-height:64px;resize:vertical}
+.ask .row,.dlg .row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.closed-note{background:var(--ok-bg);border-radius:6px;padding:8px 10px}
+.qbadge{font-size:11.5px;font-weight:700;color:var(--warn);background:var(--warn-bg);border-radius:4px;padding:0 6px;justify-self:start}
+/* office lower panels */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:18px;align-items:start}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:12px;align-content:start}
+.say{background:var(--doing-bg);border-radius:8px;padding:10px 12px}
+.say b{display:block;font-size:12.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.roster{display:grid;gap:2px}
+.roster button{all:unset;display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:5px 6px;border-radius:6px;cursor:pointer}
+.roster button:hover,.roster button[aria-pressed="true"]{background:var(--bg)}.roster button:focus-visible{outline:2px solid var(--accent)}
+.nm{font-weight:700;font-size:14px;line-height:1.3;min-width:0}.nm small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.av{width:32px;height:32px;border-radius:7px;background-repeat:no-repeat;background-size:150% auto;background-position:50% 6%;border:2px solid var(--line);background-color:var(--bg);flex:none}
+.agent-card{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:4px}
+.agent-card[hidden]{display:none!important}
+.agent-card .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}.legend img{height:18px}
+.btn-lite{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:5px;padding:3px 12px;cursor:pointer;justify-self:start}
+/* roadmap */
+.rm{display:grid;gap:12px;min-width:0}
+.rm-now{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;background:var(--doing-bg);border-radius:8px;padding:10px 14px}.rm-now .lbl{margin:0}.rm-now b{font-size:16px}
+.rm-filters{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.rm-ver{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0;overflow:hidden}
+.rm-ver.cur{border-color:var(--accent)}
+.rm-vhead{all:unset;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;padding:12px 14px;width:100%;box-sizing:border-box;align-items:center}
+.rm-vhead:hover{background:var(--bg)}.rm-vhead:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.rm-vt{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;min-width:0}.rm-vt b{font-size:16px}.rm-caret{color:var(--muted);width:12px}
+.rm-vmeta{display:flex;gap:4px 14px;flex-wrap:wrap;grid-column:1 / -1}
+.rm-vhead .bar{grid-column:1 / -1}
+.rm-steps{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.rm-step{display:inline-flex;gap:5px;align-items:center;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 9px 1px 6px;color:var(--muted)}
+.rm-step i{width:9px;height:9px;border-radius:50%;background:var(--line);display:block}
+.rm-step.ok i{background:var(--ok)}.rm-step.ok{color:var(--ok)}
+.rm-step.now{border-color:var(--accent);color:var(--accent);font-weight:700}.rm-step.now i{background:var(--accent)}
+.rm-step.some i{background:var(--warn)}
+@media (max-width:700px){.rm-vhead{grid-template-columns:minmax(0,1fr)}.rm-steps{justify-content:flex-start}}
+.rm-scroll{overflow-x:auto;border-top:1px solid var(--line)}
+.rm-grid{display:grid;min-width:620px}
+.rm-h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);background:var(--bg)}
+.rm-pn{display:grid;gap:4px;align-content:start;padding:10px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
+.rm-pn.now{border-left-color:var(--accent);background:var(--doing-bg)}.rm-pn.ok{border-left-color:var(--ok)}
+.rm-pt{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.rm-who{display:flex;flex-wrap:wrap;gap:3px}.rm-av{all:unset;cursor:pointer;border-radius:7px}.rm-av:focus-visible{outline:2px solid var(--accent)}
+.rm-cell{display:grid;gap:4px;align-content:start;padding:8px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);min-width:0}
+.rm-cell.na{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--bg) 6px 12px)}
+.rm-n{font-family:var(--font-mono);font-size:18px;font-weight:700}
+.rm-pill{all:unset;cursor:pointer;display:flex;gap:6px;align-items:baseline;font-size:12.5px;border:1px solid var(--line);border-radius:5px;padding:2px 6px;min-width:0}
+.rm-pill:hover{border-color:var(--accent)}.rm-pill:focus-visible{outline:2px solid var(--accent)}
+.rm-pill .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;unicode-bidi:plaintext}
+.rm-pill.blocked{border-left:3px solid var(--bad)}.rm-pill .mono{white-space:nowrap;flex:none}
+.ph-tag{justify-self:start;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+/* Arabic replies: English and task ids on their own lines */
+.msg .body.bidi{text-align:right}
+.msg .body .ln{overflow-wrap:anywhere}
+.msg .body .ln-en{direction:ltr;unicode-bidi:isolate;text-align:right;font-weight:500}
+.msg .body .ln-gap{height:.6em}
+/* back to where you were */
+.nav-back{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9000;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 32px);box-sizing:border-box;border:0;border-radius:999px;padding:9px 16px;background:var(--accent,#3b5bdb);color:#fff;font:inherit;font-weight:600;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.nav-back[hidden]{display:none}
+.nav-back bdi{font-weight:400;opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46vw}
+/* agent page */
+#agentDlg{width:min(980px,calc(100% - 24px))}
+.ag-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:start}
+.ag-head h2{margin:0}.ag-title{display:grid;gap:4px;min-width:0}
+.ag-prev{width:96px;height:132px;border:3px solid var(--line);border-radius:10px;background:var(--bg);display:grid;place-items:end center;overflow:hidden}
+.ag-prev img{height:126px;width:auto;image-rendering:auto}
+.ag-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px}
+.ag-work{grid-column:1 / -1}
+@media (max-width:760px){.ag-grid{grid-template-columns:minmax(0,1fr)}.ag-head{grid-template-columns:auto minmax(0,1fr)}.ag-head>.btn-lite{grid-column:1 / -1;justify-self:end;grid-row:1}}
+.ag-box{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px;align-content:start;min-width:0}
+.ag-box h3{margin:0;font-size:15px}
+.ag-sprites{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.ag-sp{all:unset;cursor:pointer;height:56px;border:2px solid var(--line);border-radius:7px;background:var(--bg) no-repeat 50% 8%/140% auto}
+.ag-sp[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--doing-bg)}.ag-sp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ag-colors{display:grid;gap:8px}.ag-crow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ag-color{display:flex;gap:8px;align-items:center;font-size:13.5px}.ag-color input{width:42px;height:28px;padding:0;border:1px solid var(--line);border-radius:5px;background:none;cursor:pointer}
+.ag-field{display:grid;gap:4px}.ag-field .lbl{margin:0}
+.ag-field textarea,.ag-field input{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:vertical;min-width:0}
+.ag-hobbies{display:flex;flex-wrap:wrap;gap:6px}.ag-hob{gap:6px}
+.ag-x{all:unset;cursor:pointer;font-weight:700;color:var(--muted);padding:0 2px}.ag-x:hover{color:var(--bad)}.ag-x:focus-visible{outline:2px solid var(--accent)}
+.ag-save{justify-content:flex-start}
+.ag-wh{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}.ag-wh h3{margin-right:auto}
+.ag-list{display:grid;gap:4px;max-height:280px;overflow:auto}
+.ag-row{all:unset;cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;min-width:0}
+.ag-row:hover{border-color:var(--accent)}.ag-row:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ag-row .tt{flex:1 1 200px;min-width:0;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:left}
+.cr-top b,.view-head b,.card .t,.tp-opt .tt,.sess-top b,.cr-prev,.fg .ck span,.kid span{unicode-bidi:plaintext}
+.arch summary{list-style:none;display:flex;gap:6px;align-items:center;border-radius:6px;padding:4px 6px;margin:0 -6px}
+.arch summary::-webkit-details-marker{display:none}
+.arch summary::before{content:"▸";font-size:12px;color:var(--muted);width:12px}.arch[open] summary::before{content:"▾"}
+.arch summary:hover{background:var(--bg)}.arch summary:focus{outline:none}.arch summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+/* chat */
+.chat-layout{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.chat-layout{grid-template-columns:minmax(0,1fr)}}
+.conv-side{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px;min-width:0}
+.conv-side h2{margin:0}
+.conv-list{display:grid;gap:4px;max-height:calc(100vh - 360px);min-height:120px;overflow:auto}
+@media (max-width:900px){.conv-list{max-height:320px}}
+.conv-row{all:unset;display:grid;gap:3px;padding:8px 10px;border-radius:7px;cursor:pointer;border:1px solid transparent;min-width:0}
+.conv-row:hover{background:var(--bg)}.conv-row:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.conv-row.on{background:var(--doing-bg);border-color:var(--accent)}
+.conv-row.closed{opacity:.85}
+.cr-top{display:flex;gap:8px;justify-content:space-between;align-items:baseline;min-width:0}.cr-top b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cr-top .note{flex:none}
+.cr-mid{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.cr-mid .faces .av{margin-right:-5px}
+.cr-prev{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.arch{border-top:1px solid var(--line);padding-top:8px}
+.arch summary{cursor:pointer;font-weight:600;font-size:14px}.arch summary span{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-left:4px}
+.arch[open]{display:grid;gap:8px}
+.arch input{font:inherit;font-size:13.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:5px 8px;width:100%;box-sizing:border-box}
+#archList{display:grid;gap:4px;max-height:300px;overflow:auto}
+.chat-tab .chat .msgs{max-height:none;height:clamp(320px,calc(100vh - 380px),900px)}
+.chat-top{position:sticky;top:0;background:var(--panel);z-index:2}
+.ppl{position:relative;display:inline-block}
+.ppl-pop{position:fixed;z-index:60;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:10px;display:grid;gap:4px}
+.ppl-pop[hidden]{display:none}
+.ppl-row{display:grid;grid-template-columns:auto 22px minmax(0,1fr);gap:8px;align-items:center;padding:4px 2px;cursor:pointer}
+.ppl-row input{margin:0;width:15px;height:15px;accent-color:var(--accent)}
+.pr-t{display:grid;min-width:0}.pr-t b{font-size:13.5px}.pr-t .note{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.compose textarea{transition:height .1s}
+.office-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.office-split{grid-template-columns:1fr}}
+.chat{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;min-height:460px;min-width:0;overflow:hidden}
+.msgs>*,.msg>div,.sess-msgs>*{min-width:0}
+.chat-top{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.msgs{padding:10px 14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:560px}
+.msg{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:start}
+.msg .av{width:36px;height:36px}
+.who{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline;font-size:13px}
+.who b{font-size:14px}
+.body{white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.owner .body{background:var(--doing-bg);border-radius:6px;padding:6px 9px}
+.kind{font-size:11.5px;border-radius:4px;padding:0 6px;font-weight:700}
+.k-proposal{background:var(--doing-bg);color:var(--accent)}
+.quick{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.typing-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:2px 0}
+.dots3{display:inline-flex;gap:3px}.dots3 i{width:5px;height:5px;border-radius:50%;background:var(--muted);display:block;animation:dots 1s ease-in-out infinite}
+.dots3 i:nth-child(2){animation-delay:.15s}.dots3 i:nth-child(3){animation-delay:.3s}
+.proposal{display:grid;gap:6px;margin-top:6px;border:1px solid var(--line);border-radius:8px;padding:8px}
+.k-question{background:var(--warn-bg);color:var(--warn)} .k-decision{background:var(--ok-bg);color:var(--ok)} .k-answer{background:var(--doing-bg);color:var(--accent)} .k-owner{background:var(--accent);color:var(--accent-ink)} .k-note{background:var(--idle-bg);color:var(--muted)}
+.linkish{all:unset;cursor:pointer;font-family:var(--font-mono);font-size:12px;color:var(--accent);text-decoration:underline;text-decoration-color:transparent;text-underline-offset:2px}
+.linkish:hover,.linkish:focus-visible{text-decoration-color:currentColor}.linkish:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.links{display:inline-flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.body a.linkish{font-size:inherit;font-family:inherit}
+.card.flash{animation:flash 1.6s ease-out 2}@keyframes flash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 3px transparent}}
+.qbadge.go{cursor:pointer;text-decoration:underline}
+form.compose{display:grid;gap:8px;padding:12px 14px;border-top:1px solid var(--line)}
+.compose .row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.compose select,.compose textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:5px 8px}
+form.compose{grid-template-columns:minmax(0,1fr)}
+.compose select{min-width:0;width:240px;max-width:100%;text-overflow:ellipsis}
+.compose label{min-width:0;max-width:100%}
+.compose textarea{width:100%;min-height:64px;resize:vertical}
+.compose label,.field{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);min-width:0;max-width:100%}
+/* task picker: open tasks of one version at hand, closed ones by search */
+.tp{display:inline-flex;min-width:0;max-width:100%}
+.tp-btn{font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:5px 28px 5px 8px;cursor:pointer;width:320px;max-width:100%;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.tp-btn::after{content:"";position:absolute;right:11px;top:50%;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-75%) rotate(45deg)}
+.tp-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.tp-btn.empty-val{color:var(--muted)}
+.tp-pop{position:fixed;z-index:9000;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.28);display:flex;flex-direction:column;gap:8px;padding:10px;font-size:14px;text-align:left}
+.tp-pop[hidden]{display:none}
+.tp-pop input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;min-width:0}
+.tp-pop input:focus-visible{outline:2px solid var(--accent);outline-offset:0}
+.tp-list{overflow-y:auto;overflow-x:hidden;min-height:0;flex:1;display:flex;flex-direction:column;gap:2px}
+.tp-opt{all:unset;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 8px;align-items:baseline;padding:6px 8px;border-radius:6px;cursor:pointer}
+.tp-opt .tt{overflow-wrap:anywhere;line-height:1.35}
+.tp-opt.active{background:var(--bg);box-shadow:inset 0 0 0 1px var(--accent)}
+.tp-opt[aria-selected="true"]{background:var(--doing-bg)}
+.tp-opt.closed .tt,.tp-opt.closed .mono{color:var(--muted)}
+.tp-tags{display:inline-flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.tp-tag{font-size:11px;font-weight:700;border-radius:4px;padding:0 6px;background:var(--idle-bg);color:var(--muted);white-space:nowrap;line-height:1.7}
+.tp-tag.closed{background:var(--ok-bg);color:var(--ok)}
+.tp-foot{font-size:12.5px}
+.tp-foot:empty{display:none}
+.chat-filter{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);min-width:0}
+.chat-filter .links{font-size:13px}
+.ag.meeting .talk{cursor:pointer}
+.ag.meeting .talk:hover{box-shadow:0 0 0 3px var(--accent)}
+.chat-top .btn-lite{justify-self:auto}
+.compose [hidden]{display:none!important}
+.view-head{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0}
+.view-head b{overflow-wrap:anywhere}
+.picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.pick{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer}
+.pick:has(input:checked){border-color:var(--accent);background:var(--doing-bg)}
+.pick:has(input:disabled){cursor:default}
+.pick input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.pick span{display:grid;min-width:0}.pick b{font-size:14px;overflow-wrap:anywhere}.pick small{color:var(--muted);font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.meet-tag{font-size:11.5px;font-weight:700;color:var(--accent);background:var(--doing-bg);border-radius:4px;padding:0 6px}
+.ver-row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.ver-row .lbl{margin:0}
+.ver-row>div{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
+.ver-row>div[hidden],.tp-pop .filters[hidden]{display:none}
+.tp-host{display:flex;min-width:0;max-width:100%}
+.hd .tog{all:unset;cursor:pointer;font-size:12px;font-weight:600;color:var(--accent);font-family:var(--font)}
+.hd .tog:focus-visible,.done-more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.done-more{all:unset;cursor:pointer;font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:5px;padding:4px 8px;text-align:center}
+.done-more:hover{color:var(--ink);border-color:var(--accent)}
+.btn{font:inherit;font-weight:700;border:0;border-radius:5px;padding:6px 18px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+/* board: stage columns x agent lanes */
+.board-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.filters button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:1px 11px;cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.board-scroll{overflow-x:auto;padding-bottom:6px}
+.lanes{display:grid;grid-template-columns:170px repeat(5,minmax(190px,1fr));min-width:1140px;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden}
+.lanes>div{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:8px;min-width:0}
+.lanes .hd{border-top:0;background:var(--bg);font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;gap:6px;position:sticky;top:0}
+.lanes .hd span{font-family:var(--font-mono);font-weight:500;color:var(--muted)}
+.lanes>.lane-name,.lanes>.hd0{border-left:0}
+.lane-name{display:flex;gap:8px;align-items:center;background:var(--bg)}
+.lane-name .nm small{font-size:12px}
+.cell{display:flex;flex-direction:column;gap:6px}
+.card{all:unset;display:grid;gap:3px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--idle);border-radius:5px;padding:7px 9px;cursor:pointer}
+.card.s-doing{border-left-color:var(--accent)}.card.s-review{border-left-color:#7048e8}.card.s-done{border-left-color:var(--ok)}.card.s-blocked{border-left-color:var(--bad)}
+.card:hover{border-color:var(--accent)} .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card .t{font-weight:700;font-size:13.5px;line-height:1.35}
+.card .meta{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.empty{color:var(--muted);font-size:13px;padding:4px 2px}
+.feat-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.feat-row .lbl{margin:0}
+.fctl{display:grid;gap:8px;min-width:0}
+.frow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0}.frow>.lbl{margin:0;min-width:62px}
+.cks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+.ck{display:inline-flex;gap:6px;align-items:center;font-size:13px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:2px 10px 2px 8px;cursor:pointer;max-width:100%}
+.ck input{margin:0;width:14px;height:14px;accent-color:var(--accent)}
+.ck span{overflow-wrap:anywhere}.ck .n{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.ck:has(input:checked){border-color:var(--accent);background:var(--doing-bg)}
+.ck.fk{border-left:4px solid var(--fc)}
+.tp-pop .fctl{border-bottom:1px solid var(--line);padding-bottom:8px}
+.frow.ftop{align-items:flex-start}.frow.ftop>.lbl{padding-top:4px}
+.ftree{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:flex-start;min-width:0;flex:1}
+.tp-pop .ftree{max-height:220px;overflow:auto}
+.fg{display:grid;gap:5px;min-width:0;max-width:100%}.fg.open{flex-basis:100%}
+.fg-h{display:flex;gap:4px;align-items:center;min-width:0;flex-wrap:wrap}
+.fg-tg{all:unset;cursor:pointer;width:18px;height:22px;line-height:22px;text-align:center;color:var(--muted);font-size:12px;border-radius:4px}
+.fg-tg:hover{background:var(--bg)}.fg-tg:focus-visible{outline:2px solid var(--accent)}
+.fkids{display:flex;flex-wrap:wrap;gap:5px;margin-left:9px;padding-left:12px;border-left:2px solid var(--fc);min-width:0}
+.ck.kid{border-radius:6px;font-size:12.5px}
+.card.conv{border-left-color:#0c8599}.card.conv>.meet-tag{justify-self:start}.card.conv .faces .av{margin-right:-5px}
+.flabel{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:0 6px;color:#fff;justify-self:start;line-height:1.6}
+.feat-sum{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:8px}
+.feat-sum[hidden]{display:none}
+.bar{height:8px;border-radius:4px;background:var(--idle-bg);overflow:hidden;display:flex}.bar i{display:block;height:100%}
+.feat-sum .row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.feat-sum .who-list{display:flex;flex-wrap:wrap;gap:6px 12px}.feat-sum .who-list span{display:inline-flex;gap:6px;align-items:center;font-size:13.5px}
+/* dialog */
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:0;width:min(720px,calc(100% - 24px));max-height:88vh;direction:ltr;text-align:left}
+dialog::backdrop{background:rgba(10,14,20,.55)}
+.dlg{padding:18px 20px;display:grid;gap:14px;overflow:auto;max-height:88vh}
+.dlg h3{font-size:22px;margin:0;line-height:1.3}
+.lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
+.dlg ul,.dlg ol{margin:0;padding-left:20px}
+.dlg p{margin:0 0 6px}
+.tc{border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:grid;gap:4px}
+.status-line{font-size:13px;color:var(--muted);margin:0}
+@media (max-width:640px){h1{font-size:25px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap" dir="ltr" lang="en">
+  <header>
+    <div>
+      <h1 id="title">Product Office</h1>
+      <p class="sub">Every agent, task and discussion in one place. Click an agent or a task for details.</p>
+    </div>
+    <div class="chips" id="summary"></div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-office" aria-controls="panel-office" aria-selected="true">Office</button>
+    <button role="tab" id="tab-roadmap" aria-controls="panel-roadmap" aria-selected="false" tabindex="-1">Roadmap</button>
+    <button role="tab" id="tab-chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">Chat<span class="count" id="chatCount"></span></button>
+    <button role="tab" id="tab-board" aria-controls="panel-board" aria-selected="false" tabindex="-1">Task board<span class="count" id="taskCount"></span></button>
+  </div>
+
+  <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
+    <div class="scene">
+      <div class="chrome"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="ttl" id="chromeTitle">Product Office</span><span class="clock" id="clock"></span></div>
+      <div class="rooms">
+        <div class="room" id="room-boss" tabindex="0" aria-label="Manager's office"><span class="label">Manager's office<small>You and your assistant</small></span></div>
+        <div class="room" id="room-main" tabindex="0" aria-label="Main office"><span class="label">Main office<small>Working</small></span></div>
+        <i class="rbreak" aria-hidden="true"></i>
+        <div class="room" id="room-meet" tabindex="0" aria-label="Meeting room"><span class="label">Meeting room<small>Free</small></span></div>
+        <div class="room" id="room-huddle" tabindex="0" aria-label="Huddle room"><span class="label">Huddle room<small>Free</small></span></div>
+        <i class="rbreak" aria-hidden="true"></i>
+        <div class="room" id="room-game" tabindex="0" aria-label="Games and lounge"><span class="label">Games &amp; lounge<small>Done or not started</small></span></div>
+        <div class="room" id="room-idle" tabindex="0" aria-label="Idle room"><span class="label">Idle room<small>Nobody inactive</small></span></div>
+      </div>
+      <p class="zoomhint">Hover over a room to zoom in.</p>
+    </div>
+
+    <div class="office-split">
+      <div class="panel">
+        <div class="say"><b>Your assistant says</b><span id="assistantSay">Getting the status ready…</span></div>
+        <div class="agent-card" id="agentCard" hidden></div>
+        <div class="row-wrap"><button class="btn-lite" id="goChat" type="button">Open the chat</button><button class="btn-lite" id="callMeet2" type="button">Call a meeting</button></div>
+      </div>
+      <div class="panel">
+        <h2>Team</h2>
+        <div class="roster" id="roster"></div>
+        <div class="legend" id="legend"></div>
+        <span class="hint" id="updated"></span>
+      </div>
+    </div>
+  </section>
+
+  <section role="tabpanel" id="panel-roadmap" aria-labelledby="tab-roadmap" class="stack" hidden>
+    <div class="board-head"><h2>Versions and phases</h2><span class="hint">Planning, Prototype, Staging, Production. Click a version to see its summary board.</span></div>
+    <div id="roadmap" class="rm"></div>
+  </section>
+
+  <section role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" class="stack chat-tab" hidden>
+    <div class="chat-layout">
+      <aside class="conv-side" aria-label="Conversations">
+        <div class="row-wrap" style="justify-content:space-between"><h2>Conversations</h2><button class="btn-lite" id="callMeet3" type="button">Call a meeting</button></div>
+        <div class="conv-list" id="sessList"></div>
+        <details class="arch" id="arch"><summary>Archive<span id="archCount"></span></summary>
+          <input type="search" id="archQ" placeholder="Search closed meetings and conversations" aria-label="Search the archive" autocomplete="off">
+          <div id="archList"></div>
+        </details>
+      </aside>
+      <div class="chat">
+        <div class="chat-top"><h2 id="h-chat">Discussion</h2><span class="row-wrap"><span class="hint">Join in or decide. Your word wins.</span><button class="btn-lite" id="callMeet" type="button">Call a meeting</button></span></div>
+        <div class="chat-filter"><span class="field">Show <span class="tp-host" id="chatPickHost"></span></span><span class="links" id="chatInfo"></span></div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <form class="compose" id="compose">
+          <div class="row">
+            <label for="to">To <select id="to"></select></label>
+            <span class="field">Task <span class="tp-host" id="composePickHost"></span></span>
+            <label for="isDecision"><input type="checkbox" id="isDecision"> This is a decision</label>
+          </div>
+          <textarea id="text" placeholder="Write your reply or decision…" aria-label="Message"></textarea>
+          <div class="row" style="justify-content:space-between">
+            <span class="note" id="composeNote">Your message goes to the Coordinator, who passes it on.</span>
+            <button class="btn" id="send" type="submit">Send</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section role="tabpanel" id="panel-board" aria-labelledby="tab-board" class="stack" hidden>
+    <div class="board-head">
+      <h2>Tasks by stage and agent</h2>
+      <div class="filters" id="filters"></div>
+    </div>
+    <div class="ver-row"><div id="boardFilters"></div><span class="field">Find <span class="tp-host" id="boardPickHost"></span></span></div>
+    <div class="feat-sum" id="featSum" hidden></div>
+    <div class="board-scroll"><div class="lanes" id="lanes"></div></div>
+  </section>
+
+  <p class="status-line" id="conn">Connecting to the office data…</p>
+  <p class="status-line">Office art and characters from <span class="mono">W17ant/Claude-Office</span> (MIT).</p>
+</div>
+
+<dialog id="taskDlg"><div class="dlg" id="taskBody"></div></dialog>
+<dialog id="sessDlg"><div class="dlg" id="sessBody"></div></dialog>
+<dialog id="meetDlg"><div class="dlg" id="meetBody"></div></dialog>
+<dialog id="agentDlg" aria-label="Agent"><div class="dlg" id="agentBody"></div></dialog>
+
+<script>
+(() => {
+const STATES = [{k:"todo", en:"To do"}, {k:"doing", en:"In progress"}, {k:"review", en:"In review"}, {k:"done", en:"Done"}, {k:"blocked", en:"Blocked"}];
+const AGENT_STATE = {
+  working:{en:"Working", cls:"st-working"}, waiting:{en:"Waiting for you", cls:"st-waiting"},
+  blocked:{en:"Blocked", cls:"st-blocked"}, done:{en:"Done", cls:"st-done"}, idle:{en:"Not started", cls:"st-idle"}
+};
+const KIND = {question:"Question", answer:"Answer", decision:"Decision", owner:"You", note:"Note", proposal:"Proposed tasks"};
+const PALETTE = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d9480f","#5c940d","#1971c2","#a61e4d","#087f5b","#862e9c"];
+
+let agents = [], tasks = [], msgs = [], sessions = [], filter = "", feat = "", selectedAgent = null, me = null, canWrite = true, db = null, user = null;
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const agentById = id => agents.find(a => a.id === id);
+const nameOf = id => id === "owner" ? "You" : id === "all" ? "Everyone" : (agentById(id)?.name_en || agentById(id)?.name_ar || id);
+const roleOf = a => a?.role_en || a?.role_ar || "";
+const doingOf = a => a?.doing_en || "";
+const colorFor = id => { const i = agents.findIndex(a => a.id === id); return PALETTE[(i < 0 ? 0 : i) % PALETTE.length]; };
+const fmt = iso => { try { return new Date(iso).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}); } catch { return ""; } };
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- tabs ---------- */
+const TABS = ["office","roadmap","chat","board"];
+const TAB_NAME = {office:"Office", roadmap:"Roadmap", chat:"Chat", board:"Task board"};
+let curTab = null, restoring = false;
+const navBack = [];
+const cloneF = f => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, v instanceof Set ? new Set(v) : v]));
+function snapshot(){
+  const bs = document.querySelector(".board-scroll");
+  return {tab:curTab, y:scrollY, chat:{chatSess, chatTask, chatPair, composeTask, ms:$("msgs").scrollTop}, board:{bf:cloneF(bf), filter, sl:bs ? bs.scrollLeft : 0}};
+}
+function backBar(){
+  let b = $("navBack");
+  if (!b) { b = el("button","nav-back"); b.id = "navBack"; b.type = "button"; b.onclick = goBack; document.body.append(b); }
+  const top = navBack[navBack.length - 1];
+  b.hidden = !top || top.tab === curTab;
+  if (top) { let what = "";
+    if (top.tab === "chat") { const s = top.chat.chatSess && sessions.find(x => x.id === top.chat.chatSess); what = s ? s.title_en || "" : top.chat.chatTask || (top.chat.chatPair ? top.chat.chatPair.split("|").map(nameOf).join(" & ") : ""); }
+    b.replaceChildren(el("span", null, "\u2190 Back to " + TAB_NAME[top.tab]), ...(what ? [el("bdi", null, what)] : [])); }
+}
+function goBack(){
+  const sn = navBack.pop(); if (!sn) return;
+  restoring = true;
+  try {
+    if (sn.tab === "chat") { ({chatSess, chatTask, chatPair, composeTask} = sn.chat); pickers.forEach(p => p.refresh()); renderMsgs(); renderCompose(); renderSessions(); }
+    if (sn.tab === "board") { Object.assign(bf, sn.board.bf); filter = sn.board.filter; renderBoard(); }
+    closeDialogs(); showTab(sn.tab);
+  } finally { restoring = false; }
+  requestAnimationFrame(() => {
+    if (sn.tab === "chat") $("msgs").scrollTop = sn.chat.ms;
+    if (sn.tab === "board") { const bs = document.querySelector(".board-scroll"); if (bs) bs.scrollLeft = sn.board.sl; }
+    scrollTo({top:sn.y, behavior:"auto"});
+  });
+  backBar();
+}
+function showTab(name, focus, byTab){
+  if (curTab && name !== curTab && !restoring && !byTab) { navBack.push(snapshot()); if (navBack.length > 12) navBack.shift(); }
+  curTab = name;
+  TABS.forEach(t => { const on = t === name; $("tab-"+t).setAttribute("aria-selected", String(on)); $("tab-"+t).tabIndex = on ? 0 : -1; $("panel-"+t).hidden = !on; });
+  if (focus) $("tab-"+name).focus();
+  try { history.replaceState(null, "", "#" + name); } catch {}
+  backBar();
+}
+TABS.forEach((t, i) => {
+  $("tab-"+t).onclick = () => showTab(t, false, true);
+  $("tab-"+t).onkeydown = e => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { showTab(TABS[(i + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length], true); e.preventDefault(); } };
+});
+const startHash = location.hash;
+showTab(/^#board/.test(startHash) ? "board" : /^#chat/.test(startHash) ? "chat" : /^#roadmap/.test(startHash) ? "roadmap" : "office");
+navBack.length = 0;
+if (/^#(task|session|board|agent)\//.test(startHash)) try { history.replaceState(null, "", startHash); } catch {}
+
+/* ---------- links: every task, session and board view has its own #address ---------- */
+const closeDialogs = () => ["taskDlg","sessDlg","meetDlg","agentDlg"].forEach(d => { if ($(d).open) $(d).close(); });
+function link(text, href, cls){ const a = el("a", cls || "linkish", text); a.href = href; a.onclick = e => { e.preventDefault(); go(href); }; return a; }
+const taskLink = id => link(id, "#task/" + encodeURIComponent(id));
+const sessLink = (id, text) => link(text || "Session", "#session/" + encodeURIComponent(id));
+const boardLink = (id, text) => link(text || "Board", "#board/" + encodeURIComponent(id));
+function go(href){ try { history.replaceState(null, "", href); } catch {} route(href); }
+function route(h){
+  const m = /^#(task|session|board|agent)\/(.+)$/.exec(h || location.hash); if (!m) return false;
+  const id = decodeURIComponent(m[2]);
+  if (m[1] === "task") { if (!tasks.some(t => t.id === id)) return false; closeDialogs(); openTask(id); }
+  else if (m[1] === "session") { if (!sessions.some(s => s.id === id)) return false; closeDialogs(); openSession(id); }
+  else if (m[1] === "agent") { if (!agentById(id)) return false; if (agentOpen !== id) { closeDialogs(); openAgent(id); } }
+  else { if (!tasks.some(t => t.id === id)) return false; closeDialogs(); showOnBoard(id); }
+  return true;
+}
+function showOnBoard(id){
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  filter = ""; bf.ver = versions().length ? verOf(t) : null; bf.states.add(t.state || "todo"); bf.feats = new Set(t.feature ? [t.feature] : []); bf.tasks.clear(); renderBoard(); showTab("board");
+  try { history.replaceState(null, "", "#board/" + encodeURIComponent(id)); } catch {}
+  const card = document.querySelector(`.card[data-task="${CSS.escape(id)}"]`);
+  if (card) { card.scrollIntoView({block:"center", inline:"center", behavior: reduce ? "auto" : "smooth"}); card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash"); card.focus({preventScroll:true}); }
+}
+/* task and session ids written inside a message become links */
+function linkify(text){
+  const ids = [...tasks.map(t => t.id), ...sessions.map(s => s.id)].filter(Boolean).sort((a,b) => b.length - a.length);
+  const frag = document.createDocumentFragment();
+  if (!ids.length) { frag.append(text); return frag; }
+  const re = new RegExp("\\b(" + ids.map(x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\b", "g");
+  let last = 0, mm;
+  while ((mm = re.exec(text))) { frag.append(text.slice(last, mm.index)); frag.append(tasks.some(t => t.id === mm[1]) ? taskLink(mm[1]) : sessLink(mm[1], mm[1])); last = mm.index + mm[1].length; }
+  frag.append(text.slice(last)); return frag;
+}
+let routed = false;
+addEventListener("hashchange", () => route());
+
+/* ---------- office scene (art from W17ant/Claude-Office, MIT) ---------- */
+const A = "assets/";
+const SPRITE = {"coordinator":"employee-3","reviewer":"employee-2","context-keeper":"explore-1","business-analyst":"Frontend-dev-1","mock-api":"dev-1","devops":"security-audit-1","backend":"employee-1","qa-api":"dev-2","office-manager":"Claude-1","owner":"Me-1"};
+const POOL = ["dev-1","dev-2","employee-1","employee-2","employee-3","explore-1","Frontend-dev-1","security-audit-1"];
+const spriteBase = id => SPRITE[id] || POOL[[...String(id)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7) % POOL.length];
+const FX = {working:"typing", waiting:"post-it", blocked:"build-failed", done:"party", idle:"sleeping"};
+const ASSISTANT = "office-manager";
+const FACINGS = ["front-left","front-right","rear-left","rear-right"];
+// furniture: [sprite, x%, y%, width% of room, z]
+const F_MAIN = [
+  ["desk-lr",42.4,50.4,10.5],["desk-lf",46.7,53,10.5],["desk-rf",39.9,55.2,10.5],
+  ["desk-lr",31.4,64.8,10.5],["desk-lf",35.4,67.5,10.5],["desk-rf",27.9,70,10.5],
+  ["desk-lr",59,73.7,10.5],["desk-lf",62.6,76,10.5],["desk-rf",55.4,78.7,10.5],["desk-rr",66.6,71.1,10.5],
+  ["coffee",78.5,50.2,5],["filing",45,56.5,5.2],["monstera",91.9,64.7,6.2],["snake",43.2,37.9,5],
+  ["money",32,71.2,5.2],["money",89.2,65.7,5.2],["monstera",60.2,80.4,6.2],["printer",85.4,56.8,6.9]];
+const S_MAIN = [
+  {x:25.8,y:71,f:"rear-left",z:85},{x:52.7,y:78.8,f:"rear-left",z:95},{x:48.9,y:52.9,f:"rear-right",z:70},
+  {x:37.9,y:68.2,f:"rear-right",z:85},{x:65.9,y:75.8,f:"rear-right",z:95},{x:38.5,y:55.2,f:"rear-left",z:58},
+  {x:26.9,y:59.2,f:"front-left",z:40},{x:68.7,y:66.2,f:"front-right",z:55},{x:38.8,y:43.6,f:"front-left",z:30},{x:55.2,y:66.8,f:"front-left",z:55},
+  {x:73.5,y:56.7,f:"rear-left"},{x:76.2,y:58.4,f:"front-right"},{x:53.3,y:46.6,f:"rear-left"},{x:56,y:47.7,f:"front-right"},{x:81,y:63,f:"rear-left"},{x:47.8,y:57.6,f:"front-right",z:70}];
+const F_BOSS = [
+  ["desk-lr",47,63.7,10.5],["desk-lf",50.6,66,10.5],["desk-rf",43.4,68.7,10.5],["desk-rr",54.6,61.1,10.5],
+  ["whiteboard",30,47,8.1],["coffee",78.5,50.2,5],["filing",86,57,5.2],["filing",82,55,5.2],
+  ["monstera",91.9,64.7,6.2],["monstera",14,66,6.2],["snake",40,40.5,5],["money",70,84,5.2],["money",22,73,5.2]];
+const S_BOSS_OWNER = {x:43.2,y:56.8,f:"front-left",z:50}, S_BOSS_ASSIST = {x:56.7,y:56.2,f:"front-right",z:50};
+const S_BOSS_VISIT = [{x:40.7,y:76,f:"rear-right"},{x:53.9,y:74,f:"rear-left"},{x:33,y:70,f:"rear-right"},{x:62,y:79,f:"rear-left"},{x:27,y:63,f:"rear-right"},{x:68,y:72,f:"rear-left"}];
+const S_GAME = [
+  {x:62.4,y:68.9,f:"rear-right"},{x:34,y:57,f:"rear-left"},{x:21.8,y:68.9,f:"rear-right"},{x:55.2,y:70,f:"rear-left"},
+  {x:67.8,y:74.4,f:"rear-right"},{x:41.5,y:52.9,f:"rear-left"},{x:37.9,y:78.9,f:"rear-right"},{x:39.3,y:59.9,f:"front-right"},
+  {x:58.2,y:74.4,f:"rear-right"},{x:30.8,y:63.7,f:"front-left"},{x:55.7,y:58.4,f:"front-right"},{x:47,y:82,f:"rear-left"}];
+
+// meeting room: sprites placed by top-left box in % of the room; seats are seat-height points (clockwise from the head)
+const MEET = {"table": {"x": 35.01, "y": 50.8, "w": 29.18, "z": 500}, "mchair-0": {"x": 47.35, "y": 46.98, "w": 5.37, "z": 295}, "mchair-1": {"x": 54.11, "y": 51.33, "w": 5.24, "z": 305}, "mchair-2": {"x": 60.94, "y": 55.6, "w": 5.04, "z": 315}, "mchair-3": {"x": 33.29, "y": 47.07, "w": 5.57, "z": 395}, "mchair-4": {"x": 32.82, "y": 57.02, "w": 5.57, "z": 695}, "mchair-5": {"x": 40.25, "y": 61.72, "w": 5.44, "z": 705}, "mchair-6": {"x": 47.68, "y": 66.34, "w": 5.37, "z": 715}, "mchair-7": {"x": 61.07, "y": 65.99, "w": 5.11, "z": 645}, "seats": [{"x": 36.24, "y": 54.01, "f": "front-right", "z": 400}, {"x": 49.93, "y": 53.93, "f": "front-left", "z": 300}, {"x": 56.64, "y": 58.24, "f": "front-left", "z": 310}, {"x": 63.35, "y": 62.56, "f": "front-left", "z": 320}, {"x": 63.52, "y": 71.37, "f": "rear-left", "z": 650}, {"x": 50.49, "y": 71.77, "f": "rear-right", "z": 720}, {"x": 43.12, "y": 67.13, "f": "rear-right", "z": 710}, {"x": 35.75, "y": 62.48, "f": "rear-right", "z": 700}], "stand": [{"x": 38.52, "y": 51.54, "f": "front-right", "z": 515}, {"x": 62.59, "y": 81.25, "f": "rear-left", "z": 813}, {"x": 25.18, "y": 59.71, "f": "front-right", "z": 597}, {"x": 73.07, "y": 72.7, "f": "rear-left", "z": 727}, {"x": 32.52, "y": 72.54, "f": "rear-right", "z": 725}, {"x": 40.4, "y": 78.48, "f": "rear-right", "z": 785}], "door": {"x": 16.24, "y": 63.4}, "chair-front-left": {"x": 46.42, "y": 55.15, "w": 5.37, "ax": 0.48, "ay": 0.618}, "chair-front-right": {"x": 46.15, "y": 55.15, "w": 5.37, "ax": 0.53, "ay": 0.618}, "chair-rear-left": {"x": 46.42, "y": 56.84, "w": 5.37, "ax": 0.48, "ay": 0.551}, "chair-rear-right": {"x": 46.22, "y": 56.75, "w": 5.31, "ax": 0.524, "ay": 0.555}};
+// huddle room: four small tables, four seats each, two standing spots per table
+const HUDDLE = {"tables":[{"table":{"x":44.705,"y":40.94254464285714,"w":14.59,"z":500},"chairs":[{"k":"mchair-3","x":42.86,"y":36.57,"w":5.57,"z":395},{"k":"mchair-1","x":52.73,"y":38.6,"w":5.24,"z":305},{"k":"mchair-7","x":56.04,"y":45.86,"w":5.11,"z":645},{"k":"mchair-5","x":46.16,"y":43.82,"w":5.44,"z":705}],"seats":[{"x":45.81,"y":43.51,"f":"front-right","z":400},{"x":55.26,"y":45.51,"f":"front-left","z":310},{"x":58.49,"y":51.24,"f":"rear-left","z":650},{"x":49.03,"y":49.23,"f":"rear-right","z":710}],"stand":[{"x":39,"y":55,"f":"rear-right","z":550},{"x":65,"y":56,"f":"rear-left","z":560}]},{"table":{"x":22.705,"y":55.94254464285714,"w":14.59,"z":1500},"chairs":[{"k":"mchair-3","x":20.86,"y":51.57,"w":5.57,"z":1395},{"k":"mchair-1","x":30.73,"y":53.6,"w":5.24,"z":1305},{"k":"mchair-7","x":34.04,"y":60.86,"w":5.11,"z":1645},{"k":"mchair-5","x":24.16,"y":58.82,"w":5.44,"z":1705}],"seats":[{"x":23.81,"y":58.51,"f":"front-right","z":1400},{"x":33.26,"y":60.51,"f":"front-left","z":1310},{"x":36.49,"y":66.24,"f":"rear-left","z":1650},{"x":27.03,"y":64.23,"f":"rear-right","z":1710}],"stand":[{"x":17,"y":70,"f":"rear-right","z":1700},{"x":43,"y":71,"f":"rear-left","z":1710}]},{"table":{"x":64.705,"y":53.94254464285714,"w":14.59,"z":2500},"chairs":[{"k":"mchair-3","x":62.86,"y":49.57,"w":5.57,"z":2395},{"k":"mchair-1","x":72.73,"y":51.6,"w":5.24,"z":2305},{"k":"mchair-7","x":76.04,"y":58.86,"w":5.11,"z":2645},{"k":"mchair-5","x":66.16,"y":56.82,"w":5.44,"z":2705}],"seats":[{"x":65.81,"y":56.51,"f":"front-right","z":2400},{"x":75.26,"y":58.51,"f":"front-left","z":2310},{"x":78.49,"y":64.24,"f":"rear-left","z":2650},{"x":69.03,"y":62.23,"f":"rear-right","z":2710}],"stand":[{"x":59,"y":68,"f":"rear-right","z":2680},{"x":85,"y":69,"f":"rear-left","z":2690}]},{"table":{"x":44.705,"y":69.94254464285714,"w":14.59,"z":3500},"chairs":[{"k":"mchair-3","x":42.86,"y":65.57,"w":5.57,"z":3395},{"k":"mchair-1","x":52.73,"y":67.6,"w":5.24,"z":3305},{"k":"mchair-7","x":56.04,"y":74.86,"w":5.11,"z":3645},{"k":"mchair-5","x":46.16,"y":72.82,"w":5.44,"z":3705}],"seats":[{"x":45.81,"y":72.51,"f":"front-right","z":3400},{"x":55.26,"y":74.51,"f":"front-left","z":3310},{"x":58.49,"y":80.24,"f":"rear-left","z":3650},{"x":49.03,"y":78.23,"f":"rear-right","z":3710}],"stand":[{"x":39,"y":84,"f":"rear-right","z":3840},{"x":65,"y":85,"f":"rear-left","z":3850}]}]};
+
+/* looks: each agent can pick a character and recolor its hair and shirt (masks mark those pixels) */
+const LOOK_SPRITES = ["Claude-1","Frontend-dev-1","Me-1","dev-1","dev-2","employee-1","employee-2","employee-3","explore-1","security-audit-1"];
+const NO_HAIR = new Set(["dev-1"]);
+const SHIRTS = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d9480f","#5c940d","#a61e4d","#087f5b","#862e9c","#495057"];
+const hashOf = id => [...String(id)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);
+/* the owner's rule: an agent without a saved look still gets its own shirt color, so two agents on one character differ */
+const lookOf = id => { const a = agentById(id), lk = (a || {}).look || {};
+  if (!a || okHex(lk.shirt) || id === "owner" || id === ASSISTANT || SPRITE[id]) return lk;
+  return {...lk, shirt:SHIRTS[(hashOf(id) >> 3) % SHIRTS.length]}; };
+const spriteOf = id => { const s = lookOf(id).sprite; return LOOK_SPRITES.includes(s) ? s : spriteBase(id); };
+const tinted = new Map(), tinting = new Set();
+const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
+const hexRgb = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+function okHex(h){ return /^#[0-9a-f]{6}$/i.test(String(h || "")); }
+async function tint(base, facing, lk){
+  const [im, mk] = await Promise.all([loadImg(`${A}chars/${base}-${facing}.webp`), loadImg(`${A}masks/${base}-${facing}.png`)]);
+  const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas"); c.width = w; c.height = h;
+  const x = c.getContext("2d", {willReadFrequently:true});
+  x.drawImage(mk, 0, 0); const m = x.getImageData(0, 0, w, h).data;
+  x.clearRect(0, 0, w, h); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, w, h), p = d.data;
+  const lum = i => .299 * p[i] + .587 * p[i + 1] + .114 * p[i + 2];
+  [[0, lk.hair], [1, lk.shirt]].forEach(([ch, col]) => {
+    if (!okHex(col)) return; const t = hexRgb(col); let sum = 0, n = 0;
+    for (let i = 0; i < p.length; i += 4) if (m[i + ch] > 127) { sum += lum(i); n++; }
+    if (!n) return; const ref = Math.max(10, sum / n);
+    for (let i = 0; i < p.length; i += 4) if (m[i + ch] > 127) { const k = Math.min(1.7, lum(i) / ref); for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, t[j] * k); }
+  });
+  x.putImageData(d, 0, 0);
+  return await new Promise((ok, no) => c.toBlob(b => b ? ok(URL.createObjectURL(b)) : no(), "image/png"));
+}
+function lookUrl(base, facing, lk){
+  const plain = `${A}chars/${base}-${facing}.webp`;
+  if (!okHex(lk.hair) && !okHex(lk.shirt)) return plain;
+  const key = [base, facing, lk.hair || "", lk.shirt || ""].join("|");
+  if (tinted.has(key)) return tinted.get(key);
+  if (!tinting.has(key)) { tinting.add(key); tint(base, facing, lk).then(u => { tinted.set(key, u); refreshLooks(); }, () => tinted.set(key, plain)); }
+  return plain;
+}
+const charUrl = (id, facing) => lookUrl(spriteOf(id), facing || "front-left", lookOf(id));
+let lookTimer = 0;
+function refreshLooks(){
+  clearTimeout(lookTimer);
+  lookTimer = setTimeout(() => {
+    figs.forEach(r => { if (r.pos) r.img.src = charUrl(r.id, r.pos.f); });
+    document.querySelectorAll(".av[data-id]").forEach(av => { av.style.backgroundImage = `url(${charUrl(av.dataset.id, "front-left")})`; });
+    if (typeof agentPreview === "function") agentPreview();
+  }, 30);
+}
+const CH_H = 13, SEAT_CUT = .44, SEAT_LIFT = 3.37;   // character height, hidden part when seated, seat height (all % of room height)
+const TALK_MIN = 15;                                  // agents who messaged each other in the last 15 minutes meet in the meeting room
+const ROOMS = {boss:$("room-boss"), meet:$("room-meet"), huddle:$("room-huddle"), main:$("room-main"), game:$("room-game"), idle:$("room-idle")};
+/* work and huddle rooms grow and shrink with the load (the owner's rule): one more main office for every 10 people at desks,
+   one more huddle room for every 4 extra conversations; extra rooms close again once nobody needs them */
+const baseOf = room => String(room).replace(/-\d+$/, "");
+const roomKey = (base, n) => n > 1 ? `${base}-${n}` : base;
+const ROOM_NAME = {main:"Main office", huddle:"Huddle room"};
+function ensureRoom(key){
+  if (ROOMS[key]) return ROOMS[key];
+  const base = baseOf(key), n = +key.slice(base.length + 1), prev = ROOMS[roomKey(base, n - 1)] || ensureRoom(roomKey(base, n - 1));
+  const r = el("div", "room"); r.id = "room-" + key; r.tabIndex = 0; r.setAttribute("aria-label", `${ROOM_NAME[base]} ${n}`);
+  const lb = el("span", "label", `${ROOM_NAME[base]} ${n}`); lb.append(el("small")); r.append(lb);
+  prev.after(r); ROOMS[key] = r;
+  if (base === "main") { furnish(r, F_MAIN); DESKS.forEach(sp => deskChair(r, sp)); }
+  else { HUDDLE.tables.forEach(t => { boxSprite(r, "table", t.table); t.chairs.forEach(c => boxSprite(r, c.k, c)); }); furnish(r, [["monstera",90,70,6.2,4700],["snake",14,58,5,1580]]); }
+  setRoomBg(); return r;
+}
+const roomsOf = base => Object.keys(ROOMS).filter(k => baseOf(k) === base).sort((a, b) => (+a.split("-").pop() || 1) - (+b.split("-").pop() || 1));
+function pruneRooms(out){   // close extra rooms nobody is planned for or still standing in
+  ["main", "huddle"].forEach(base => roomsOf(base).slice(1).reverse().forEach(k => {
+    const busy = [...out.values()].some(p => p.room === k) || [...figs.values()].some(r => r.room === k);
+    if (!busy) { ROOMS[k].remove(); delete ROOMS[k]; }
+  }));
+}
+/* idle room (the owner's rule): an agent with no activity for more than 3 days sits here on a chair and does not move,
+   with "Idle since <date>" over its head. Any new message, task update or meeting brings it back. */
+const IDLE_DAYS = 3, NEVER_IDLE = new Set(["coordinator", "office-manager", "agent-designer"]);
+const IDLE_SEATS = (() => {   // rows of chairs facing front-right, on the same iso floor as the meeting room
+  const B=[50,40], R=[88,65], F=[54,94], L=[4,63];
+  const P = (u, v) => [0,1].map(k => (1-u)*(1-v)*B[k] + u*(1-v)*R[k] + u*v*F[k] + (1-u)*v*L[k]);
+  const out = [];
+  // filled front row first, every other chair, so name tags don't overlap
+  [[.70,.32],[.70,.64],[.50,.48],[.30,.32],[.30,.64],[.50,.80],[.70,.48],[.70,.80],[.50,.32],[.50,.64],[.30,.48],[.30,.80]].forEach(([u, v]) => { const [x, y] = P(u, v);
+    out.push({x:+x.toFixed(2), y:+(y - SEAT_LIFT).toFixed(2), f:"front-right", z:Math.round(y * 10), seat:true}); });
+  return out;
+})();
+const lastActive = a => {
+  let t = 0; const bump = v => { const n = Date.parse(v || ""); if (n > t) t = n; };
+  bump(a.last_active_at); bump(a.updated_at); bump(a.profile_updated_at);
+  msgs.forEach(m => { if (m.from === a.id) bump(m.at); });
+  tasks.forEach(t2 => { if (t2.session === a.id) bump(t2.updated_at); });
+  sessions.forEach(x => { if ((x.members || []).includes(a.id)) { bump(x.opened_at); bump(x.closed_at); } });
+  return t;
+};
+const idleSince = a => { if (!a || NEVER_IDLE.has(a.id) || a.state === "waiting") return 0;
+  const t = lastActive(a); return a.archived === true ? (t || 1) : (t && Date.now() - t > IDLE_DAYS * 864e5 ? t : 0); };
+const DOOR = MEET.door;
+const DESKS = S_MAIN.slice(0, 10);                    // spots 0-9 are at desks and get a chair
+const COFFEE = {x:74.2, y:57.4, f:"rear-right", z:60};
+const sitAt = s => ({...s, seat:true, y:s.y - SEAT_LIFT});
+const SLOTS = {
+  boss: S_BOSS_VISIT,
+  main: S_MAIN.map((s, i) => i < DESKS.length ? sitAt(s) : s),
+  game: S_GAME,
+  idle: IDLE_SEATS,
+  meet: MEET.seats.map(s => ({...s, seat:true})).concat(MEET.stand),
+  huddle: HUDDLE.tables.flatMap(t => t.seats.map(s => ({...s, seat:true}))).concat(HUDDLE.tables.flatMap(t => t.stand))
+};
+const N_TABLES = HUDDLE.tables.length, tableSlots = ti => [0,1,2,3].map(k => ti * 4 + k).concat([N_TABLES * 4 + ti * 2, N_TABLES * 4 + ti * 2 + 1]);
+const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 18; };
+function setRoomBg(){
+  const n = isNight() ? "night" : "day";
+  Object.entries(ROOMS).forEach(([k, r]) => { const b = baseOf(k); if (b === "boss" || b === "main") r.style.backgroundImage = `url(${A}rooms/office-${n}.webp)`; if (b === "meet" || b === "huddle") r.style.backgroundImage = `url(${A}rooms/meet-${n}.webp)`; });
+  ROOMS.game.style.backgroundImage = `url(${A}rooms/game-${n}.webp)`;
+  ROOMS.idle.style.backgroundImage = `url(${A}rooms/office-${n}.webp)`;
+  const d = new Date(); $("clock").textContent = (isNight() ? "NIGHT " : "DAY ") + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+}
+function furnish(room, list){
+  list.forEach(([k,x,y,w,z]) => { const i = el("img","sp"); i.src = `${A}furn/${k}.webp`; i.alt = ""; i.style.cssText = `left:${x}%;top:${y}%;width:${w}%;z-index:${z ?? Math.round(y)}`; room.append(i); });
+}
+function boxSprite(room, k, b){ const i = el("img","sp box"); i.src = `${A}furn/${k}.webp`; i.alt = ""; i.style.cssText = `left:${b.x}%;top:${b.y}%;width:${b.w}%;z-index:${b.z}`; room.append(i); }
+function deskChair(room, s){
+  const f = s.f, c = MEET["chair-" + f], i = el("img","sp box"); i.src = `${A}furn/chair-${f}.webp`; i.alt = "";
+  i.style.cssText = `left:${s.x}%;top:${s.y - SEAT_LIFT}%;width:${c.w}%;transform:translate(${-c.ax*100}%,${-c.ay*100}%);z-index:${(s.z ?? Math.round(s.y)+10) - 1}`;
+  room.append(i);
+}
+let built = false;
+function buildRooms(){
+  if (built) return; built = true;
+  furnish(ROOMS.boss, F_BOSS); furnish(ROOMS.main, F_MAIN);
+  [S_BOSS_OWNER, S_BOSS_ASSIST].forEach(s => deskChair(ROOMS.boss, s));
+  DESKS.forEach(s => deskChair(ROOMS.main, s));
+  boxSprite(ROOMS.meet, "table", MEET.table);
+  for (let i = 0; i < 8; i++) boxSprite(ROOMS.meet, "mchair-" + i, MEET["mchair-" + i]);
+  furnish(ROOMS.meet, [["monstera",88,66,6.2,660],["monstera",14,60,6.2,600],["snake",70,40,5,400],["whiteboard",27,44,8.1,440]]);
+  HUDDLE.tables.forEach(t => { boxSprite(ROOMS.huddle, "table", t.table); t.chairs.forEach(c => boxSprite(ROOMS.huddle, c.k, c)); });
+  furnish(ROOMS.huddle, [["monstera",90,70,6.2,4700],["snake",14,58,5,1580]]);
+  IDLE_SEATS.forEach(s => boxSprite(ROOMS.idle, "mchair-3", {x:s.x - 2.95, y:s.y - 6.94, w:5.57, z:s.z - 5}));   // chairs only
+}
+
+/* who meets: members of open task sessions, plus agents talking to each other */
+function meetingGroups(){
+  const ids = new Set(agents.map(a => a.id)), groups = [];
+  sessions.filter(s => s.state === "open").sort((a, b) => String(a.opened_at || "").localeCompare(String(b.opened_at || ""))).forEach(s => groups.push({key:"s:" + s.id, label:`${s.task || convKind(s)} · ${s.title_en || "Question"}`, ids:(s.members || []).filter(m => m === "owner" || ids.has(m))}));
+  const since = Date.now() - TALK_MIN * 60000, pairs = new Map();
+  msgs.forEach(m => { if (m.session || Date.parse(m.at) <= since) return;
+    if (m.pair && m.pair.split("|").every(x => ids.has(x))) { const was = pairs.get(m.pair); pairs.set(m.pair, was || m.from === "owner"); return; }
+    if (ids.has(m.from) && ids.has(m.to) && m.from !== m.to) { const k = [m.from, m.to].sort().join("|"); pairs.set(k, pairs.get(k) || false); } });
+  /* when you write in two agents' talk you join it: you sit with them in the room */
+  pairs.forEach((withOwner, k) => groups.push({key:"p:" + k, label:k.split("|").map(nameOf).join(" & ") + (withOwner ? " & You" : ""), ids:[...(withOwner ? ["owner"] : []), ...k.split("|")]}));
+  /* you sit with the talk you wrote in last */
+  const lastOwner = msgs.filter(m => m.from === "owner" && (m.session || m.pair)).sort((x, y) => String(y.at).localeCompare(String(x.at)))[0];
+  const mine = lastOwner && groups.find(g => g.key === (lastOwner.session ? "s:" + lastOwner.session : "p:" + lastOwner.pair) && g.ids.includes("owner"));
+  if (mine) groups.forEach(g => { if (g !== mine) g.ids = g.ids.filter(x => x !== "owner"); });
+  return groups;
+}
+/* where everyone should be: Map id -> {room, spot}
+   the first group takes the meeting room; the next ones each take a free table in the huddle room */
+function plan(){
+  const out = new Map(), usedSets = {}, U = room => usedSets[room] ??= new Set(), used = new Proxy({}, {get:(_, k) => U(k)});
+  const slotsOf = room => SLOTS[baseOf(room)];
+  const groups = meetingGroups(), place = new Map(), tables = [];
+  let big = false;
+  groups.forEach(g => {
+    const ids = g.ids.filter(id => !place.has(id)).sort((a, b) => (b === "owner") - (a === "owner"));
+    if (!ids.length) { const p = place.get(g.ids[0]); g.where = p?.room; g.table = p?.table; return; }
+    let room = "meet", p;
+    if (big) { const g2 = tables.length, local = g2 % N_TABLES; room = roomKey("huddle", Math.floor(g2 / N_TABLES) + 1); ensureRoom(room); tables.push(true);
+      p = {room, table:local, slots:tableSlots(local)}; }
+    else { big = true; p = {room, table:null, slots:SLOTS.meet.map((_, i) => i)}; }
+    g.where = room; g.table = p.table;
+    ids.forEach(id => place.set(id, p));
+  });
+  const wants = [];
+  place.forEach((p, id) => wants.push([id, p.room, p.slots]));
+  if (!place.has("owner")) out.set("owner", {room:"boss", spot:sitAt(S_BOSS_OWNER), slot:-1});
+  else { const p = place.get("owner"), i = p.slots[0]; used[p.room].add(i); out.set("owner", {room:p.room, spot:slotsOf(p.room)[i], slot:i}); }   // you take the head seat
+  if (!place.has(ASSISTANT)) out.set(ASSISTANT, {room:"boss", spot:sitAt(S_BOSS_ASSIST), slot:-1});
+  agents.filter(a => a.id !== ASSISTANT && !place.has(a.id)).forEach(a => {
+    const st = a.state || "idle";
+    wants.push([a.id, idleSince(a) ? "idle" : st === "waiting" ? "boss" : (st === "working" || st === "blocked") ? "main" : "game", null]);
+  });
+  const atDesk = agents.filter(a => !place.has(a.id) && a.id !== ASSISTANT && !idleSince(a) && (a.state === "working" || a.state === "blocked")).length;
+  const nMain = Math.max(1, Math.ceil(atDesk / DESKS.length));
+  for (let k = 2; k <= nMain; k++) ensureRoom(roomKey("main", k));
+  const mains = Array.from({length:nMain}, (_, k) => roomKey("main", k + 1));
+  const free = (room, list) => { const l = list || slotsOf(room).map((_, i) => i).filter(i => baseOf(room) !== "main" || nMain === 1 || i < DESKS.length); const i = l.find(k => !used[room].has(k)); return i ?? -1; };
+  const pending = [];
+  wants.forEach(([id, room, list]) => { if (out.has(id)) return; const r = figs.get(id);
+    if (r && r.plan && (r.plan.room === room || (room === "main" && mains.includes(r.plan.room))) && r.plan.slot >= 0 && (!list || list.includes(r.plan.slot)) && !used[r.plan.room].has(r.plan.slot)) { used[r.plan.room].add(r.plan.slot); out.set(id, r.plan); }
+    else pending.push([id, room, list]); });
+  pending.forEach(([id, room, list]) => {
+    let rm = room, i = free(rm, list);
+    if (room === "main") for (const m of mains) { i = free(m); if (i >= 0) { rm = m; break; } }
+    if (i < 0 && list) i = free(rm);
+    if (i < 0) { rm = "game"; i = free(rm); }
+    if (i < 0) return;
+    used[rm].add(i); out.set(id, {room:rm, spot:slotsOf(rm)[i], slot:i});
+  });
+  return {out, groups};
+}
+
+/* figures that persist and walk between spots */
+const figs = new Map();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function makeFig(id){
+  FACINGS.forEach(f => { const p = new Image(); p.src = charUrl(id, f); });
+  const b = el("button","ag"); b.type = "button";
+  const img = el("img","body"); img.alt = ""; b.append(img);
+  const fx = el("img","fx"); fx.alt = ""; b.append(fx);
+  const talk = el("span","talk"); talk.append(el("i"), el("i"), el("i")); b.append(talk);
+  const idle = el("span","idle"); b.append(idle);
+  const tag = el("span","tag");
+  const r = {id, b, img, fx, tag, idle, room:null, pos:null, plan:null, want:null, busy:false, errand:false};
+  talk.title = "Open this conversation";
+  if (id === "owner") b.tabIndex = -1;
+  b.onclick = e => { if (b.classList.contains("meeting") && e.target.closest(".talk")) openTalk(id); else if (id !== "owner") selectAgent(id); };
+  figs.set(id, r); return r;
+}
+function setPos(r, p, ms){
+  const t = ms ? `left ${ms}ms linear, top ${ms}ms linear` : "none";
+  r.b.style.transition = r.tag.style.transition = ms ? t + ", opacity .35s" : "opacity .35s";
+  const y = p.seat ? p.y + SEAT_CUT * CH_H : p.y;
+  r.b.style.left = r.tag.style.left = p.x + "%"; r.b.style.top = y + "%"; r.tag.style.top = p.y + "%";
+  r.b.style.zIndex = p.z ?? Math.round(p.y) + 10;
+  r.b.classList.toggle("seated", !!p.seat);
+  r.img.src = charUrl(r.id, p.f);
+  r.pos = p;
+}
+const idleDate = t => { try { return new Date(t).toLocaleDateString("en-GB", {day:"numeric", month:"short"}); } catch { return ""; } };
+const facingTo = (a, b) => ((b.y > a.y) ? "front-" : "rear-") + ((b.x < a.x) ? "left" : "right");
+async function walk(r, to){
+  const from = r.pos, d = Math.hypot(to.x - from.x, (to.y - from.y) * 896 / 1200);
+  if (reduce || d < .5) { setPos(r, to, 0); return; }
+  const ms = Math.min(4200, Math.max(500, d * 70));
+  setPos(r, {...from, seat:false, f:facingTo(from, to), z:Math.max(from.z ?? 0, to.z ?? 0, Math.round(Math.max(from.y, to.y)) + 10)}, 0);
+  r.b.classList.add("walking"); void r.b.offsetWidth;
+  setPos(r, {...to, seat:false, f:facingTo(from, to), z:r.b.style.zIndex}, ms);
+  await sleep(ms);
+  r.b.classList.remove("walking"); setPos(r, to, 0);
+}
+async function fade(r, on){ r.b.style.opacity = r.tag.style.opacity = on ? "1" : "0"; await sleep(reduce ? 0 : 360); }
+function mount(r, room){ ROOMS[room].append(r.b, r.tag); r.room = room; }
+async function goTo(r, room, spot){
+  r.want = {room, spot};
+  if (r.busy) return; r.busy = true;
+  while (r.want) {
+    const w = r.want; r.want = null;
+    if (!r.room) { mount(r, w.room); r.b.style.opacity = r.tag.style.opacity = "0"; setPos(r, w.spot, 0); await sleep(20); await fade(r, 1); continue; }
+    if (r.room !== w.room) {
+      await walk(r, {...DOOR, f:"front-left"}); await fade(r, 0);
+      mount(r, w.room); setPos(r, {...DOOR, f:"rear-right"}, 0); await fade(r, 1);
+    }
+    await walk(r, w.spot);
+  }
+  r.busy = false;
+}
+function dress(r, o){
+  r.b.className = "ag " + o.state + (r.b.classList.contains("walking") ? " walking" : "") + (r.pos?.seat ? " seated" : "") + (selectedAgent === r.id ? " sel" : "") + (o.meet ? " meeting" : "") + (o.idle ? " dormant" : "");
+  r.idle.textContent = o.idle ? "Idle since " + idleDate(o.idle) : "";
+  if (o.idle) r.fx.hidden = true; else if (o.fx) { r.fx.src = `${A}fx/${o.fx}.webp`; r.fx.hidden = false; } else r.fx.hidden = true;
+  r.b.style.height = (o.h || CH_H) + "%";
+  r.tag.textContent = o.label;
+  r.b.setAttribute("aria-label", o.label + (o.stateText ? ": " + o.stateText : "") + (o.meet ? " (in the meeting room)" : ""));
+}
+let lastGroups = [];
+function drawScene(){
+  buildRooms(); setRoomBg();
+  const {out, groups} = plan(); lastGroups = groups;
+  const meetIds = new Set(groups.flatMap(g => g.ids));
+  const live = new Set(["owner", ...agents.map(a => a.id)]);
+  if (!agentById(ASSISTANT)) live.add(ASSISTANT);
+  figs.forEach((r, id) => { if (!live.has(id) || !out.has(id)) { r.b.remove(); r.tag.remove(); figs.delete(id); } });
+  out.forEach((p, id) => {
+    const r = figs.get(id) || makeFig(id), a = agentById(id), st = id === "owner" ? "owner" : (a?.state || "working");
+    const label = id === "owner" ? "You" : (nameOf(id) === ASSISTANT ? "Office Manager" : nameOf(id));
+    const dz = p.room === "idle" ? idleSince(a) : 0;
+    dress(r, {state:st, meet:meetIds.has(id), label, idle:dz, stateText:AGENT_STATE[st]?.en, h:(id === "owner" || id === ASSISTANT) ? 14 : CH_H,
+      fx: meetIds.has(id) ? null : id === "owner" ? "monster-energy" : id === ASSISTANT && st === "working" ? "need-coffee" : FX[st]});
+    const changed = !r.plan || r.plan.room !== p.room || r.plan.slot !== p.slot || r.plan.spot !== p.spot;
+    r.plan = p;
+    if (changed && !r.errand) goTo(r, p.room, p.spot);
+  });
+  pruneRooms(out); sizeRooms(out);
+  const big = groups.filter(g => g.where === "meet");
+  const roomLabel = (room, list, empty) => { const sm = ROOMS[room].querySelector(".label small"); sm.replaceChildren();   // each title isolated, so Arabic and English don't mix up
+    if (!list.length) { sm.textContent = empty; return; }
+    list.forEach(([pre, t], i) => { if (i) sm.append(" · "); if (pre) sm.append(pre); sm.append(el("bdi", null, t)); }); };
+  roomLabel("meet", big.map(g => ["", g.label]), "Free");
+  roomsOf("huddle").forEach(k => roomLabel(k, groups.filter(g => g.where === k).map(g => [`Table ${g.table + 1}: `, g.label]), `${N_TABLES} free tables`));
+  roomsOf("main").slice(1).forEach(k => { ROOMS[k].querySelector(".label small").textContent = "Working"; });
+  const nIdle = [...out.values()].filter(p => p.room === "idle").length;
+  ROOMS.idle.querySelector(".label small").textContent = nIdle ? `Inactive ${IDLE_DAYS}+ days · ${nIdle}` : "Nobody inactive";
+}
+/* the owner's rule: a room with nobody is smaller, a room with people is normal, a crowded one a little bigger */
+const CROWD = 4, RW = {empty:.36, some:.5, many:.6}, RP = {empty:.72, some:.88, many:1};
+function sizeRooms(out){
+  const n = {}; Object.keys(ROOMS).forEach(k => n[k] = 0);
+  out.forEach(p => { if (p.room in n) n[p.room]++; });
+  const kind = r => !n[r] ? "empty" : n[r] >= CROWD ? "many" : "some";
+  [["boss", ...roomsOf("main")],["meet", ...roomsOf("huddle")],["game","idle"]].forEach(row => {
+    const w = row.map(r => RW[kind(r)]), sum = w.reduce((a, b) => a + b, 0), k = sum > 1 ? 1 / sum : 1;
+    row.forEach((r, i) => { const el2 = ROOMS[r]; el2.style.setProperty("--rw", (w[i] * k).toFixed(3)); el2.style.setProperty("--rp", RP[kind(r)]); el2.dataset.size = kind(r);
+      el2.setAttribute("aria-label", el2.getAttribute("aria-label").replace(/ \(\d+ (?:people|person)\)$/, "") + ` (${n[r]} ${n[r] === 1 ? "person" : "people"})`); });
+  });
+}
+function openTalk(id){
+  const g = lastGroups.find(x => x.ids.includes(id)); if (!g) return;
+  if (g.key.startsWith("s:")) viewSession(g.key.slice(2)); else viewPair(g.key.slice(2));
+  showTab("chat"); $("h-chat").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"});
+}
+/* a little life: people in the lounge wander, people at desks fetch coffee, people in meetings take turns to talk */
+function wander(){
+  if (reduce) return;
+  const lounge = [...figs.values()].filter(r => r.plan?.room === "game" && !r.busy);
+  if (!lounge.length) return;
+  const r = lounge[Math.floor(Math.random() * lounge.length)];
+  const taken = new Set([...figs.values()].filter(x => x.plan?.room === "game").map(x => x.plan.slot));
+  const freeIdx = SLOTS.game.map((_, i) => i).filter(i => !taken.has(i));
+  if (!freeIdx.length) return;
+  const i = freeIdx[Math.floor(Math.random() * freeIdx.length)];
+  r.plan = {room:"game", spot:SLOTS.game[i], slot:i}; goTo(r, "game", r.plan.spot);
+}
+async function coffeeRun(){
+  if (reduce) return;
+  const desk = [...figs.values()].filter(r => baseOf(r.plan?.room) === "main" && !r.busy && !r.errand && agentById(r.id)?.state === "working");
+  if (!desk.length) return;
+  const r = desk[Math.floor(Math.random() * desk.length)];
+  r.errand = true; await goTo(r, r.plan.room, COFFEE);
+  r.fx.src = `${A}fx/need-coffee.webp`; r.fx.hidden = false; await sleep(2600);
+  r.errand = false; if (figs.get(r.id) === r) { await goTo(r, r.plan.room, r.plan.spot); drawScene(); }
+}
+let turn = 0;
+function takeTurns(){
+  turn++;
+  figs.forEach(r => r.b.classList.remove("speaking"));
+  lastGroups.forEach(g => { const here = g.ids.map(id => figs.get(id)).filter(r => r && (r.room === "meet" || baseOf(r.room) === "huddle") && !r.busy); if (here.length) here[turn % here.length].b.classList.add("speaking"); });
+}
+function play(){
+  if (reduce) return;
+  const lounge = [...figs.values()].filter(r => r.room === "game" && r.plan?.room === "game" && !r.busy && !r.b.classList.contains("walking"));
+  if (!lounge.length) return;
+  const r = lounge[Math.floor(Math.random() * lounge.length)];
+  r.b.classList.add("playing"); setTimeout(() => r.b.classList.remove("playing"), 3600);
+}
+setInterval(play, 4100); setInterval(wander, 5200); setInterval(coffeeRun, 17000); setInterval(takeTurns, 2200); setInterval(drawScene, 30000);
+function renderAssistant(){
+  if (!agents.length) { $("assistantSay").textContent = "The office is empty. Agents move in when the product starts."; return; }
+  const c = s => agents.filter(a => (a.state||"idle") === s).length;
+  const waiting = agents.filter(a => a.state === "waiting" && a.id !== ASSISTANT), blocked = agents.filter(a => a.state === "blocked");
+  const openT = tasks.filter(t => t.state !== "done").length, pending = msgs.filter(m => m.from === "owner" && m.relayed === false).length;
+  const parts = [`${c("working")} working, ${c("done")+c("idle")} in the lounge, ${openT} open task${openT === 1 ? "" : "s"}.`];
+  if (waiting.length) parts.push(`Waiting for you in your office: ${waiting.map(a => nameOf(a.id)).join(", ")}.`);
+  if (blocked.length) parts.push(`Blocked: ${blocked.map(a => nameOf(a.id)).join(", ")}.`);
+  const dormant = agents.filter(a => idleSince(a));
+  if (dormant.length) parts.push(`In the idle room (no activity for ${IDLE_DAYS}+ days): ${dormant.map(a => nameOf(a.id)).join(", ")}.`);
+  const os = sessions.filter(x => x.state === "open");
+  if (os.length) parts.push(`${os.length} conversation${os.length === 1 ? " is" : "s are"} open in the meeting room: ${os.map(x => x.task || x.title_en || "a meeting").join(", ")}.`);
+  if (pending) parts.push(`${pending} of your message${pending === 1 ? " has" : "s have"} not reached the agents yet; I'll pass ${pending === 1 ? "it" : "them"} to the Coordinator.`);
+  $("assistantSay").textContent = parts.join(" ");
+}
+function avatar(id, size){ const av = el("span","av"); av.dataset.id = id; av.style.backgroundImage = `url(${charUrl(id,"front-left")})`; av.style.borderColor = id === "owner" ? "var(--accent)" : colorFor(id); if (size) { av.style.width = av.style.height = size + "px"; } return av; }
+function stateChip(st){ const s = AGENT_STATE[st] || AGENT_STATE.idle; const c = el("span","chip "+s.cls); c.append(el("span","dot"), s.en); return c; }
+function renderRoster(){
+  const box = $("roster"); box.replaceChildren();
+  if (!agents.length) { box.append(el("div","empty","No agents yet.")); return; }
+  const order = {waiting:0, blocked:1, working:2, done:3, idle:4};
+  [...agents].sort((a,b) => (order[a.state||"idle"] - order[b.state||"idle"]) || (a.desk ?? 0) - (b.desk ?? 0)).forEach(a => {
+    const b = el("button"); b.type = "button"; b.setAttribute("aria-pressed", String(selectedAgent === a.id));
+    const nm = el("span","nm", nameOf(a.id)); nm.append(el("small", null, roleOf(a)));
+    const dz = idleSince(a), chip = dz ? el("span","chip st-idle") : stateChip(a.state);
+    if (dz) chip.append(el("span","dot"), "Idle since " + idleDate(dz));
+    b.append(avatar(a.id), nm, chip); b.onclick = () => selectAgent(a.id); box.append(b);
+  });
+}
+function renderLegend(){
+  const box = $("legend"); box.replaceChildren();
+  [["typing","Working"],["post-it","Waiting for you"],["build-failed","Blocked"],["party","Done"],["sleeping","Not started"],["sleeping",`Idle room: no activity for ${IDLE_DAYS}+ days`]].forEach(([f,t]) => { const s = el("span"); const i = el("img"); i.src = `${A}fx/${f}.webp`; i.alt = ""; s.append(i, t); box.append(s); });
+}
+
+/* ---------- summary ---------- */
+function renderSummary(){
+  const box = $("summary"); box.replaceChildren();
+  const counts = {}; agents.forEach(a => counts[a.state||"idle"] = (counts[a.state||"idle"]||0)+1);
+  ["waiting","working","blocked","done","idle"].forEach(k => { if (counts[k]) { const c = stateChip(k); c.lastChild.textContent = `${AGENT_STATE[k].en}: ${counts[k]}`; box.append(c); } });
+  const open = tasks.filter(t => t.state !== "done").length;
+  box.append(el("span","chip", `Open tasks: ${open}`));
+  const os = sessions.filter(x => x.state === "open").length; if (os) { const c = stateChip("waiting"); c.lastChild.textContent = `Open sessions: ${os}`; box.append(c); }
+  $("taskCount").textContent = tasks.length ? String(tasks.length) : "";
+  const latest = [...agents.map(a=>a.updated_at), ...tasks.map(t=>t.updated_at)].filter(Boolean).sort().pop();
+  $("updated").textContent = latest ? `Last update: ${fmt(latest)}` : "";
+}
+
+/* ---------- board: stage columns x agent lanes ---------- */
+const FCOL = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d9480f","#5c940d","#1971c2","#a61e4d"];
+const allFeatures = () => [...new Set(tasks.map(t => t.feature).filter(Boolean))].sort();
+const features = () => [...new Set(tasks.filter(t => inVer(t, boardVer())).map(t => t.feature).filter(Boolean))].sort();
+const featColor = f => FCOL[Math.max(0, allFeatures().indexOf(f)) % FCOL.length];
+const verTasks = () => tasks.filter(t => inVer(t, boardVer()));
+const shown = t => inVer(t, boardVer()) && (!filter || t.session === filter) && bf.states.has(t.state || "todo") && featOk({type:"task", id:t.id, feature:t.feature || ""}, bf) && phaseOk({type:"task", t}, bf);
+function flabel(f){ const l = el("span","flabel", f); l.style.background = featColor(f); return l; }
+function renderFeatures(){
+  const sum = $("featSum");
+  const fs = new Set([...bf.feats, ...[...bf.tasks].map(id => tasks.find(t => t.id === id)?.feature).filter(Boolean)]);
+  feat = fs.size === 1 ? [...fs][0] : "";
+  if (!feat) { sum.hidden = true; return; }
+  const ft = verTasks().filter(t => t.feature === feat), n = ft.length || 1;
+  sum.replaceChildren(); sum.hidden = false;
+  const h = el("div","row"); h.append(flabel(feat), el("b", null, `${ft.filter(t => t.state === "done").length} of ${ft.length} tasks done`)); sum.append(h);
+  const bar = el("div","bar"); [["done","var(--ok)"],["review","#7048e8"],["doing","var(--accent)"],["blocked","var(--bad)"]].forEach(([k,c]) => { const i = el("i"); i.style.cssText = `width:${100*ft.filter(t => t.state === k).length/n}%;background:${c}`; bar.append(i); }); sum.append(bar);
+  const counts = el("div","row note"); STATES.forEach(s => counts.append(el("span", null, `${s.en}: ${ft.filter(t => (t.state||"todo") === s.k).length}`))); sum.append(counts);
+  const people = [...new Set(ft.map(t => t.session).filter(Boolean))];
+  const wl = el("div","who-list"); people.forEach(id => { const sp = el("span"); const open = ft.filter(t => t.session === id && t.state !== "done"); sp.append(avatar(id, 24), el("b", null, nameOf(id)), el("span","note", open.length ? open.map(t => STATES.find(s => s.k === t.state)?.en || t.state).join(", ") : "Done")); wl.append(sp); });
+  const lw = el("div"); lw.append(el("div","lbl","Who is on it"), wl); sum.append(lw);
+}
+function laneIds(){
+  const withTasks = [...new Set(verTasks().map(t => t.session).filter(Boolean))];
+  const ordered = agents.map(a => a.id).filter(id => withTasks.includes(id));
+  return ordered.concat(withTasks.filter(id => !ordered.includes(id)));
+}
+function renderFilters(){
+  const box = $("filters"); box.replaceChildren();
+  const mk = (id, label) => { const b = el("button", null, label); b.type = "button"; b.setAttribute("aria-pressed", String(filter === id)); b.onclick = () => { filter = id; renderBoard(); }; return b; };
+  box.append(mk("", "All agents"));
+  laneIds().forEach(s => box.append(mk(s, nameOf(s))));
+  $("boardFilters").replaceChildren(filterControls(bf, renderBoard, {convs:true}));
+}
+function convCard(s){
+  const b = el("button","card conv s-" + convState(s)); b.type = "button"; b.dataset.session = s.id;
+  b.append(el("span","meet-tag", convKind(s)), el("span","t", s.title_en || "Conversation"));
+  const m = el("span","meta"); const fc = el("span","faces"); (s.members || []).slice(0, 8).forEach(x => fc.append(avatar(x, 20)));
+  m.append(fc, el("span","note", `${msgs.filter(x => x.session === s.id).length} msg`)); b.append(m);
+  if (s.task) { const tl = el("span","mono", s.task); b.append(tl); }
+  b.onclick = () => go("#session/" + encodeURIComponent(s.id)); return b;
+}
+function renderBoard(){
+  renderFilters(); renderFeatures();
+  const cols = STAGES().filter(s => bf.states.has(s.k));
+  const grid = $("lanes"); grid.replaceChildren();
+  grid.style.gridTemplateColumns = `170px repeat(${Math.max(1, cols.length)}, minmax(190px,1fr))`; grid.style.minWidth = (170 + 190 * Math.max(1, cols.length)) + "px";
+  if (!cols.length) { const e = el("div","empty","Tick at least one stage to see tasks."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
+  grid.append(Object.assign(el("div","hd hd0"), {textContent:"Agent"}));
+  const convs = items(true).filter(it => it.type === "conv" && itemIn(it, bf) && (!filter || it.members.includes(filter))).map(it => it.s);
+  cols.forEach(s => { const h = el("div","hd"); h.append(s.en, el("span", null, String(tasks.filter(t => (t.state||"todo") === s.k && shown(t)).length + convs.filter(c => convState(c) === s.k).length))); grid.append(h); });
+  const lanes = laneIds().filter(id => (!filter || id === filter) && tasks.some(t => t.session === id && shown(t)));
+  if (!lanes.length && !convs.length) { const e = el("div","empty", tasks.length ? "Nothing here with these filters. Change the version, stage or feature, or use Find." : "No tasks yet. The Business Analyst adds them here."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
+  if (convs.length) {
+    const ln = el("div","lane-name"); const nm = el("span","nm","Conversations"); nm.append(el("small", null, `${convs.filter(c => c.state === "open").length} open`)); ln.append(nm); grid.append(ln);
+    cols.forEach(s => { const cell = el("div","cell"); convs.filter(c => convState(c) === s.k).sort((a, b) => String(b.opened_at).localeCompare(String(a.opened_at))).forEach(c => cell.append(convCard(c))); grid.append(cell); });
+  }
+  lanes.forEach(id => {
+    const ln = el("div","lane-name"); const nm = el("span","nm", nameOf(id)); nm.append(el("small", null, `${verTasks().filter(t => t.session === id && !isClosed(t)).length} open`)); ln.append(avatar(id, 28), nm); grid.append(ln);
+    cols.forEach(s => {
+      const cell = el("div","cell");
+      tasks.filter(t => t.session === id && (t.state||"todo") === s.k && shown(t)).sort((a,b) => (a.order ?? 999) - (b.order ?? 999) || String(a.id).localeCompare(String(b.id))).forEach(t => {
+        const b = el("button","card s-"+s.k); b.type = "button"; b.dataset.task = t.id;
+        if (t.feature) b.append(flabel(t.feature));
+        b.append(el("span","t", t.title_en || t.id), el("span","ph-tag ph-" + phaseOf(t), phaseName(phaseOf(t))));
+        const os = openSessionFor(t.id);
+        if (os) { const q = el("span","qbadge go","Question open"); q.title = "Go to the session"; q.dataset.session = os.id; b.append(q); }
+        const m = el("span","meta"); m.append(el("span","mono", t.id), el("span","note", (Array.isArray(t.test_cases) && t.test_cases.length) ? `${t.test_cases.length} test case${t.test_cases.length === 1 ? "" : "s"}` : ""));
+        b.append(m); b.onclick = e => e.target.dataset.session ? go("#session/" + encodeURIComponent(e.target.dataset.session)) : go("#task/" + encodeURIComponent(t.id)); cell.append(b);
+      });
+      grid.append(cell);
+    });
+  });
+}
+function openTask(id){
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  const body = $("taskBody"); body.replaceChildren();
+  const top = el("div"); top.append(el("span","mono", `${t.id} · ${nameOf(t.session)}`), el("h3", null, t.title_en || t.id)); body.append(top);
+  const st = STATES.find(s => s.k === t.state); const sr = el("div"); sr.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center"; const sc = el("span","chip"); sc.textContent = st ? st.en : (t.state || ""); sr.append(sc); if (t.feature) sr.append(flabel(t.feature)); if (versions().length) sr.append(el("span","chip", verName(verOf(t)))); sr.append(el("span","chip", "Phase: " + phaseName(phaseOf(t)))); body.append(sr);
+  if (t.summary_en) { const d = el("div"); d.append(el("div","lbl","Summary"), el("div", null, t.summary_en)); body.append(d); }
+  if (t.description_en) { const d = el("div"); d.append(el("div","lbl","Description")); String(t.description_en).split(/\n{2,}/).forEach(x => d.append(el("p", null, x))); body.append(d); }
+  if (Array.isArray(t.acceptance_en) && t.acceptance_en.length) { const d = el("div"); d.append(el("div","lbl","Acceptance criteria")); const ul = el("ul"); t.acceptance_en.forEach(a => ul.append(el("li", null, a))); d.append(ul); body.append(d); }
+  const tcs = Array.isArray(t.test_cases) ? t.test_cases : [];
+  const d = el("div"); d.append(el("div","lbl","Test cases"));
+  if (!tcs.length) d.append(el("div","empty","No test cases for this task yet."));
+  tcs.forEach(c => {
+    const box = el("div","tc"); const h = el("div"); h.append(el("b", null, c.title_en || c.id || ""), document.createTextNode(" "), el("span","mono", c.id || "")); box.append(h);
+    if (Array.isArray(c.steps_en) && c.steps_en.length) { const ol = el("ol"); c.steps_en.forEach(s => ol.append(el("li", null, s))); box.append(ol); }
+    if (c.expected_en) { const e = el("div"); e.append(el("b", null, "Expected: "), document.createTextNode(c.expected_en)); box.append(e); }
+    d.append(box);
+  });
+  body.append(d);
+  const ts = sessions.filter(x => x.task === t.id), op = openSessionFor(t.id);
+  if (op) { const d2 = el("div","ask"); const b2 = el("button","btn","Go to the open session"); b2.type = "button"; b2.onclick = () => { $("taskDlg").close(); openSession(op.id); }; d2.append(el("div","lbl","Question open"), el("div", null, op.title_en || ""), b2); body.append(d2); }
+  else askForm(t, body);
+  if (ts.filter(x => x.state !== "open").length) { const d3 = el("div"); d3.append(el("div","lbl","Solved sessions")); ts.filter(x => x.state !== "open").forEach(x => { const l = el("button","linkish", `${x.title_en || x.id} (${fmt(x.closed_at)})`); l.type = "button"; l.style.display = "block"; l.onclick = () => { $("taskDlg").close(); openSession(x.id); }; d3.append(l); }); body.append(d3); }
+  const related = msgs.filter(m => m.task === t.id).length;
+  const row = el("div","row"); row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap";
+  const sb = el("button","btn-lite","Show on board"); sb.type = "button"; sb.onclick = () => go("#board/" + encodeURIComponent(t.id)); row.append(sb);
+  if (op) { const r = el("button","btn-lite","Open session"); r.type = "button"; r.onclick = () => go("#session/" + encodeURIComponent(op.id)); row.append(r); }
+  if (related) { const r = el("button","btn-lite", `Discussion (${related})`); r.type = "button"; r.onclick = () => { $("taskDlg").close(); showTab("chat"); filterChat(t.id); $("h-chat").scrollIntoView({behavior: reduce ? "auto" : "smooth"}); }; row.append(r); }
+  const c = el("button","btn-lite","Close"); c.type = "button"; c.onclick = () => $("taskDlg").close(); row.append(c);
+  body.append(row);
+  if (!$("taskDlg").open) $("taskDlg").showModal();
+}
+
+/* ---------- task sessions: one private room per question, closed when solved ---------- */
+const openSessionFor = taskId => sessions.find(s => s.task === taskId && s.state === "open");
+const membersFor = t => [...new Set(["owner", "coordinator", t.author || "business-analyst", t.session, ...(Array.isArray(t.related) ? t.related : [])].filter(Boolean))];
+let openSess = null;
+/* ---------- chat tab: the conversation list (open ones, then the archive) beside the chat ---------- */
+let archQ = "", pplOpen = "";
+const lastOf = id => { let l = null; msgs.forEach(m => { if (id ? m.session === id : !m.session) l = m; }); return l; };
+const fmtShort = iso => { try { const d = new Date(iso), n = new Date(); return d.toDateString() === n.toDateString() ? d.toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"}) : d.toLocaleDateString("en-GB", {day:"numeric", month:"short"}); } catch { return ""; } };
+function convRow(s){
+  const on = s ? chatSess === s.id : (!chatSess && !chatPair);
+  const b = el("button","conv-row" + (on ? " on" : "") + (s && s.state !== "open" ? " closed" : "")); b.type = "button";
+  if (on) b.setAttribute("aria-current","true");
+  const last = lastOf(s ? s.id : null);
+  const top = el("span","cr-top"); top.append(el("b", null, s ? (s.title_en || "Conversation") : "Team discussion"), el("span","note", last ? fmtShort(last.at) : ""));
+  const mid = el("span","cr-mid"); mid.append(el("span","meet-tag", s ? convKind(s) : "Everyone"));
+  if (s) { const f = el("span","faces"); (s.members || []).slice(0, 7).forEach(m => f.append(avatar(m, 18))); mid.append(f); if (s.state !== "open") mid.append(el("span","tp-tag closed","Done")); }
+  const pv = el("span","cr-prev", s && s.state !== "open" && s.resolution_en ? s.resolution_en : last ? `${nameOf(last.from)}: ${last.text || ""}` : "No messages yet");
+  b.append(top, mid, pv);
+  b.onclick = () => { s ? viewSession(s.id) : filterChat(""); if (matchMedia("(max-width:900px)").matches) $("h-chat").scrollIntoView({behavior: reduce ? "auto" : "smooth"}); };
+  return b;
+}
+const sortByLast = (a, b) => String(lastOf(b.id)?.at || b.opened_at || "").localeCompare(String(lastOf(a.id)?.at || a.opened_at || ""));
+function renderSessions(){
+  const box = $("sessList"); box.replaceChildren(convRow(null));
+  const open = sessions.filter(s => s.state === "open").sort(sortByLast);
+  open.forEach(s => box.append(convRow(s)));
+  if (!open.length) box.append(el("div","note","No open conversations. Call a meeting, or ask about a task."));
+  $("chatCount").textContent = open.length || "";
+  const closed = sessions.filter(s => s.state !== "open").sort((a, b) => String(b.closed_at || b.opened_at || "").localeCompare(String(a.closed_at || a.opened_at || "")));
+  $("archCount").textContent = closed.length;
+  const q = archQ.trim().toLowerCase(), ab = $("archList"); ab.replaceChildren();
+  const hits = closed.filter(s => !q || [s.title_en, s.resolution_en, convKind(s), s.task, ...(s.members || []).map(nameOf)].some(x => String(x || "").toLowerCase().includes(q)) || msgs.some(m => m.session === s.id && String(m.text || "").toLowerCase().includes(q)));
+  hits.forEach(s => ab.append(convRow(s)));
+  if (!hits.length) ab.append(el("div","note", closed.length ? "Nothing matches." : "Closed meetings and conversations are kept here."));
+  if (chatSess && closed.some(s => s.id === chatSess)) $("arch").open = true;
+}
+$("archQ").addEventListener("input", e => { archQ = e.target.value; renderSessions(); });
+/* people: add or remove members while the conversation goes on */
+async function setMember(id, who, on){
+  const s = sessions.find(x => x.id === id); if (!s) return;
+  const m = new Set(s.members || []); on ? m.add(who) : m.delete(who);
+  await db.doc("sessions/" + id).update({members:[...m], relayed:false});
+  await db.collection("messages").add({at:new Date().toISOString(), from:"coordinator", to:"session", session:id, task:s.task || null, kind:"note", relayed:false,
+    text:`${nameOf(who)} ${on ? "joined" : "left"} the ${isMeeting(s) ? "meeting" : "conversation"}.`});
+}
+function peopleButton(s){
+  const wrap = el("span","ppl"), b = el("button","btn-lite", `People (${(s.members || []).length})`); b.type = "button";
+  const pop = el("div","ppl-pop"); pop.setAttribute("role","dialog"); pop.setAttribute("aria-label","People in this conversation");
+  const note = el("div","note","Changes apply at once. The conversation keeps going.");
+  const fill = () => {
+    const cur = new Set((sessions.find(x => x.id === s.id) || s).members || []);
+    pop.replaceChildren(el("div","lbl", "Who is in this " + (isMeeting(s) ? "meeting" : "conversation")));
+    const ids = ["owner","coordinator", ...agents.map(a => a.id).filter(id => id !== "coordinator" && id !== "owner")];
+    ids.forEach(id => {
+      const fixed = id === "owner" || id === "coordinator";
+      const l = el("label","ppl-row"), i = el("input"); i.type = "checkbox"; i.checked = fixed || cur.has(id); i.disabled = fixed || !canWrite;
+      i.onchange = async () => { i.disabled = true; note.textContent = "Saving…";
+        try { await setMember(s.id, id, i.checked); note.textContent = `${nameOf(id)} ${i.checked ? "joined" : "left"}.`; } catch (err) { i.checked = !i.checked; note.textContent = writeError(err); }
+        i.disabled = false; };
+      const t = el("span","pr-t"); t.append(el("b", null, nameOf(id)), el("span","note", fixed ? (id === "owner" ? "You" : "Runs it, always in") : roleOf(agentById(id))));
+      l.append(i, avatar(id, 22), t); pop.append(l);
+    });
+    pop.append(note);
+  };
+  const place = () => { const r = b.getBoundingClientRect(), w = Math.min(340, innerWidth - 16), below = innerHeight - r.bottom - 12, up = below < 260 && r.top > below;
+    pop.style.width = w + "px"; pop.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + "px";
+    pop.style.maxHeight = Math.min(420, up ? r.top - 12 : below) + "px"; pop.style.top = up ? "" : (r.bottom + 4) + "px"; pop.style.bottom = up ? (innerHeight - r.top + 4) + "px" : ""; };
+  const set = on => { pop.hidden = !on; b.setAttribute("aria-expanded", String(on)); pplOpen = on ? s.id : ""; if (on) { fill(); requestAnimationFrame(place); } };
+  b.onclick = e => { e.stopPropagation(); set(pop.hidden); };
+  pop.onkeydown = e => { if (e.key === "Escape") { set(false); b.focus(); } };
+  wrap.append(b, pop); set(pplOpen === s.id);
+  return wrap;
+}
+document.addEventListener("pointerdown", e => { if (pplOpen && !e.target.closest(".ppl")) { pplOpen = ""; document.querySelectorAll(".ppl-pop").forEach(p => { p.hidden = true; }); } });
+/* pop-ups close when you click outside them */
+["taskDlg","sessDlg","meetDlg"].forEach(id => { const d = $(id); let down = null;
+  d.addEventListener("pointerdown", e => { down = e.target; });
+  d.addEventListener("click", e => { if (e.target === d && down === d) d.close(); down = null; }); });
+/* the message box grows with what you type */
+const grow = () => { const t = $("text"); t.style.height = "auto"; t.style.height = Math.min(220, Math.max(64, t.scrollHeight + 2)) + "px"; };
+$("text").addEventListener("input", grow); $("compose").addEventListener("submit", () => setTimeout(grow, 400));
+/* ---------- agent page: who they are, how they look, what they work on ---------- */
+let agentOpen = null, agentDraft = null, agentTaskView = "open", agentConvView = "open";
+const PROFILE = [["instructions_en","Instructions","What this agent must do and follow. The Coordinator passes changes on to its session."],
+  ["personality_en","Personality","How they talk and work with others."],
+  ["notes_en","More about them","Anything else worth knowing."]];
+function selectAgent(id){ selectedAgent = id; drawScene(); renderRoster(); go("#agent/" + encodeURIComponent(id)); }
+function agentPreview(){
+  if (!agentOpen || !agentDraft) return;
+  const img = document.querySelector("#agentBody .ag-prev img"); if (!img) return;
+  img.src = lookUrl(agentDraft.look.sprite || spriteOf(agentOpen), "front-left", agentDraft.look);
+}
+function openAgent(id){
+  const a = agentById(id); if (!a) return false;
+  agentOpen = id;
+  agentDraft = {look:{...(a.look || {})}, hobbies:[...(Array.isArray(a.hobbies) ? a.hobbies : [])]};
+  PROFILE.forEach(([k]) => { agentDraft[k] = a[k] || ""; });
+  const body = $("agentBody"); body.replaceChildren();
+  const head = el("div","ag-head");
+  const pv = el("div","ag-prev"); const pimg = el("img"); pimg.alt = ""; pv.append(pimg); pv.style.borderColor = colorFor(id);
+  const tt = el("div","ag-title"); const h = el("h2", null, nameOf(id)); tt.append(h, el("div","note", roleOf(a)));
+  const row = el("div","row-wrap"); row.append(stateChip(a.state), el("span","mono", id)); tt.append(row);
+  if (doingOf(a)) { const d = el("div"); d.append(el("span","note","Now: "), document.createTextNode(doingOf(a))); tt.append(d); }
+  const x = el("button","btn-lite","Close"); x.type = "button"; x.onclick = () => $("agentDlg").close();
+  head.append(pv, tt, x); body.append(head);
+  const grid = el("div","ag-grid");
+  /* look */
+  const lookBox = el("section","ag-box"); lookBox.append(el("h3", null, "Look"));
+  const sp = el("div","ag-sprites"); sp.setAttribute("role","group"); sp.setAttribute("aria-label","Character");
+  const pick = () => sp.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === (agentDraft.look.sprite || spriteOf(id)))));
+  LOOK_SPRITES.forEach(s => { const b = el("button","ag-sp"); b.type = "button"; b.dataset.s = s; b.title = s; b.setAttribute("aria-label","Character " + s);
+    b.style.backgroundImage = `url(${A}chars/${s}-front-left.webp)`; b.onclick = () => { agentDraft.look.sprite = s; pick(); colors(); dirty(); agentPreview(); }; sp.append(b); });
+  lookBox.append(sp);
+  const cols = el("div","ag-colors");
+  const colorRow = (key, label) => { const l = el("label","ag-color"); const i = el("input"); i.type = "color"; i.value = okHex(agentDraft.look[key]) ? agentDraft.look[key] : (key === "hair" ? "#5a3a24" : "#3b5bdb");
+    const rs = el("button","linkish","Original"); rs.type = "button";
+    const st = el("span","note"); const show = () => { st.textContent = okHex(agentDraft.look[key]) ? agentDraft.look[key] : "original"; rs.hidden = !okHex(agentDraft.look[key]); };
+    i.oninput = () => { agentDraft.look[key] = i.value; show(); dirty(); agentPreview(); };
+    rs.onclick = () => { delete agentDraft.look[key]; show(); dirty(); agentPreview(); };
+    show(); l.append(el("span", null, label), i, st); const w = el("div","ag-crow"); w.append(l, rs); w.dataset.k = key; return w; };
+  const hairRow = colorRow("hair","Hair color"), shirtRow = colorRow("shirt","Shirt color"), noHair = el("div","note","This character has no hair to color.");
+  const colors = () => { const bald = NO_HAIR.has(agentDraft.look.sprite || spriteOf(id)); hairRow.hidden = bald; noHair.hidden = !bald; };
+  cols.append(hairRow, noHair, shirtRow); lookBox.append(cols);
+  pick(); colors();
+  /* profile */
+  const prof = el("section","ag-box"); prof.append(el("h3", null, "Profile"));
+  PROFILE.forEach(([k, label, hint]) => { const l = el("label","ag-field"); l.append(el("span","lbl", label));
+    const ta = el("textarea"); ta.value = agentDraft[k]; ta.placeholder = hint; ta.dir = "auto"; ta.rows = k === "instructions_en" ? 6 : 3;
+    ta.oninput = () => { agentDraft[k] = ta.value; dirty(); }; l.append(ta); prof.append(l); });
+  const hb = el("div","ag-field"); hb.append(el("span","lbl","Hobbies"));
+  const chips = el("div","ag-hobbies"), add = el("input"); add.type = "text"; add.placeholder = "Add a hobby and press Enter"; add.dir = "auto"; add.setAttribute("aria-label","Add a hobby");
+  const drawHobbies = () => { chips.replaceChildren(); agentDraft.hobbies.forEach((x, i) => { const c = el("span","chip ag-hob"); c.append(el("span", null, x)); c.dir = "auto";
+    const del = el("button","ag-x","×"); del.type = "button"; del.setAttribute("aria-label","Remove " + x); del.onclick = () => { agentDraft.hobbies.splice(i, 1); drawHobbies(); dirty(); }; c.append(del); chips.append(c); });
+    if (!agentDraft.hobbies.length) chips.append(el("span","note","No hobbies yet.")); };
+  add.onkeydown = e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); const v = add.value.trim(); if (v && !agentDraft.hobbies.includes(v)) { agentDraft.hobbies.push(v); drawHobbies(); dirty(); } add.value = ""; } };
+  drawHobbies(); hb.append(chips, add); prof.append(hb);
+  const save = el("div","row-wrap ag-save"); const sb = el("button","btn","Save"); sb.type = "submit"; const sn = el("span","note", canWrite ? "" : "You can read this page but not change it."); sb.disabled = !canWrite;
+  const dirty = () => { sn.textContent = "Unsaved changes."; };
+  sb.onclick = async () => { sb.disabled = true; sn.textContent = "Saving…";
+    const look = {}; if (LOOK_SPRITES.includes(agentDraft.look.sprite)) look.sprite = agentDraft.look.sprite; if (okHex(agentDraft.look.hair)) look.hair = agentDraft.look.hair; if (okHex(agentDraft.look.shirt)) look.shirt = agentDraft.look.shirt;
+    const doc = {look, hobbies:agentDraft.hobbies, profile_updated_at:new Date().toISOString(), relayed:false}; PROFILE.forEach(([k]) => { doc[k] = agentDraft[k].trim(); });
+    try { await db.doc("agents/" + id).update(doc); sn.textContent = "Saved. The Coordinator passes the changes on to " + nameOf(id) + "."; } catch (err) { sn.textContent = writeError(err); }
+    sb.disabled = !canWrite; };
+  save.append(sb, sn); prof.append(save);
+  grid.append(lookBox, prof);
+  /* linked work */
+  const work = el("section","ag-box ag-work"); work.id = "agentWork"; grid.append(work);
+  body.append(grid);
+  renderAgentWork(); agentPreview();
+  if (!$("agentDlg").open) $("agentDlg").showModal();
+  return true;
+}
+function viewChips(cur, opts, set){
+  const box = el("div","filters"); opts.forEach(([k, label]) => { const b = el("button", null, label); b.type = "button"; b.setAttribute("aria-pressed", String(cur === k)); b.onclick = () => { set(k); renderAgentWork(); }; box.append(b); }); return box;
+}
+function renderAgentWork(){
+  const box = $("agentWork"); if (!box || !agentOpen) return; const id = agentOpen; box.replaceChildren();
+  const mine = tasks.filter(t => t.session === id).sort(byOrder), openT = mine.filter(t => !isClosed(t));
+  const th = el("div","ag-wh"); th.append(el("h3", null, `Tasks (${openT.length} open of ${mine.length})`),
+    viewChips(agentTaskView, [["open","Open"],["done","Done"],["all","All"]], v => agentTaskView = v));
+  const sb = el("button","btn-lite","Show on the board"); sb.type = "button"; sb.onclick = () => { $("agentDlg").close(); filter = id; renderBoard(); showTab("board"); }; th.append(sb);
+  box.append(th);
+  const tl = el("div","ag-list"); const shownT = mine.filter(t => agentTaskView === "all" || (agentTaskView === "done") === isClosed(t));
+  shownT.forEach(t => { const b = el("button","ag-row"); b.type = "button";
+    b.append(el("span","mono", t.id), el("span","tt", t.title_en || t.id), el("span","tp-tag" + (isClosed(t) ? " closed" : ""), stateName(t)));
+    if (t.feature) b.append(flabel(t.feature)); if (versions().length) b.append(el("span","tp-tag", verName(verOf(t)))); b.append(el("span","tp-tag", phaseName(phaseOf(t))));
+    b.onclick = () => go("#task/" + encodeURIComponent(t.id)); tl.append(b); });
+  if (!shownT.length) tl.append(el("div","note", mine.length ? "None here." : "No tasks yet."));
+  box.append(tl);
+  const conv = sessions.filter(s => (s.members || []).includes(id)).sort(sortByLast), openC = conv.filter(s => s.state === "open");
+  const ch = el("div","ag-wh"); ch.append(el("h3", null, `Conversations (${openC.length} open of ${conv.length})`),
+    viewChips(agentConvView, [["open","Open"],["done","Archive"],["all","All"]], v => agentConvView = v));
+  box.append(ch);
+  const cl = el("div","ag-list"); const shownC = conv.filter(s => agentConvView === "all" || (agentConvView === "done") === (s.state !== "open"));
+  shownC.forEach(s => { const last = lastOf(s.id), b = el("button","ag-row"); b.type = "button";
+    b.append(el("span","meet-tag", convKind(s)), el("span","tt", s.title_en || "Conversation"), el("span","tp-tag" + (s.state !== "open" ? " closed" : ""), s.state === "open" ? "Open" : "Done"), el("span","note", last ? fmtShort(last.at) : ""));
+    b.onclick = () => { $("agentDlg").close(); showTab("chat"); viewSession(s.id); }; cl.append(b); });
+  if (!shownC.length) cl.append(el("div","note", conv.length ? "None here." : "No conversations yet."));
+  box.append(cl);
+}
+$("agentDlg").addEventListener("close", () => { agentOpen = null; agentDraft = null; if (selectedAgent) { selectedAgent = null; drawScene(); renderRoster(); } });
+(() => { const d = $("agentDlg"); let down = null; d.addEventListener("pointerdown", e => { down = e.target; }); d.addEventListener("click", e => { if (e.target === d && down === d) d.close(); down = null; }); })();
+/* ---------- roadmap: versions, then phases (planning, prototype, staging, production) and their stages ---------- */
+const PHASES = [
+  {k:"planning",   en:"Planning",   subs:["todo","doing","done"]},
+  {k:"prototype",  en:"Prototype",  subs:["todo","doing","test","done"]},
+  {k:"staging",    en:"Staging",    subs:["todo","doing","test","done"]},
+  {k:"production", en:"Production", subs:["todo","doing","test","done"]}];
+const SUBS = {todo:"To do", doing:"In progress", test:"Testing", done:"Done"};
+const SUB_KEYS = ["todo","doing","test","done"];
+const PHASE_GUESS = {"coordinator":"planning","reviewer":"planning","context-keeper":"planning","business-analyst":"planning","office-manager":"planning","agent-designer":"planning",
+  "mock-api":"prototype","web-prototype":"prototype","mobile-prototype":"prototype","vision-prototype":"prototype",
+  "backend":"staging","web-frontend":"staging","mobile-app":"staging","vision-app":"staging","devops":"staging","qa-api":"staging","qa-web":"staging","qa-mobile":"staging","qa-vision":"staging","ai-service":"staging"};
+const phaseOf = t => PHASES.some(p => p.k === t.phase) ? t.phase : (PHASE_GUESS[t.session] || "planning");
+const phaseName = k => PHASES.find(p => p.k === k)?.en || k;
+const subOf = t => { const s = t.state || "todo", ph = phaseOf(t); return s === "done" ? "done" : s === "todo" ? "todo" : s === "review" ? (ph === "planning" ? "doing" : "test") : "doing"; };
+const verInfo = v => (Array.isArray(metaOffice.versions) ? metaOffice.versions : []).find(x => x && x.id === v) || {};
+function phaseStatus(list){
+  const done = list.filter(t => isClosed(t)).length;
+  return {n:list.length, done, pct:list.length ? Math.round(100 * done / list.length) : 0, complete:list.length > 0 && done === list.length};
+}
+/* where a version is now: the first phase that is not finished */
+function nowPhase(v){
+  const vt = tasks.filter(t => verOf(t) === v);
+  for (const p of PHASES) { const st = phaseStatus(vt.filter(t => phaseOf(t) === p.k)); if (!st.complete) return p.k; }
+  return "done";
+}
+const rmap = {vers:null, phases:new Set(PHASES.map(p => p.k)), subs:new Set(SUB_KEYS), open:new Set(), tasks:true};
+function rmCheck(label, on, cb, cls){ return ck(label, null, on, cb, cls); }
+function renderRoadmap(){
+  const box = $("roadmap"); if (!box) return; box.replaceChildren();
+  const vs = versions().filter(Boolean);
+  rmap.vers ??= new Set(); rmap.seen ??= new Set();
+  vs.forEach(v => { if (!rmap.seen.has(v)) { rmap.vers.add(v); rmap.seen.add(v); } });   // new versions show up ticked
+  if (!rmap.opened && vs.length && tasks.length) { rmap.opened = true; const c = currentVer(); if (c && c !== "*") rmap.open.add(c); }   // the current version starts open
+  if (!vs.length) { box.append(el("div","empty","No versions yet. Give each task a version (v1, v2, ...) and a phase, and the roadmap fills in.")); return; }
+  /* where we are now */
+  const cur = currentVer(), np = cur !== "*" ? nowPhase(cur) : "";
+  const all = tasks.filter(t => verOf(t) === cur), st = phaseStatus(all);
+  const now = el("div","rm-now"); now.append(el("span","lbl","Where we are now"));
+  const nb = el("b", null, `${cur} · ${np === "done" ? "Live, all phases done" : phaseName(np)}`); now.append(nb, el("span","note", `${st.done} of ${st.n} tasks done (${st.pct}%)`));
+  box.append(now);
+  /* filters */
+  const fl = el("div","fctl rm-filters");
+  const r1 = el("div","frow"); r1.append(el("span","lbl","Version")); const c1 = el("div","cks");
+  vs.forEach(v => c1.append(rmCheck(v + (v === cur ? " (now)" : ""), rmap.vers.has(v), on => { on ? rmap.vers.add(v) : rmap.vers.delete(v); renderRoadmap(); })));
+  r1.append(c1); fl.append(r1);
+  const r2 = el("div","frow"); r2.append(el("span","lbl","Phase")); const c2 = el("div","cks");
+  PHASES.forEach(p => c2.append(rmCheck(p.en, rmap.phases.has(p.k), on => { on ? rmap.phases.add(p.k) : rmap.phases.delete(p.k); renderRoadmap(); })));
+  r2.append(c2); fl.append(r2);
+  const r3 = el("div","frow"); r3.append(el("span","lbl","Stage")); const c3 = el("div","cks");
+  SUB_KEYS.forEach(k => c3.append(rmCheck(SUBS[k], rmap.subs.has(k), on => { on ? rmap.subs.add(k) : rmap.subs.delete(k); renderRoadmap(); }, "st-" + k)));
+  r3.append(c3); fl.append(r3);
+  const r4 = el("div","frow"); r4.append(el("span","lbl","Show")); const c4 = el("div","cks");
+  c4.append(rmCheck("Task names", rmap.tasks, on => { rmap.tasks = on; renderRoadmap(); }));
+  const ea = el("button","linkish", "Open every version"); ea.type = "button"; ea.onclick = () => { vs.forEach(v => rmap.open.add(v)); renderRoadmap(); };
+  const ca = el("button","linkish", "Fold all"); ca.type = "button"; ca.onclick = () => { rmap.open.clear(); renderRoadmap(); };
+  c4.append(ea, ca); r4.append(c4); fl.append(r4);
+  box.append(fl);
+  /* one card per version; a card opens its summary kanban */
+  const shown = vs.filter(v => rmap.vers.has(v));
+  if (!shown.length) box.append(el("div","empty","Tick at least one version."));
+  shown.forEach(v => {
+    const vt = tasks.filter(t => verOf(t) === v), vst = phaseStatus(vt), info = verInfo(v), np2 = nowPhase(v), open = rmap.open.has(v);
+    const wrap = el("section","rm-ver" + (v === cur ? " cur" : "") + (open ? " open" : ""));
+    const head = el("button","rm-vhead"); head.type = "button"; head.setAttribute("aria-expanded", String(open));
+    const t1 = el("span","rm-vt"); t1.append(el("span","rm-caret", open ? "▾" : "▸"), el("b", null, v), el("span", null, info.name_en || ""));
+    if (v === cur) t1.append(el("span","tp-tag","Now"));
+    const t2 = el("span","rm-vmeta"); t2.append(el("span","note", info.goal_en || ""), el("span","note", `${vst.done} of ${vst.n} done`));
+    const steps = el("span","rm-steps");
+    PHASES.forEach(p => { const ps = phaseStatus(vt.filter(t => phaseOf(t) === p.k));
+      const s = el("span","rm-step " + (ps.complete ? "ok" : p.k === np2 ? "now" : ps.n ? "some" : "none")); s.title = `${p.en}: ${ps.done} of ${ps.n} done`;
+      s.append(el("i"), el("span", null, p.en)); steps.append(s); });
+    const bar = el("span","bar"); const bi = el("i"); bi.style.cssText = `width:${vst.pct}%;background:var(--ok)`; bar.append(bi);
+    head.append(t1, steps, t2, bar);
+    head.onclick = () => { open ? rmap.open.delete(v) : rmap.open.add(v); renderRoadmap(); };
+    wrap.append(head);
+    if (open) wrap.append(versionKanban(v, vt, np2));
+    box.append(wrap);
+  });
+}
+function versionKanban(v, vt, np){
+  const grid = el("div","rm-grid");
+  const cols = SUB_KEYS.filter(k => rmap.subs.has(k));
+  grid.style.gridTemplateColumns = `minmax(160px,200px) repeat(${Math.max(1, cols.length)}, minmax(140px,1fr))`;
+  grid.append(el("div","rm-h","Phase")); cols.forEach(k => grid.append(el("div","rm-h", SUBS[k])));
+  const phases = PHASES.filter(p => rmap.phases.has(p.k));
+  if (!phases.length || !cols.length) { const e = el("div","empty","Tick at least one phase and one stage."); e.style.gridColumn = "1 / -1"; grid.append(e); return grid; }
+  phases.forEach(p => {
+    const pt = vt.filter(t => phaseOf(t) === p.k), ps = phaseStatus(pt);
+    const name = el("div","rm-pn" + (p.k === np ? " now" : ps.complete ? " ok" : ""));
+    const top = el("div","rm-pt"); top.append(el("b", null, p.en)); if (p.k === np) top.append(el("span","tp-tag","Now")); if (ps.complete) top.append(el("span","tp-tag closed","Done"));
+    name.append(top, el("span","note", ps.n ? `${ps.done} of ${ps.n} done` : "No tasks yet"));
+    const who = [...new Set(pt.map(t => t.session).filter(Boolean))];
+    if (who.length) { const f = el("span","rm-who"); who.forEach(id => { const n = pt.filter(t => t.session === id), b = el("button","rm-av"); b.type = "button";
+      b.title = `${nameOf(id)}: ${n.length} task${n.length === 1 ? "" : "s"}, ${n.filter(t => !isClosed(t)).length} open`; b.setAttribute("aria-label", b.title); b.append(avatar(id, 22)); b.onclick = () => go("#agent/" + encodeURIComponent(id)); f.append(b); }); name.append(f); }
+    const ob = el("button","linkish","Open on the board"); ob.type = "button";
+    ob.onclick = () => { filter = ""; bf.ver = v; bf.phases = new Set([p.k]); bf.states = new Set(["todo","doing","review","blocked","done"]); bf.feats.clear(); bf.tasks.clear(); renderBoard(); showTab("board"); };
+    name.append(ob); grid.append(name);
+    cols.forEach(k => {
+      const cell = el("div","rm-cell");
+      if (!p.subs.includes(k)) { cell.classList.add("na"); cell.append(el("span","note","Not used in this phase")); grid.append(cell); return; }
+      const list = pt.filter(t => subOf(t) === k).sort(byOrder);
+      cell.append(el("span","rm-n", String(list.length)));
+      if (rmap.tasks) { list.slice(0, 5).forEach(t => { const b = el("button","rm-pill" + (t.state === "blocked" ? " blocked" : "")); b.type = "button"; b.title = `${t.id} · ${t.title_en || ""} (${nameOf(t.session)})`;
+        b.append(el("span","mono", t.id), el("span","tt", t.title_en || "")); b.onclick = () => go("#task/" + encodeURIComponent(t.id)); cell.append(b); });
+        if (list.length > 5) cell.append(el("span","note", `+${list.length - 5} more`)); }
+      grid.append(cell);
+    });
+  });
+  const sc = el("div","rm-scroll"); sc.append(grid); return sc;
+}
+function openSession(id){
+  openSess = id; const s = sessions.find(x => x.id === id); if (!s) return;
+  const body = $("sessBody"); body.replaceChildren();
+  const top = el("div"); top.append(el("span","mono", isMeeting(s) ? "Meeting" + (s.task ? ` · ${s.task}` : "") : `Task session · ${s.task || ""}`), el("h3", null, s.title_en || "Question")); body.append(top);
+  const t = tasks.find(x => x.id === s.task);
+  const row = el("div","row-wrap");
+  const st = el("span","chip " + (s.state === "open" ? "st-waiting" : "st-done")); st.append(el("span","dot"), s.state === "open" ? "Open" : "Done"); row.append(st);
+  const below = el("button","linkish","Show in the discussion"); below.type = "button"; below.onclick = () => { $("sessDlg").close(); showTab("chat"); viewSession(s.id); $("h-chat").scrollIntoView(); };
+  if (t?.feature) row.append(flabel(t.feature));
+  { const ls = el("span","links"); if (t) ls.append(link("Open the task", "#task/" + encodeURIComponent(t.id)), boardLink(t.id, "Show on board")); ls.append(below); row.append(ls); }
+  body.append(row);
+  const mem = el("div"); mem.append(el("div","lbl","In this session"));
+  const ml = el("div","who-list"); (s.members || []).forEach(m => { const sp = el("span"); sp.append(avatar(m, 24), el("b", null, nameOf(m)), el("span","note", m === "owner" ? (isMeeting(s) ? "called it" : "asked") : m === "coordinator" ? "manager" : isMeeting(s) ? (roleOf(agentById(m)) || "invited") : m === (t?.author || "business-analyst") ? "wrote the task" : m === t?.session ? "owns the task" : "related")); ml.append(sp); });
+  mem.append(ml); body.append(mem);
+  const thread = el("div","sess-msgs");
+  const list = msgs.filter(m => m.session === s.id);
+  if (!list.length) thread.append(el("div","empty","No messages yet."));
+  list.forEach(m => thread.append(msgRow(m)));
+  body.append(thread);
+  if (s.state === "open") {
+    const f = el("form","compose"); f.style.padding = "0"; f.style.border = "0";
+    const ta = el("textarea"); ta.placeholder = "Ask or answer in this session…"; ta.setAttribute("aria-label","Message in this session"); enterSends(ta, () => f.requestSubmit());
+    const r = el("div","row"); r.style.justifyContent = "space-between";
+    const note = el("span","note","Only the people in this session see it.");
+    const btns = el("span","row");
+    const solve = el("button","btn-lite", isMeeting(s) ? "End meeting" : "Mark as solved"); solve.type = "button";
+    const send = el("button","btn","Send"); send.type = "submit";
+    btns.append(solve, send); r.append(note, btns); f.append(ta, r); body.append(f);
+    f.onsubmit = async e => { e.preventDefault(); const text = ta.value.trim(); if (!text) return; send.disabled = true;
+      try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:"session", session:s.id, task:s.task || null, kind:"owner", text, decided_by:null, author_id:me, relayed:false}); ta.value = ""; note.textContent = "Sent. Answers come in a moment."; quickReplies({session:s.id, task:s.task || null, text}); }
+      catch (err) { note.textContent = writeError(err); } finally { send.disabled = !canWrite; } };
+    solve.onclick = () => {
+      const res = el("textarea"); res.placeholder = "What solved it? (one line, optional)"; res.setAttribute("aria-label","What solved it");
+      const ok = el("button","btn", isMeeting(s) ? "End the meeting" : "Close the session"); ok.type = "button";
+      const w = el("div","compose"); w.style.padding = "0"; w.style.border = "0"; w.append(res, ok); solve.replaceWith(); f.after(w); solve.disabled = true;
+      ok.onclick = async () => { ok.disabled = true;
+        try { await db.doc("sessions/" + s.id).update({state:"closed", closed_at:new Date().toISOString(), closed_by:"owner", resolution_en:res.value.trim() || null, relayed:false}); }
+        catch (err) { note.textContent = writeError(err); ok.disabled = false; } };
+    };
+  } else {
+    const d = el("div","closed-note"); d.append(el("b", null, isMeeting(s) ? "Ended" : "Solved"), document.createTextNode(` ${fmt(s.closed_at)} by ${nameOf(s.closed_by || "coordinator")}.`));
+    if (s.resolution_en) d.append(el("div", null, s.resolution_en));
+    body.append(d);
+  }
+  const c = el("button","btn-lite","Close"); c.type = "button"; c.onclick = () => $("sessDlg").close(); body.append(c);
+  if (!$("sessDlg").open) $("sessDlg").showModal();
+}
+$("sessDlg").addEventListener("close", () => { openSess = null; });
+function askForm(t, host){
+  const w = el("div","ask");
+  const ml = el("div","who-list"); membersFor(t).forEach(m => { const sp = el("span"); sp.append(avatar(m, 22), el("span", null, nameOf(m))); ml.append(sp); });
+  const ta = el("textarea"); ta.placeholder = "What isn't clear about this task?"; ta.setAttribute("aria-label","Your question"); enterSends(ta, () => go.click());
+  const r = el("div","row"); r.style.justifyContent = "space-between";
+  const note = el("span","note","A private session with the manager, the task's writer and the agents on it. It closes when the question is solved.");
+  const go = el("button","btn","Open session"); go.type = "button"; r.append(note, go);
+  w.append(el("div","lbl","Ask about this task"), ml, ta, r); host.append(w);
+  go.onclick = async () => {
+    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
+    if (!db) { note.textContent = "Can't reach the office data right now."; return; }
+    go.disabled = true;
+    try {
+      const now = new Date().toISOString();
+      const ref = await db.collection("sessions").add({task:t.id, title_en:text.length > 70 ? text.slice(0, 67) + "…" : text, opened_by:"owner", author_id:me, opened_at:now, members:membersFor(t), state:"open", relayed:false});
+      await db.collection("messages").add({at:now, from:"owner", to:"session", session:ref.id, task:t.id, kind:"question", text, decided_by:null, author_id:me, relayed:false});
+      quickReplies({session:ref.id, members:membersFor(t), task:t.id, text});
+      $("taskDlg").close(); openSessAfter = ref.id;
+    } catch (err) { note.textContent = writeError(err); go.disabled = false; }
+  };
+}
+let openSessAfter = null;
+function callMeeting(){
+  const body = $("meetBody"); body.replaceChildren();
+  body.append(el("h3", null, "Call a meeting"), el("div","note","Everyone on this product is ticked. Untick who you don't need. Each one answers from their own role; the Coordinator runs the meeting."));
+  const list = agents.filter(a => a.id !== "owner");
+  const head = el("div","row-wrap"), count = el("span","note");
+  const allB = el("button","linkish","Everyone"), noneB = el("button","linkish","Only the Coordinator"); allB.type = noneB.type = "button";
+  head.append(allB, noneB, count);
+  const grid = el("div","picks"), boxes = [];
+  list.forEach(a => { const lab = el("label","pick"); const cb = el("input"); cb.type = "checkbox"; cb.value = a.id; cb.checked = true;
+    if (a.id === "coordinator") { cb.disabled = true; lab.title = "The Coordinator runs every meeting"; }
+    const tx = el("span"); tx.append(el("b", null, nameOf(a.id)), el("small", null, a.id === "coordinator" ? "Runs the meeting" : roleOf(a) || a.id));
+    lab.append(cb, avatar(a.id, 30), tx); grid.append(lab); boxes.push(cb); cb.onchange = upd; });
+  function upd(){ const n = boxes.filter(b => b.checked).length; count.textContent = `${n} of ${boxes.length} invited`; }
+  allB.onclick = () => { boxes.forEach(b => b.checked = true); upd(); };
+  noneB.onclick = () => { boxes.forEach(b => b.checked = b.disabled); upd(); };
+  upd();
+  const about = chatTask && tasks.find(t => t.id === chatTask);
+  let aboutId = about ? about.id : null;
+  const ab = el("div","row-wrap");
+  if (about) { ab.append(el("span","note","About"), taskLink(about.id), el("span", null, about.title_en || "")); const x = el("button","linkish","Not about a task"); x.type = "button"; x.onclick = () => { aboutId = null; ab.remove(); }; ab.append(x); }
+  const ta = el("textarea"); ta.placeholder = "What do you want to talk about?"; ta.setAttribute("aria-label","Meeting topic"); enterSends(ta, () => start.click());
+  ta.style.cssText = "font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:6px 9px;min-height:80px;resize:vertical";
+  const r = el("div","row-wrap"); r.style.justifyContent = "space-between";
+  const note = el("span","note","");
+  const btns = el("span","row-wrap"); const cancel = el("button","btn-lite","Cancel"), start = el("button","btn","Start meeting"); cancel.type = start.type = "button"; btns.append(cancel, start);
+  r.append(note, btns);
+  body.append(head, grid); if (about) body.append(ab); body.append(ta, r);
+  cancel.onclick = () => $("meetDlg").close();
+  start.onclick = async () => {
+    const text = ta.value.trim(); if (!text) { ta.focus(); note.textContent = "Write what the meeting is about."; return; }
+    if (!db) { note.textContent = "Can't reach the office data right now."; return; }
+    start.disabled = true;
+    try {
+      const now = new Date().toISOString();
+      const members = ["owner", ...boxes.filter(b => b.checked).map(b => b.value)];
+      const ref = await db.collection("sessions").add({kind:"meeting", task:aboutId, title_en:text.length > 70 ? text.slice(0, 67) + "…" : text, opened_by:"owner", author_id:me, opened_at:now, members, state:"open", relayed:false});
+      await db.collection("messages").add({at:now, from:"owner", to:"session", session:ref.id, task:aboutId, kind:"question", text, decided_by:null, author_id:me, relayed:false});
+      quickReplies({session:ref.id, members, task:aboutId, text});
+      $("meetDlg").close(); showTab("chat"); viewSession(ref.id); $("h-chat").scrollIntoView();
+    } catch (err) { note.textContent = writeError(err); start.disabled = false; }
+  };
+  closeDialogs(); $("meetDlg").showModal(); ta.focus();
+}
+$("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat");
+function writeError(err){
+  if (err && err.code === "quota_exceeded") return "The office data is full. Ask the Office Manager to archive old messages.";
+  if (err && (err.code === "not_granted" || err.code === "permission_denied")) { canWrite = false; return "You can read this page but not post."; }
+  return "Not sent. Try again.";
+}
+
+/* ---------- discussion ---------- */
+function renderMsgs(){
+  const box = $("msgs"); const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  box.replaceChildren();
+  const sessTask = id => sessions.find(x => x.id === id)?.task;
+  const feed = chatSess ? msgs.filter(m => m.session === chatSess) : chatPair ? msgs.filter(m => !m.session && (m.pair === chatPair || [m.from, m.to].sort().join("|") === chatPair)) : chatTask ? msgs.filter(m => m.task === chatTask || (m.session && sessTask(m.session) === chatTask)) : msgs.filter(m => !m.session);
+  renderChatInfo(feed.length);
+  if (!feed.length) box.append(el("div","empty", chatSess || chatPair ? "No messages yet." : chatTask ? "Nothing has been discussed about this task yet." : "No discussions yet. Agents' questions and decisions show up here."));
+  feed.forEach(m => box.append(msgRow(m)));
+  const ty = typingRow(); if (ty) box.append(ty);
+  if (atBottom || chatJump || ty) box.scrollTop = box.scrollHeight; chatJump = false;
+}
+/* the owner's rule: in an Arabic reply every English run (a word, a name, a task id) sits on its own line,
+   with the Arabic before it and after it on their own lines, so right-to-left text never jumbles */
+const AR_LETTER = /[\u0621-\u064A\u0671-\u06D3\u06FA-\u06FF]/;
+const LATIN_RUN = /[A-Za-z0-9#@][A-Za-z0-9#@ \t.,:;\/_&+'"!?%*=()\[\]-]*[A-Za-z0-9)\]%]|[A-Za-z]/g;
+function bidiSegments(line){
+  const segs = []; let last = 0, mm;
+  LATIN_RUN.lastIndex = 0;
+  while ((mm = LATIN_RUN.exec(line))) {
+    let a = mm.index, t = mm[0];
+    if (!/[A-Za-z]/.test(t)) continue;                                   // plain numbers stay in the Arabic sentence
+    const open = (t.match(/\(/g) || []).length, close = (t.match(/\)/g) || []).length;
+    if (close > open && line[a - 1] === "(") { a--; t = "(" + t; }
+    else if (close > open && t.endsWith(")")) t = t.slice(0, -1);
+    if (a > last) segs.push({ar:true, t:line.slice(last, a)});
+    segs.push({ar:false, t}); last = a + t.length;
+  }
+  if (last < line.length) segs.push({ar:true, t:line.slice(last)});
+  // tidy: punctuation-only Arabic bits join the English before them; a one-letter joiner (و) between two English runs keeps them together
+  const out = [];
+  segs.forEach(sg => {
+    const prev = out[out.length - 1];
+    if (sg.ar && !AR_LETTER.test(sg.t)) { if (!sg.t.trim()) { if (prev) prev.t += sg.t; return; } if (prev && !prev.ar) { prev.t += sg.t.replace(/\u060C/g, ",").replace(/\u061B/g, ";").replace(/\u061F/g, "?"); prev.glue = true; return; } }
+    if (!sg.ar && prev && !prev.ar && prev.glue) { prev.t = prev.t.replace(/\s*$/, " ") + sg.t; prev.glue = false; return; }
+    if (sg.ar && prev) { const lead = /^[\s.,:;!?،؛؟)\]]+/.exec(sg.t); if (lead && lead[0].trim()) { prev.t += lead[0].trim(); sg = {...sg, t:sg.t.slice(lead[0].length)}; if (!sg.t.trim()) return; } }
+    if (prev && prev.ar === sg.ar) { prev.t += sg.t; return; }
+    out.push({...sg});
+  });
+  for (let i = 1; i < out.length - 1; i++) {
+    const j = out[i];
+    if (j.ar && !out[i-1].ar && !out[i+1].ar && j.t.replace(/[\s.,:;،]/g, "").length <= 2) { out[i-1].t = out[i-1].t.replace(/\s*$/, " ") + j.t.trim() + " " + out[i+1].t; out.splice(i, 2); i--; }
+  }
+  return out.map(x => ({ar:x.ar, t:x.t.trim()})).filter(x => x.t && (!x.ar || AR_LETTER.test(x.t) || x.t.length > 1));
+}
+function bidiBody(text){
+  const frag = document.createDocumentFragment();
+  String(text).split("\n").forEach(line => {
+    if (!line.trim()) { frag.append(el("div","ln ln-gap")); return; }
+    bidiSegments(line).forEach(sg => { const d = el("div", "ln " + (sg.ar ? "ln-ar" : "ln-en")); d.dir = sg.ar ? "rtl" : "ltr"; d.append(linkify(sg.t)); frag.append(d); });
+  });
+  return frag;
+}
+function msgRow(m){
+    const owner = m.from === "owner";
+    const row = el("div","msg" + (owner ? " owner" : ""));
+    const main = el("div"); const who = el("div","who");
+    who.append(el("b", null, nameOf(m.from)));
+    if (m.to && m.to !== "session") who.append(el("span","note", "→ " + nameOf(m.to)));
+    if (m.kind) who.append(el("span","kind k-" + m.kind, KIND[m.kind] || m.kind));
+    if (m.quick) { const q = el("span","quick","Quick reply"); q.title = "Answered at once from the agent's role and the office data. The agent's own session follows up when real work is needed."; who.append(q); }
+    if (m.task || (m.session && m.session !== chatSess)) {
+      const ls = el("span","links");
+      if (m.task && tasks.some(t => t.id === m.task)) ls.append(taskLink(m.task)); else if (m.task) ls.append(el("span","mono", m.task));
+      const sid = m.session || openSessionFor(m.task)?.id;
+      if (sid && sid !== openSess && sid !== chatSess) ls.append(sessLink(sid));
+      if (m.task && tasks.some(t => t.id === m.task)) ls.append(boardLink(m.task));
+      who.append(ls);
+    }
+    who.append(el("span","note", fmt(m.at)));
+    const bd = el("div","body"); bd.dir = "auto";
+    if (!owner && AR_LETTER.test(m.text || "")) { bd.dir = "rtl"; bd.classList.add("bidi"); bd.append(bidiBody(m.text || "")); } else bd.append(linkify(m.text || "")); main.append(who, bd);
+    if (m.decided_by) main.append(el("div","note", "Decided by: " + nameOf(m.decided_by)));
+    if (m.kind === "proposal" && Array.isArray(m.proposed_tasks)) main.append(proposalBox(m));
+    row.append(avatar(owner ? "owner" : m.from, 36), main);
+    return row;
+}
+function renderSelects(){
+  const to = $("to"), keep = to.value; to.replaceChildren();
+  const o = el("option", null, nameOf("coordinator") === "coordinator" ? "Coordinator" : nameOf("coordinator")); o.value = "coordinator"; to.append(o);
+  agents.filter(a => a.id !== "coordinator").forEach(a => { const x = el("option", null, nameOf(a.id)); x.value = a.id; to.append(x); });
+  if (keep) to.value = keep;
+  pickers.forEach(p => p.refresh());
+}
+$("compose").addEventListener("submit", async e => {
+  e.preventDefault();
+  const text = $("text").value.trim(); if (!text) return;
+  if (!db) { $("composeNote").textContent = "Can't reach the office data right now. Try again shortly."; return; }
+  const btn = $("send"); btn.disabled = true;
+  const decision = $("isDecision").checked;
+  const vs = chatSess && sessions.find(x => x.id === chatSess);
+  if (vs && vs.state === "open" && !(vs.members || []).includes("owner")) { try { await db.doc("sessions/" + vs.id).update({members:["owner", ...(vs.members || [])]}); } catch {} }   // writing in a talk makes you one of its people
+  const pairIds = !chatSess && chatPair ? chatPair.split("|") : null;
+  const doc = pairIds ? { at: new Date().toISOString(), from: "owner", to: pairIds.find(x => x !== "coordinator") || pairIds[0], pair: chatPair, task: composeTask || null,
+    kind: decision ? "decision" : "owner", text, decided_by: decision ? "owner" : null, author_id: me, relayed: false } : chatSess ? { at: new Date().toISOString(), from: "owner", to: "session", session: chatSess, task: vs?.task || null,
+    kind: decision ? "decision" : "owner", text, decided_by: decision ? "owner" : null, author_id: me, relayed: false } : { at: new Date().toISOString(), from: "owner", to: $("to").value, task: composeTask || null,
+    kind: decision ? "decision" : "owner", text, decided_by: decision ? "owner" : null, author_id: me, relayed: false };
+  try { await db.collection("messages").add(doc); $("text").value = ""; $("isDecision").checked = false; $("composeNote").textContent = "Sent. Answers come in a moment.";
+    quickReplies({session: doc.session || null, task: doc.task, to: doc.to, text, decision, pair: doc.pair || null, members: pairIds || undefined}); drawScene(); }
+  catch (err) {
+    if (err && err.code === "quota_exceeded") $("composeNote").textContent = "The discussion log is full. Ask the Office Manager to archive old messages.";
+    else if (err && (err.code === "not_granted" || err.code === "permission_denied")) { canWrite = false; $("composeNote").textContent = "You can read this page but not post."; }
+    else $("composeNote").textContent = "Not sent. Try again.";
+  } finally { btn.disabled = !canWrite; renderCompose(); }
+});
+
+/* ---------- versions: each task belongs to one (tasks/<ID>.version); done tasks are closed ---------- */
+let metaOffice = {}, bver = null, chatTask = "", composeTask = "", chatSess = "", chatPair = "", chatJump = false;
+const verOf = t => t.version || "";
+const vcmp = (a, b) => !a && !b ? 0 : !a ? 1 : !b ? -1 : a.localeCompare(b, undefined, {numeric:true, sensitivity:"base"});
+const versions = () => { const vs = [...new Set([...tasks.map(verOf), ...(Array.isArray(metaOffice.versions) ? metaOffice.versions.map(v => v && v.id).filter(Boolean) : [])])]; return vs.length === 1 && vs[0] === "" ? [] : vs.sort(vcmp); };
+const verName = v => v === "*" ? "All versions" : v || "No version";
+const isClosed = t => (t.state || "todo") === "done";
+const inVer = (t, v) => v === "*" || !versions().length || verOf(t) === v;
+const byOrder = (a, b) => (a.order ?? 999) - (b.order ?? 999) || String(a.id).localeCompare(String(b.id), undefined, {numeric:true});
+const stateName = t => STATES.find(s => s.k === (t.state || "todo"))?.en || t.state;
+/* the current version: meta/office.current_version, else the first one with open tasks, else the newest */
+function currentVer(){
+  const vs = versions(); if (!vs.length) return "*";
+  const c = metaOffice.current_version; if (c && vs.includes(c)) return c;
+  return vs.find(v => v && tasks.some(t => verOf(t) === v && !isClosed(t))) ?? vs.filter(Boolean).pop() ?? vs[0];
+}
+const bf = {ver:null, states:new Set(["todo","doing","review","blocked"]), feats:new Set(), tasks:new Set(), open:new Set(), shut:new Set(), phases:new Set()};
+const boardVer = () => { const v = bf.ver ?? currentVer(); return v === "*" || versions().includes(v) ? v : currentVer(); };
+
+/* ---------- items: tasks and conversations, filtered the same way everywhere ----------
+   version first, then stage checkboxes (Done is off by default), then feature checkboxes */
+const KINDS = {meeting:"Meeting", question:"Quick question", consult:"Consultation", chat:"Chat"};
+const convKind = s => KINDS[s?.kind] || "Task session";
+const convTask = s => tasks.find(t => t.id === s.task);
+const convState = s => s.state === "open" ? "doing" : "done";
+const convVer = s => s.version || verOf(convTask(s) || {}) || "";
+const convFeat = s => convTask(s)?.feature || "";
+const DEFAULT_STATES = ["todo","doing","review","blocked"];
+const STAGES = () => ["todo","doing","review","blocked","done"].map(k => STATES.find(s => s.k === k)).filter(Boolean);
+const newFilter = () => ({ver:null, states:new Set(DEFAULT_STATES), feats:new Set(), tasks:new Set(), open:new Set(), shut:new Set(), phases:new Set()});
+/* phase filter: none ticked means every phase; a conversation follows its task's phase */
+const phaseOk = (it, f) => !f.phases || !f.phases.size || (it.type === "conv" ? (!it.s?.task || f.phases.has(phaseOf(tasks.find(t => t.id === it.s.task) || {}))) : f.phases.has(phaseOf(it.t || it)));
+/* feature filter: whole features (f.feats) and single tasks picked inside a feature (f.tasks) */
+const featOn = f => f.feats.size > 0 || f.tasks.size > 0;
+const featOk = (it, f) => !featOn(f) || f.feats.has(it.feature) || f.tasks.has(it.type === "conv" ? (it.s?.task || "") : it.id);
+const fVer = f => { const v = f.ver ?? currentVer(); return v === "*" || versions().includes(v) ? v : currentVer(); };
+function items(withConvs){
+  const a = tasks.map(t => ({type:"task", id:t.id, title:t.title_en || t.id, state:t.state || "todo", version:verOf(t), feature:t.feature || "", owner:t.session, order:t.order, t}));
+  if (withConvs) sessions.forEach(s => a.push({type:"conv", id:s.id, title:s.title_en || "Conversation", state:convState(s), version:convVer(s), feature:convFeat(s), kind:convKind(s), members:s.members || [], s}));
+  return a;
+}
+/* a conversation with no version of its own belongs to the current one */
+const inVerF = (it, f) => { const v = fVer(f); return v === "*" || !versions().length || (it.version || (it.type === "conv" ? currentVer() : "")) === v; };
+const itemIn = (it, f) => inVerF(it, f) && f.states.has(it.state) && featOk(it, f) && phaseOk(it, f);
+/* the three filter rows: Version chips, Stage checkboxes, Feature checkboxes */
+function filterControls(f, onChange, {convs} = {}){
+  const wrap = el("div","fctl");
+  const vs = versions();
+  if (vs.length) { const r = el("div","frow"); r.append(el("span","lbl","Version")); const box = el("div","filters");
+    [...vs, "*"].forEach(v => { const n = items(convs).filter(it => (v === "*" || it.version === v) && it.state !== "done").length;
+      const b = el("button", null, verName(v)); b.type = "button"; b.setAttribute("aria-pressed", String(fVer(f) === v)); b.append(el("span","vn", ` · ${n} open`));
+      b.onclick = () => { f.ver = v; f.feats.clear(); f.tasks.clear(); onChange(); }; box.append(b); });
+    r.append(box); wrap.append(r); }
+  const pool = items(convs).filter(it => inVerF(it, f));
+  const r2 = el("div","frow"); r2.append(el("span","lbl","Stage")); const sb = el("div","cks");
+  STAGES().forEach(s => { const n = pool.filter(it => it.state === s.k && featOk(it, f)).length;
+    sb.append(ck(s.k === "done" ? "Done (closed)" : s.en, n, f.states.has(s.k), on => { on ? f.states.add(s.k) : f.states.delete(s.k); onChange(); }, "st-" + s.k)); });
+  r2.append(sb); wrap.append(r2);
+  const rp = el("div","frow"); rp.append(el("span","lbl","Phase")); const pb = el("div","cks");
+  PHASES.forEach(p => { const n = pool.filter(it => it.type === "task" && phaseOf(it.t) === p.k && f.states.has(it.state)).length;
+    pb.append(ck(p.en, n, f.phases.has(p.k), on => { on ? f.phases.add(p.k) : f.phases.delete(p.k); onChange(); })); });
+  if (f.phases.size) { const cl = el("button","linkish","All phases"); cl.type = "button"; cl.onclick = () => { f.phases.clear(); onChange(); }; pb.append(cl); }
+  rp.append(pb); wrap.append(rp);
+  /* features as a tree: the feature ticks all its tasks, or open it and tick single tasks */
+  const feats = [...new Set(pool.map(it => it.feature).filter(Boolean))].sort();
+  if (feats.length) { const r3 = el("div","frow ftop"); r3.append(el("span","lbl","Feature")); const tree = el("div","ftree");
+    feats.forEach(x => {
+      const kids = pool.filter(it => it.type === "task" && it.feature === x && f.states.has(it.state)).sort(byOrder);
+      const all = pool.filter(it => it.type === "task" && it.feature === x).map(it => it.id);
+      const whole = f.feats.has(x), picked = kids.filter(k => f.tasks.has(k.id)).length;
+      const open = f.open.has(x) || (!whole && picked > 0 && !f.shut.has(x));
+      const g = el("div","fg" + (open ? " open" : "")); g.style.setProperty("--fc", featColor(x));
+      const head = el("div","fg-h");
+      const tg = el("button","fg-tg", open ? "▾" : "▸"); tg.type = "button"; tg.setAttribute("aria-expanded", String(open)); tg.setAttribute("aria-label", (open ? "Hide" : "Show") + " the tasks of " + x);
+      tg.onclick = () => { if (open) { f.open.delete(x); f.shut.add(x); } else { f.open.add(x); f.shut.delete(x); } onChange(); };
+      const c = ck(x, kids.length, whole, on => { all.forEach(id => f.tasks.delete(id)); on ? f.feats.add(x) : f.feats.delete(x); onChange(); });
+      c.classList.add("fk"); c.querySelector("input").indeterminate = !whole && picked > 0;
+      head.append(tg, c); if (!whole && picked) head.append(el("span","note", `${picked} of ${kids.length}`));
+      g.append(head);
+      if (open) { const box = el("div","fkids");
+        kids.forEach(k => box.append(ck(`${k.id} · ${k.title}`, null, whole || f.tasks.has(k.id), on => {
+          if (whole) { f.feats.delete(x); kids.forEach(o => { if (o.id !== k.id) f.tasks.add(o.id); }); }
+          else { on ? f.tasks.add(k.id) : f.tasks.delete(k.id); if (kids.every(o => f.tasks.has(o.id))) { kids.forEach(o => f.tasks.delete(o.id)); f.feats.add(x); } }
+          onChange(); }, "kid")));
+        if (!kids.length) box.append(el("span","note","No tasks in the ticked stages."));
+        g.append(box); }
+      tree.append(g);
+    });
+    if (featOn(f)) { const clr = el("button","linkish","All features"); clr.type = "button"; clr.onclick = () => { f.feats.clear(); f.tasks.clear(); onChange(); }; tree.append(clr); }
+    r3.append(tree); wrap.append(r3); }
+  return wrap;
+}
+function ck(label, n, on, cb, cls){
+  const l = el("label","ck" + (cls ? " " + cls : "")); const i = el("input"); i.type = "checkbox"; i.checked = on; i.onchange = () => cb(i.checked);
+  l.append(i, el("span", null, label)); if (n != null) l.append(el("span","n", String(n))); return l;
+}
+/* task picker: version, stage and feature filters on top, then search; conversations too where asked */
+function taskPicker({none, placeholder, get, set, convs}){
+  const wrap = el("span","tp"), btn = el("button","tp-btn"); btn.type = "button";
+  btn.setAttribute("aria-haspopup","listbox"); btn.setAttribute("aria-expanded","false");
+  const pop = el("div","tp-pop"); pop.hidden = true; pop.setAttribute("role","dialog"); pop.setAttribute("aria-label", convs ? "Pick a task or conversation" : "Pick a task");
+  const q = el("input"); q.type = "search"; q.placeholder = convs ? "Search tasks and conversations" : "Search tasks"; q.setAttribute("aria-label","Search"); q.autocomplete = "off";
+  const fbox = el("div"), list = el("div","tp-list"), foot = el("div","note tp-foot");
+  list.setAttribute("role","listbox");
+  pop.append(q, fbox, list, foot); wrap.append(btn); document.querySelector(".wrap").append(pop);
+  let pf = newFilter(), act = 0, opts = [];
+  const find = id => items(convs).find(it => it.id === id);
+  const label = () => { const id = get(), it = id && find(id);
+    btn.textContent = id ? (it ? (it.type === "task" ? `${it.id} · ${it.title}` : `${it.kind} · ${it.title}`) : id) : (placeholder || none); btn.title = btn.textContent; btn.classList.toggle("empty-val", !id && !!placeholder); };
+  const mark = () => opts.forEach((o, i) => o.classList.toggle("active", i === act));
+  function addOpt(id, text, it){
+    const o = el("button","tp-opt" + (it && it.state === "done" ? " closed" : "")); o.type = "button"; o.tabIndex = -1;
+    o.setAttribute("role","option"); o.dataset.id = id; o.setAttribute("aria-selected", String(id === get()));
+    if (it) { const tags = el("span","tp-tags");
+      tags.append(el("span","tp-tag" + (it.state === "done" ? " closed" : ""), it.state === "done" ? (it.type === "conv" ? "Done" : "Closed") : STATES.find(s => s.k === it.state)?.en || it.state));
+      if (versions().length && fVer(pf) === "*") tags.append(el("span","tp-tag", verName(it.version)));
+      o.append(it.type === "task" ? el("span","mono", it.id) : el("span","meet-tag", it.kind), el("span","tt", it.title), tags); }
+    else { o.append(el("span","tt", text)); o.style.gridTemplateColumns = "minmax(0,1fr)"; }
+    o.onclick = () => choose(id); o.onmousemove = () => { act = opts.indexOf(o); mark(); };
+    list.append(o); opts.push(o);
+  }
+  function fill(keep){
+    const term = q.value.trim().toLowerCase(), was = act;
+    fbox.replaceChildren(filterControls(pf, () => { fill(); }, {convs}));
+    const base = items(convs).filter(it => itemIn(it, pf));
+    const rows = base.filter(it => !term || [it.id, it.title, it.feature, it.version, it.kind, it.owner && nameOf(it.owner)].some(x => String(x || "").toLowerCase().includes(term)))
+      .sort((a, b) => (a.state === "done") - (b.state === "done") || (a.type === "conv") - (b.type === "conv") || byOrder(a, b));
+    list.replaceChildren(); opts = [];
+    if (none && !term) addOpt("", none);
+    rows.slice(0, 200).forEach(it => addOpt(it.id, null, it));
+    if (!rows.length) list.append(el("div","empty", term ? "Nothing matches with these filters." : "Nothing here with these filters."));
+    const hid = pf.states.has("done") ? 0 : items(convs).filter(it => inVerF(it, pf) && it.state === "done" && (!term || String(it.title + it.id).toLowerCase().includes(term))).length;
+    foot.textContent = hid ? `${hid} closed not shown. Tick "Done (closed)" to include ${hid === 1 ? "it" : "them"}.` : `${rows.length} shown.`;
+    act = keep ? Math.min(was, Math.max(0, opts.length - 1)) : Math.max(0, opts.findIndex(o => o.dataset.id === get()));
+    mark();
+  }
+  function place(){
+    const r = btn.getBoundingClientRect(), w = Math.min(520, innerWidth - 16);
+    const below = innerHeight - r.bottom - 12, above = r.top - 12, up = below < 360 && above > below;
+    pop.style.width = w + "px"; pop.style.maxHeight = Math.min(560, Math.max(220, up ? above : below)) + "px";
+    pop.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + "px";
+    pop.style.top = up ? "" : (r.bottom + 4) + "px"; pop.style.bottom = up ? (innerHeight - r.top + 4) + "px" : "";
+  }
+  function open(){
+    pickers.forEach(p => p !== api && p.close());
+    const it = get() && find(get());
+    pf = newFilter(); if (it && versions().length) pf.ver = it.version; if (it) pf.states.add(it.state);
+    q.value = ""; fill(); pop.hidden = false; btn.setAttribute("aria-expanded","true"); place(); q.focus();
+  }
+  function close(focus){ if (pop.hidden) return; pop.hidden = true; btn.setAttribute("aria-expanded","false"); if (focus) btn.focus(); }
+  function choose(id){ set(id, id ? find(id)?.type : null); label(); close(true); }
+  btn.onclick = () => pop.hidden ? open() : close();
+  q.oninput = () => fill();
+  q.onkeydown = e => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (!opts.length) return; act = (act + (e.key === "ArrowDown" ? 1 : opts.length - 1)) % opts.length; mark(); opts[act].scrollIntoView({block:"nearest"}); }
+    else if (e.key === "Enter") { e.preventDefault(); if (opts[act]) choose(opts[act].dataset.id); }
+  };
+  pop.onkeydown = e => { if (e.key === "Escape") { e.preventDefault(); close(true); } };
+  document.addEventListener("pointerdown", e => { if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) close(); });
+  addEventListener("resize", () => { if (!pop.hidden) place(); });
+  addEventListener("scroll", e => { if (!pop.hidden && !pop.contains(e.target)) place(); }, true);
+  const api = { el: wrap, refresh(){ label(); if (!pop.hidden && !pop.contains(document.activeElement && document.activeElement.type === "checkbox" ? document.activeElement : null)) fill(true); }, close };
+  label(); return api;
+}
+const chatPick = taskPicker({none:"All discussions", convs:true, get:() => chatTask || chatSess, set:(id, type) => type === "conv" ? viewSession(id) : filterChat(id)});
+const composePick = taskPicker({none:"None", get:() => composeTask, set:id => { composeTask = id; }});
+const boardPick = taskPicker({placeholder:"A task or conversation", convs:true, get:() => "", set:(id, type) => { if (id) go((type === "conv" ? "#session/" : "#board/") + encodeURIComponent(id)); }});
+const pickers = [chatPick, composePick, boardPick];
+$("chatPickHost").append(chatPick.el); $("composePickHost").append(composePick.el); $("boardPickHost").append(boardPick.el);
+function filterChat(id){ chatTask = id || ""; chatSess = chatPair = ""; if (id) composeTask = id; chatJump = true; pickers.forEach(p => p.refresh()); renderMsgs(); renderCompose(); renderSessions(); }
+function viewSession(id){ chatSess = id; chatTask = chatPair = ""; chatJump = true; pickers.forEach(p => p.refresh()); renderMsgs(); renderCompose(); renderSessions(); }
+function viewPair(key){ chatPair = key; chatTask = chatSess = ""; chatJump = true; const other = key.split("|").find(x => x !== "coordinator"); if (other && [...$("to").options].some(o => o.value === other)) $("to").value = other; pickers.forEach(p => p.refresh()); renderMsgs(); renderCompose(); }
+const isMeeting = s => s?.kind === "meeting";
+/* the composer follows the view: inside a session or meeting it posts there */
+function renderCompose(){
+  const s = chatSess && sessions.find(x => x.id === chatSess);
+  const inS = !!chatSess, open = !inS || !s || s.state === "open";
+  $("to").closest("label").hidden = inS || !!chatPair; $("composePickHost").closest(".field").hidden = inS;
+  $("text").disabled = !open; $("send").disabled = !open || !canWrite;
+  $("text").placeholder = !open ? "This conversation is done. Everyone is back at work." : inS ? "Write to everyone in this " + (isMeeting(s) ? "meeting…" : "session…") : chatPair ? "Join in: write to " + chatPair.split("|").map(nameOf).join(" & ") + "…" : "Write your reply or decision…";
+  $("composeNote").textContent = inS ? (open ? "Goes to the people here. Each one answers from their own role." : "Read only.") : chatPair ? "You join their talk, and you sit with them in the office." : "Your message goes to the Coordinator, who passes it on.";
+}
+function renderChatInfo(n){
+  const box = $("chatInfo"); box.replaceChildren();
+  const all = () => { const c = el("button","linkish","Show all discussions"); c.type = "button"; c.onclick = () => filterChat(""); return c; };
+  if (chatSess) { const s = sessions.find(x => x.id === chatSess);
+    const h = el("span","view-head"); h.append(el("span","meet-tag", convKind(s)), el("b", null, s?.title_en || "Question"));
+    const f = el("span","faces"); (s?.members || []).forEach(m => f.append(avatar(m, 20))); h.append(f);
+    if (s && s.state !== "open") h.append(el("span","tp-tag closed", "Done"));
+    box.append(h, el("span","note", `${n} message${n === 1 ? "" : "s"}`));
+    if (s?.task) box.append(taskLink(s.task));
+    const w = el("button","linkish","Open in a window"); w.type = "button"; w.onclick = () => go("#session/" + encodeURIComponent(chatSess)); box.append(w, all());
+    if (s && s.state === "open") box.append(peopleButton(s));
+    if (s && s.state === "open" && canWrite) box.append(doneButton(s));
+    if (s && s.state !== "open" && s.resolution_en) box.append(el("span","note", s.resolution_en));
+    return; }
+  if (chatPair) { const ids = chatPair.split("|"); const h = el("span","view-head"); const f = el("span","faces"); ids.forEach(m => f.append(avatar(m, 20))); h.append(f, el("b", null, ids.map(nameOf).join(" & ")));
+    box.append(h, el("span","note", `${n} message${n === 1 ? "" : "s"}`), all()); return; }
+  if (!chatTask) return;
+  const t = tasks.find(x => x.id === chatTask);
+  box.append(el("span","note", `${n} message${n === 1 ? "" : "s"}`));
+  if (t && isClosed(t)) box.append(el("span","tp-tag closed","Closed"));
+  if (t && versions().length) box.append(el("span","tp-tag", verName(verOf(t))));
+  if (t) box.append(link("Open the task", "#task/" + encodeURIComponent(t.id)), boardLink(t.id, "Show on board"));
+  box.append(all());
+}
+
+/* ---------- quick replies: invited agents answer at once from their role and the office data;
+   decisions turn into proposed tasks the owner adds to the board ---------- */
+let samplerP = null;
+const sampler = () => samplerP ??= (async () => { try { return await claude.use("sample"); } catch { return null; } })();
+let typing = null, mainLang = "en";                                   // {key, ids} while agents are answering
+const viewKey = () => chatSess || "main";
+function rolesBlock(ids){ return ids.map(id => { const a = agentById(id); return `- ${id} (${nameOf(id)}): ${id === "coordinator" ? "Coordinator, runs meetings, owns plan and schedule, brings decisions to the owner" : roleOf(a) || "agent"}. Now: ${doingOf(a) || "nothing noted"}. State: ${a?.state || "idle"}.`; }).join("\n"); }
+async function quickReplies(ctx){
+  const sample = await sampler(); if (!sample || !db) return;
+  const sess = ctx.session && sessions.find(s => s.id === ctx.session);
+  let who = sess ? (sess.members || ctx.members || []) : (ctx.members || [ctx.to && ctx.to !== "all" ? ctx.to : "coordinator"]);
+  who = [...new Set(who.filter(id => id !== "owner" && (agentById(id) || id === "coordinator")))];
+  if (!who.includes("coordinator")) who.unshift("coordinator");
+  const hist = (ctx.session ? msgs.filter(m => m.session === ctx.session) : msgs.filter(m => !m.session && (who.includes(m.from) || who.includes(m.to) || m.from === "owner"))).slice(-24)
+    .map(m => `${m.from === "owner" ? "OWNER" : m.from}: ${m.text}`).join("\n");
+  const task = ctx.task && tasks.find(t => t.id === ctx.task);
+  const board = tasks.filter(t => !isClosed(t)).slice(0, 80).map(t => `${t.id} | ${verOf(t) || "-"} | ${t.state || "todo"} | ${t.session} | ${t.feature || "-"} | ${t.title_en || ""}`).join("\n");
+  const lang = (sess && sess.lang) || (!ctx.session && mainLang) || "en";
+  const prompt = `You answer for AI agents on the team building ${metaOffice.product_en || "this product"}. The owner just wrote in ${sess ? (isMeeting(sess) ? "a meeting" : "a task session") : "the team discussion"}${sess ? ` titled "${sess.title_en || ""}"` : ""}.
+Agents who may answer (id: role):
+${rolesBlock(who)}
+${task ? `The conversation is about task ${task.id}: ${task.title_en}. Summary: ${task.summary_en || "-"}` : ""}
+Open tasks (id | version | state | owner | feature | title):
+${board || "(none)"}
+Conversation so far, oldest first:
+${hist}
+OWNER (latest${ctx.decision ? ", marked as a decision" : ""}): ${ctx.text}
+
+Rules:
+- Each agent answers only from its own role. For a greeting or a question to everyone, every agent answers briefly. Otherwise only the agents with something useful to add. The coordinator answers first.
+- 1 to 3 short, friendly sentences each. Start with the answer itself: no greeting (no "Hi", "هلا", "أهلاً") and never introduce yourself or say your name or role ("I'm the Backend", "أنا الـBackend"); each reply already shows who wrote it. Example: asked "what are you doing here?", Backend answers "I said I'd fix the wrong-code response to 401 with an error code and send it to you. Nothing else is logged as in progress."
+- Language: the conversation language is now "${lang}" (an ISO code; "en" is the default). Answer in that language. Understand the owner in any language, but writing in Arabic is NOT a request to switch. Switch only when the owner explicitly asks (e.g. "reply in Arabic", "رد بالعربي", "كلموني عربي", "back to English"); then answer in the new language and keep it for the rest of this conversation. In Arabic, use simple Gulf-friendly Arabic and keep technical names (Render, API, task ids) in English.
+- Use only the facts above. Never claim work is done or started unless the data says so. Never invent numbers, links or dates.
+- Never decide money, paid plans, deleting data, production, security or scope yourselves: say the coordinator brings it to the owner.
+${ctx.session ? `- If the owner asks to close, end or finish this ${sess && isMeeting(sess) ? "meeting" : "session"} (e.g. "close it", "we're done", "خلاص قفلوه", "ارجعوا لشغلكم"), set "close" to true and "resolution_en" to one English line saying what was agreed; only the coordinator replies, with a short closing line saying everyone goes back to their tasks. Otherwise "close" is false.\n` : ""}- If the owner's latest message makes or confirms a decision that needs work, the coordinator restates the decision in one line, and you propose the tasks that carry it out (each owned by the agent whose role fits, from the list above). Otherwise "tasks" is empty.
+Return only JSON: {"close":false,"resolution_en":"","language":"<the conversation language after this message, ISO code>","replies":[{"from":"<agent id>","text":"..."}],"decision_en":"<one line, or empty>","tasks":[{"title_en":"...","summary_en":"one sentence","session":"<agent id>","feature":"<short label>"}]}`;
+  typing = {key: ctx.session || "main", ids: who.slice(0, 4)}; renderMsgs();
+  let note = "";
+  try {
+    const out = await sample.json(prompt, {modelTier:"quick", cache:false});
+    const nl = typeof out?.language === "string" && /^[a-z]{2}$/.test(out.language) ? out.language : lang;
+    if (nl !== lang) { if (ctx.session) { try { await db.doc("sessions/" + ctx.session).update({lang: nl}); } catch {} } else mainLang = nl; }
+    const replies = (Array.isArray(out?.replies) ? out.replies : []).filter(r => r && who.includes(r.from) && r.text);
+    let t = Date.now();
+    const base = {to: ctx.session ? "session" : "owner", session: ctx.session || null, task: ctx.task || null, decided_by: null, quick: true, ...(ctx.pair ? {pair: ctx.pair} : {})};
+    for (const r of replies) await db.collection("messages").add({...base, at: new Date(t++).toISOString(), from: r.from, kind: "answer", text: String(r.text).slice(0, 1500)});
+    const props = (Array.isArray(out?.tasks) ? out.tasks : []).filter(x => x && x.title_en).slice(0, 8)
+      .map(x => ({title_en: String(x.title_en).slice(0, 160), summary_en: String(x.summary_en || "").slice(0, 400), session: agentById(x.session) ? x.session : "coordinator", feature: String(x.feature || "").slice(0, 40)}));
+    if (props.length) await db.collection("messages").add({...base, at: new Date(t++).toISOString(), from: "coordinator", kind: "proposal", text: out.decision_en ? `Decision: ${out.decision_en}` : "Proposed tasks from this decision.", proposed_tasks: props, added: [], relayed: false});
+    if (ctx.session && out?.close === true) { try { await closeSession(ctx.session, "coordinator", String(out.resolution_en || "").slice(0, 300)); } catch {} }
+    if (!replies.length && !props.length) note = "No quick answer came back. The Coordinator will answer.";
+  } catch (e) {
+    note = e && e.code === "not_granted" ? "Quick replies are off for this page. The Coordinator answers when it checks the office."
+      : e && e.code === "rate_limited" ? "Too many quick replies at once. Wait a moment before the next message."
+      : "Quick replies didn't come through. The Coordinator will answer.";
+  } finally { typing = null; renderMsgs(); if (note) $("composeNote").textContent = note; }
+  return note;
+}
+function typingRow(){
+  if (!typing || typing.key !== viewKey()) return null;
+  const r = el("div","typing-row"); const f = el("span","faces"); typing.ids.forEach(id => f.append(avatar(id, 22)));
+  const dots = el("span","dots3"); dots.append(el("i"), el("i"), el("i"));
+  r.append(f, el("span","note", `${typing.ids.map(nameOf).join(", ")} ${typing.ids.length === 1 ? "is" : "are"} answering`), dots);
+  return r;
+}
+/* a proposal: the decision's tasks, ticked; "Add to board" puts them on the kanban as To do */
+function proposalBox(m){
+  const box = el("div","proposal"), list = m.proposed_tasks || [], added = new Set(m.added || []);
+  const cbs = [];
+  list.forEach((p, i) => { const lab = el("label","pick"); const cb = el("input"); cb.type = "checkbox"; cb.checked = !added.size; cb.disabled = added.size > 0;
+    const tx = el("span"); tx.append(el("b", null, p.title_en), el("small", null, `${nameOf(p.session)}${p.feature ? " · " + p.feature : ""}${p.summary_en ? " · " + p.summary_en : ""}`));
+    lab.append(cb, avatar(p.session, 26), tx); box.append(lab); cbs.push(cb); });
+  if (added.size) { const r = el("div","links"); r.append(el("span","note","Added to the board:")); [...added].forEach(id => r.append(boardLink(id, id))); box.append(r); return box; }
+  if (!canWrite) return box;
+  const r = el("div","row-wrap"); const b = el("button","btn","Add to board"); b.type = "button";
+  const n = el("span","note","The Coordinator picks them up and starts the work. A task session opens if anything needs you.");
+  r.append(b, n); box.append(r);
+  b.onclick = async () => { b.disabled = true;
+    try {
+      const pick = list.filter((_, i) => cbs[i].checked); if (!pick.length) { n.textContent = "Tick at least one task."; b.disabled = false; return; }
+      let k = tasks.filter(t => /^MT-\d+$/.test(t.id)).reduce((a, t) => Math.max(a, +t.id.slice(3)), 0);
+      const now = new Date().toISOString(), ids = [], v = versions().length ? (chatTask && verOf(tasks.find(t => t.id === chatTask) || {})) || currentVer() : null;
+      for (const p of pick) { const id = `MT-${++k}`; ids.push(id);
+        await db.doc("tasks/" + id).set({order: 900 + k, session: p.session, state: "todo", feature: p.feature || null, title_en: p.title_en, summary_en: p.summary_en || "", ...(v && v !== "*" ? {version: v} : {}), author: "coordinator", from_session: m.session || null, from_message: m.id, relayed: false, updated_at: now}); }
+      await db.doc("messages/" + m.id).update({added: ids});
+    } catch (err) { n.textContent = writeError(err); b.disabled = false; }
+  };
+  return box;
+}
+
+/* closing a session or meeting: the owner presses Done, or says so and the Coordinator closes it */
+async function closeSession(id, by, resolution){
+  await db.doc("sessions/" + id).update({state:"closed", closed_at:new Date().toISOString(), closed_by:by, resolution_en:resolution || null, relayed:false});
+}
+function doneButton(s){
+  const b = el("button","btn-lite","Mark done"); b.type = "button"; b.title = "Close this " + (isMeeting(s) ? "meeting" : "session") + "; everyone goes back to work";
+  b.onclick = async e => { e.stopPropagation();
+    if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Close it?"; setTimeout(() => { if (b.isConnected) { b.dataset.sure = ""; b.textContent = "Mark done"; } }, 4000); return; }
+    b.disabled = true; b.textContent = "Closing…";
+    try { await closeSession(s.id, "owner"); } catch (err) { b.textContent = writeError(err); b.disabled = false; } };
+  return b;
+}
+/* Enter sends, Shift+Enter makes a new line (typing in an input method is left alone) */
+function enterSends(ta, send){
+  ta.title = "Enter to send, Shift+Enter for a new line";
+  ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); send(); } });
+}
+enterSends($("text"), () => $("compose").requestSubmit());
+function renderAll(){ if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderAssistant(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); }
+
+/* ---------- data ---------- */
+renderLegend(); renderAll(); setInterval(setRoomBg, 60000);
+(async () => {
+  db = await claude.use("db"); user = await claude.use("user");
+  if (!db) { $("conn").textContent = "Couldn't open the office data in this view. Open the page while signed in."; $("send").disabled = true; return; }
+  try { me = user ? await user.id() : null; } catch { me = null; }
+  try { const w = user ? await user.can("data.write") : null; if (w === false) { canWrite = false; $("send").disabled = true; $("composeNote").textContent = "You can read this page but not post."; } } catch {}
+  const onErr = () => { $("conn").textContent = "Live updates stopped. Reload the page."; };
+  db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); $("conn").textContent = "Connected. Updates appear live."; renderAll(); }, onErr);
+  db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; if (tasks.length) renderAll(); const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {});
+  db.collection("tasks").onSnapshot(s => { tasks = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
+  db.collection("messages").orderBy("at").limit(500).onSnapshot(s => { msgs = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
+  db.collection("sessions").onSnapshot(s => { sessions = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
+})();
+})();
+</script>
