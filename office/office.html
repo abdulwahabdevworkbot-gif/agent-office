@@ -516,7 +516,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   </section>
 
   <p class="status-line" id="conn">Connecting to the office data…</p>
-  <p class="status-line">Office art and characters from <span class="mono">W17ant/Claude-Office</span> (MIT).</p>
+  <p class="status-line">Office art and characters drawn for this page (see <span class="mono">tools/art</span>).</p>
 </div>
 
 <dialog id="taskDlg"><div class="dlg" id="taskBody"></div></dialog>
@@ -633,10 +633,10 @@ function linkify(text){
 let routed = false;
 addEventListener("hashchange", () => route());
 
-/* ---------- office scene (art from W17ant/Claude-Office, MIT) ---------- */
+/* ---------- office scene (art drawn by tools/art) ---------- */
 const A = "assets/";
-const SPRITE = {"coordinator":"employee-3","reviewer":"employee-2","context-keeper":"explore-1","business-analyst":"Frontend-dev-1","mock-api":"dev-1","devops":"security-audit-1","backend":"employee-1","qa-api":"dev-2","office-manager":"Claude-1","owner":"Me-1"};
-const POOL = ["dev-1","dev-2","employee-1","employee-2","employee-3","explore-1","Frontend-dev-1","security-audit-1"];
+const SPRITE = {"coordinator":"gulf-thobe","reviewer":"japan-suit","context-keeper":"arab-hijab","business-analyst":"india-sari","mock-api":"sikh-dastar","devops":"china-qipao","backend":"saudi-shemagh","qa-api":"brazil-curls","office-manager":"gulf-abaya","owner":"saudi-shemagh"};
+const POOL = ["gulf-thobe", "saudi-shemagh", "gulf-abaya", "arab-hijab", "india-sari", "sikh-dastar", "china-qipao", "japan-suit", "nigeria-gele", "brazil-curls"];
 const spriteBase = id => SPRITE[id] || POOL[[...String(id)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7) % POOL.length];
 const FX = {working:"typing", waiting:"post-it", blocked:"build-failed", done:"party", idle:"sleeping"};
 const ASSISTANT = "office-manager";
@@ -670,13 +670,16 @@ const MEET = {"table": {"x": 35.01, "y": 50.8, "w": 29.18, "z": 500}, "mchair-0"
 const HUDDLE = {"tables":[{"table":{"x":44.705,"y":40.94254464285714,"w":14.59,"z":500},"chairs":[{"k":"mchair-3","x":42.86,"y":36.57,"w":5.57,"z":395},{"k":"mchair-1","x":52.73,"y":38.6,"w":5.24,"z":305},{"k":"mchair-7","x":56.04,"y":45.86,"w":5.11,"z":645},{"k":"mchair-5","x":46.16,"y":43.82,"w":5.44,"z":705}],"seats":[{"x":45.81,"y":43.51,"f":"front-right","z":400},{"x":55.26,"y":45.51,"f":"front-left","z":310},{"x":58.49,"y":51.24,"f":"rear-left","z":650},{"x":49.03,"y":49.23,"f":"rear-right","z":710}],"stand":[{"x":39,"y":55,"f":"rear-right","z":550},{"x":65,"y":56,"f":"rear-left","z":560}]},{"table":{"x":22.705,"y":55.94254464285714,"w":14.59,"z":1500},"chairs":[{"k":"mchair-3","x":20.86,"y":51.57,"w":5.57,"z":1395},{"k":"mchair-1","x":30.73,"y":53.6,"w":5.24,"z":1305},{"k":"mchair-7","x":34.04,"y":60.86,"w":5.11,"z":1645},{"k":"mchair-5","x":24.16,"y":58.82,"w":5.44,"z":1705}],"seats":[{"x":23.81,"y":58.51,"f":"front-right","z":1400},{"x":33.26,"y":60.51,"f":"front-left","z":1310},{"x":36.49,"y":66.24,"f":"rear-left","z":1650},{"x":27.03,"y":64.23,"f":"rear-right","z":1710}],"stand":[{"x":17,"y":70,"f":"rear-right","z":1700},{"x":43,"y":71,"f":"rear-left","z":1710}]},{"table":{"x":64.705,"y":53.94254464285714,"w":14.59,"z":2500},"chairs":[{"k":"mchair-3","x":62.86,"y":49.57,"w":5.57,"z":2395},{"k":"mchair-1","x":72.73,"y":51.6,"w":5.24,"z":2305},{"k":"mchair-7","x":76.04,"y":58.86,"w":5.11,"z":2645},{"k":"mchair-5","x":66.16,"y":56.82,"w":5.44,"z":2705}],"seats":[{"x":65.81,"y":56.51,"f":"front-right","z":2400},{"x":75.26,"y":58.51,"f":"front-left","z":2310},{"x":78.49,"y":64.24,"f":"rear-left","z":2650},{"x":69.03,"y":62.23,"f":"rear-right","z":2710}],"stand":[{"x":59,"y":68,"f":"rear-right","z":2680},{"x":85,"y":69,"f":"rear-left","z":2690}]},{"table":{"x":44.705,"y":69.94254464285714,"w":14.59,"z":3500},"chairs":[{"k":"mchair-3","x":42.86,"y":65.57,"w":5.57,"z":3395},{"k":"mchair-1","x":52.73,"y":67.6,"w":5.24,"z":3305},{"k":"mchair-7","x":56.04,"y":74.86,"w":5.11,"z":3645},{"k":"mchair-5","x":46.16,"y":72.82,"w":5.44,"z":3705}],"seats":[{"x":45.81,"y":72.51,"f":"front-right","z":3400},{"x":55.26,"y":74.51,"f":"front-left","z":3310},{"x":58.49,"y":80.24,"f":"rear-left","z":3650},{"x":49.03,"y":78.23,"f":"rear-right","z":3710}],"stand":[{"x":39,"y":84,"f":"rear-right","z":3840},{"x":65,"y":85,"f":"rear-left","z":3850}]}]};
 
 /* looks: each agent can pick a character and recolor its hair and shirt (masks mark those pixels) */
-const LOOK_SPRITES = ["Claude-1","Frontend-dev-1","Me-1","dev-1","dev-2","employee-1","employee-2","employee-3","explore-1","security-audit-1"];
-const NO_HAIR = new Set(["dev-1"]);
+const CHARS = [{"id": "gulf-thobe", "label_en": "Gulf man in thobe and ghutra", "featured": true, "hair": false}, {"id": "saudi-shemagh", "label_en": "Saudi man in red shemagh", "featured": true, "hair": false}, {"id": "gulf-abaya", "label_en": "Gulf woman in abaya and shayla", "featured": true, "hair": false}, {"id": "arab-hijab", "label_en": "Arab woman in hijab and blazer", "featured": true, "hair": false}, {"id": "india-sari", "label_en": "Indian woman in sari", "featured": true, "hair": true}, {"id": "sikh-dastar", "label_en": "Sikh man in dastar", "featured": true, "hair": false}, {"id": "china-qipao", "label_en": "Chinese woman in qipao-style top", "featured": true, "hair": true}, {"id": "japan-suit", "label_en": "Japanese man in suit", "featured": true, "hair": true}, {"id": "nigeria-gele", "label_en": "Nigerian woman in gele and ankara", "featured": true, "hair": false}, {"id": "brazil-curls", "label_en": "Brazilian woman with curls", "featured": true, "hair": true}];
+const LOOK_SPRITES = CHARS.map(c => c.id), CHAR_LABEL = Object.fromEntries(CHARS.map(c => [c.id, c.label_en]));
+const NO_HAIR = new Set(CHARS.filter(c => !c.hair).map(c => c.id));
+/* long robes and cultural dress keep their own colors unless the owner picks one */
+const ROBES = new Set(["gulf-thobe","saudi-shemagh","gulf-abaya","india-sari","nigeria-gele"]);
 const SHIRTS = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d9480f","#5c940d","#a61e4d","#087f5b","#862e9c","#495057"];
 const hashOf = id => [...String(id)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);
 /* the owner's rule: an agent without a saved look still gets its own shirt color, so two agents on one character differ */
 const lookOf = id => { const a = agentById(id), lk = (a || {}).look || {};
-  if (!a || okHex(lk.shirt) || id === "owner" || id === ASSISTANT || SPRITE[id]) return lk;
+  if (!a || okHex(lk.shirt) || id === "owner" || id === ASSISTANT || SPRITE[id] || ROBES.has(LOOK_SPRITES.includes(lk.sprite) ? lk.sprite : spriteBase(id))) return lk;
   return {...lk, shirt:SHIRTS[(hashOf(id) >> 3) % SHIRTS.length]}; };
 const spriteOf = id => { const s = lookOf(id).sprite; return LOOK_SPRITES.includes(s) ? s : spriteBase(id); };
 const tinted = new Map(), tinting = new Set();
@@ -1398,7 +1401,7 @@ function openAgent(id){
   const lookBox = el("section","ag-box"); lookBox.append(el("h3", null, "Look"));
   const sp = el("div","ag-sprites"); sp.setAttribute("role","group"); sp.setAttribute("aria-label","Character");
   const pick = () => sp.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === (agentDraft.look.sprite || spriteOf(id)))));
-  LOOK_SPRITES.forEach(s => { const b = el("button","ag-sp"); b.type = "button"; b.dataset.s = s; b.title = s; b.setAttribute("aria-label","Character " + s);
+  LOOK_SPRITES.forEach(s => { const b = el("button","ag-sp"); b.type = "button"; b.dataset.s = s; b.title = CHAR_LABEL[s] || s; b.setAttribute("aria-label","Character: " + (CHAR_LABEL[s] || s));
     b.style.backgroundImage = `url(${A}chars/${s}-front-left.webp)`; b.onclick = () => { agentDraft.look.sprite = s; pick(); colors(); dirty(); agentPreview(); }; sp.append(b); });
   lookBox.append(sp);
   const cols = el("div","ag-colors");

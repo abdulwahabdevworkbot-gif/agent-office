@@ -4,7 +4,7 @@
 
 سكل لـ Claude يبني لك فريق وكلاء لأي فكرة، ويعطيك مكتب تشوفهم فيه يشتغلون.
 
-![المكتب](docs/images/office.webp)
+![المكتب](docs/images/rooms-new.webp)
 
 ## وش يسوي؟
 
@@ -54,6 +54,14 @@ Intern ← Developer / Analyst ← Senior ← Consultant ← Senior Consultant �
 <td><img src="docs/images/meeting-room.webp" alt="غرفة الاجتماعات"></td>
 <td><img src="docs/images/idle-room.webp" alt="غرفة الخاملين"></td>
 </tr></table>
+
+## الشخصيات
+
+١٠ شخصيات من ثقافات مختلفة، ومصمم الوكلاء يختار منها لكل وكيل. الشعر ولون القميص يتغيرون، واللبس التقليدي يبقى بألوانه.
+
+![الشخصيات](docs/images/characters-top10.webp)
+
+ومعها ٣٠ شخصية ثانية مكتوبة في المولّد وبتنضاف قريب.
 
 ## التبويبات
 
@@ -123,6 +131,14 @@ When the project grows, the Agent Designer proposes departments (e.g. Marketing)
 
 Positions, lowest to highest: Intern → Developer / Analyst → Senior → Consultant → Senior Consultant → Manager → Director.
 
+## Characters
+
+Ten characters from different cultures, and the Agent Designer picks one for each agent. Hair and shirt colors can change; traditional dress keeps its own colors. The list is in `office/assets/chars/characters.json`.
+
+![Characters](docs/images/characters-top10.webp)
+
+Thirty more are already written in the generator and are coming soon.
+
 ## Tabs
 
 | Tab | What's in it |
@@ -145,8 +161,9 @@ Positions, lowest to highest: Intern → Developer / Analyst → Senior → Cons
 - `agent-designer-playbook/SKILL.md`: the skill.
 - `office/office.html`: the office page template (a claude.ai Artifact with the `db`, `user` and `sample` capabilities).
 - `office/SPEC.md`: every requirement of the page and its data layout. `office/README.md`: how to publish it.
-- `office/assets/`: rooms, furniture, characters, effects and fonts. `office/tools/`: scripts that draw the meeting, huddle and games room furniture.
+- `office/assets/`: rooms, furniture, characters, effects and fonts.
+- `office/tools/art/`: the generators that draw the rooms, furniture and characters (`build_rooms.py`, `chars.py`), with the shared style in `STYLE.md`.
 
 ## Credits
 
-Office room, furniture, effects and character sprites from [W17ant/Claude-Office](https://github.com/W17ant/Claude-Office) (MIT, see `office/assets/LICENSE-Claude-Office.txt`). Font: Dubai. Screenshots use made-up demo data.
+Rooms, furniture and characters are drawn for this repo by the generators in `office/tools/art/`. The small status effects are from [W17ant/Claude-Office](https://github.com/W17ant/Claude-Office) (MIT, see `office/assets/LICENSE-Claude-Office.txt`). Font: Dubai. Screenshots use made-up demo data.

@@ -1,0 +1,82 @@
+[
+ {
+  "id": "gulf-thobe",
+  "label_en": "Gulf man in thobe and ghutra",
+  "culture_en": "Gulf Arab",
+  "gender": "m",
+  "hair": false,
+  "featured": true
+ },
+ {
+  "id": "saudi-shemagh",
+  "label_en": "Saudi man in red shemagh",
+  "culture_en": "Saudi",
+  "gender": "m",
+  "hair": false,
+  "featured": true
+ },
+ {
+  "id": "gulf-abaya",
+  "label_en": "Gulf woman in abaya and shayla",
+  "culture_en": "Gulf Arab",
+  "gender": "f",
+  "hair": false,
+  "featured": true
+ },
+ {
+  "id": "arab-hijab",
+  "label_en": "Arab woman in hijab and blazer",
+  "culture_en": "Arab",
+  "gender": "f",
+  "hair": false,
+  "featured": true
+ },
+ {
+  "id": "india-sari",
+  "label_en": "Indian woman in sari",
+  "culture_en": "Indian",
+  "gender": "f",
+  "hair": true,
+  "featured": true
+ },
+ {
+  "id": "sikh-dastar",
+  "label_en": "Sikh man in dastar",
+  "culture_en": "Punjabi Sikh",
+  "gender": "m",
+  "hair": false,
+  "featured": true
+ },
+ {
+  "id": "china-qipao",
+  "label_en": "Chinese woman in qipao-style top",
+  "culture_en": "Chinese",
+  "gender": "f",
+  "hair": true,
+  "featured": true
+ },
+ {
+  "id": "japan-suit",
+  "label_en": "Japanese man in suit",
+  "culture_en": "Japanese",
+  "gender": "m",
+  "hair": true,
+  "featured": true
+ },
+ {
+  "id": "nigeria-gele",
+  "label_en": "Nigerian woman in gele and ankara",
+  "culture_en": "Nigerian (Yoruba)",
+  "gender": "f",
+  "hair": false,
+  "featured": true
+ },
+ {
+  "id": "brazil-curls",
+  "label_en": "Brazilian woman with curls",
+  "culture_en": "Brazilian",
+  "gender": "f",
+  "hair": true,
+  "featured": true
+ }
+]
