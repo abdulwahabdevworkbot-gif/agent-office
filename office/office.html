@@ -322,6 +322,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .inbox-head h2{margin:0}
 .inbox-head .row-wrap{margin-left:auto}
 .sum-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);align-self:center;margin-left:6px}
+.blk-why{display:block;font-size:12px;line-height:1.35;color:var(--bad);margin-top:3px}.blk-why.need{color:var(--warn);font-weight:600}
+.since[hidden]{display:none}.ib-need{grid-column:2;font-size:12.5px;font-weight:600;color:var(--warn);overflow-wrap:anywhere}
 .since{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:13px}
 .since b{margin-right:4px}
 .since .chip.go{cursor:pointer}
@@ -726,7 +728,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   </section>
 
   <p class="status-line" id="conn">Connecting to the office data…</p>
-  <p class="status-line">Office art and characters drawn for this page (see <span class="mono">tools/art</span>).</p>
+  <p class="status-line">Rooms and characters are @Abdulwahabdev's own drawings, cut out for this page (see <span class="mono">tools/cut</span>).</p>
 </div>
 
 <dialog id="taskDlg"><div class="dlg" id="taskBody"></div></dialog>
@@ -1469,6 +1471,12 @@ function renderSince(){
   const ok = el("button", "btn-lite", "Got it"); ok.type = "button"; ok.onclick = () => { seenAt = Date.now(); saveSeen(); renderSince(); };
   box.replaceChildren(el("b", null, `Since you left (${ago(new Date(seenAt).toISOString())}):`), ...parts.map(chip), ok); box.hidden = false;
 }
+// Why an agent (or task) is stuck and what it needs from the owner: the agent's blocked_en / needs_en, the task's blocked_en, else the agent's last word.
+function blockInfo(a, t){
+  const last = a ? [...msgs].reverse().find(m => m.from === a.id && (m.text_en || m.text)) : null;
+  const why = t?.blocked_en || a?.blocked_en || (last ? (last.text_en || last.text) : "") || a?.doing_en || "";
+  return {why: why.length > 140 ? why.slice(0, 137) + "…" : why, needs: a?.needs_en || t?.needs_en || ""};
+}
 function renderInbox(){
   renderSince();
   const box = $("inboxList"); if (!box) return;
@@ -1480,7 +1488,8 @@ function renderInbox(){
       key:"w:" + a.id, inline:() => inlineReply("w:" + a.id, {to:a.id, task:t?.id || null}, `Reply to ${nameOf(a.id)}…`),
       acts:[["Reply", "inline", true], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Chat", () => replyTo(a.id)]]}); });
   agents.filter(a => a.state === "blocked").forEach(a => { const t = openOf(a.id);
-    items.push({k:"Blocked", c:"var(--bad)", who:a.id, t:nameOf(a.id), s:[t ? `${t.id} · ${t.title_en || ""}` : "", a.doing_en || ""].filter(Boolean).join(". "), at:a.updated_at,
+    const bi = blockInfo(a, t);
+    items.push({k:"Blocked", c:"var(--bad)", who:a.id, t:nameOf(a.id), s:[t ? `${t.id} · ${t.title_en || ""}` : "", bi.why ? "Why: " + bi.why.replace(/\.$/, "") : ""].filter(Boolean).join(". "), need:bi.needs ? "Needs from you: " + bi.needs : "", at:a.updated_at,
       key:"b:" + a.id, inline:() => inlineReply("b:" + a.id, {to:a.id, task:t?.id || null}, `How should ${nameOf(a.id)} get unstuck?`),
       acts:[["Help", "inline", true], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Huddle", () => { chatTask = t?.id || ""; callMeeting(); }]]}); });
   msgs.filter(m => m.kind === "proposal" && Array.isArray(m.proposed_tasks) && m.proposed_tasks.length && !(m.added || []).length && !m.dismissed).forEach(m => {
@@ -1517,7 +1526,7 @@ function renderInbox(){
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
       b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
     if (sent) a.append(el("span","ib-sent", sent + " ✓"));
-    c.append(avatar(it.who, 34), k, el("div","ib-t", it.t), el("div","ib-s", it.s), a);
+    c.append(avatar(it.who, 34), k, el("div","ib-t", it.t), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
     if (open && it.inline) { const x = el("div","ib-x"); x.append(it.inline()); c.append(x); c.classList.add("wide"); }
     box.append(c); });
   if (items.length > 6) { const m = el("button","linkish inbox-more", inboxAll ? "Show fewer" : `Show all ${items.length}`); m.type = "button"; m.onclick = () => { inboxAll = !inboxAll; renderInbox(); }; box.append(m); }
@@ -1784,7 +1793,9 @@ function renderBoard(){
         const b = el("button","card s-"+s.k); b.type = "button"; b.dataset.task = t.id;
         if (t.feature) b.append(flabel(t.feature));
         b.append(el("span","t", t.title_en || t.id), el("span","ph-tag ph-" + phaseOf(t), phaseName(phaseOf(t))));
-        if (t.state !== "blocked" && !isClosed(t) && agentById(t.session)?.state === "blocked") b.append(el("span","late-tag", "Agent blocked"));
+        const ab = !isClosed(t) && agentById(t.session)?.state === "blocked";
+        if (t.state !== "blocked" && ab) b.append(el("span","late-tag", "Agent blocked"));
+        if (t.state === "blocked" || ab) { const bi = blockInfo(ab ? agentById(t.session) : null, t); if (bi.why) b.append(el("span","blk-why", bi.why)); if (bi.needs) b.append(el("span","blk-why need", "Needs from you: " + bi.needs)); }
         const os = openSessionFor(t.id);
         if (os) { const q = el("span","qbadge go","Question open"); q.title = "Go to the session"; q.dataset.session = os.id; b.append(q); }
         const pl = sched.byTask[t.id]; if (pl && !pl.done) { const tm = el("span","est", `${fmtDur(estOf(t))} · ends ${fmtWhen(pl.e)}`); b.append(tm); if (pl.lateBy || pl.lateDeps?.length) b.append(el("span","late-tag", [lateText(pl), pl.lateDeps?.length ? "after " + pl.lateDeps.join(", ") : ""].filter(Boolean).join(" · "))); }

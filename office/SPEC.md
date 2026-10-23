@@ -73,7 +73,7 @@ The owner's requirements for the office page. Keep all of them when publishing o
 - `meta/office.departments[]`: `id`, `code` (2 to 4 letters, e.g. `MKT`), `name_en`, `goal_en`, `color` (#rrggbb, optional), `director` (agent id), `groups[]` (`id`, `name_en`, `manager`).
 - `agents/<session-id>` may also carry `last_active_at` (ISO time of its last real work) and `archived` (true parks a reusable agent in the idle room).
 - Agent names (`name_en`) are always English, without exception (the owner's strict rule).
-- `agents/<session-id>`: `desk` (order), `name_en`, `role_en`, `doing_en`, `state` (working / waiting / blocked / done / idle), `updated_at`.
+- `agents/<session-id>`: `desk` (order), `name_en`, `role_en`, `doing_en`, `state` (working / waiting / blocked / done / idle), `updated_at`, and when blocked `blocked_en` (why) and `needs_en` (what it needs from the owner). A task may carry its own `blocked_en`. Needs you and the board card show "Why: ..." and "Needs from you: ..."; without them the agent's last message stands in.
 - `tasks/<ID>`: `order`, `session`, `state` (todo / doing / review / done / blocked), `feature`, `title_en`, `summary_en`, `description_en`, `acceptance_en[]`, `test_cases[]` (`id`, `title_en`, `steps_en[]`, `expected_en`), `updated_at`. The Arabic title and summary stay in `docs/tasks/` for talking with the owner.
 - Agents talking to each other always do it in a session (below); there is no `talking_with` field.
 - `tasks/<ID>` may also carry `author` (who wrote it; default `business-analyst`) and `related[]` (other sessions linked to it).
