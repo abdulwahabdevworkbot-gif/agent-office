@@ -327,7 +327,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .minutes{display:grid;gap:8px}.mn-row{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}.mn-row.up{border-style:dashed}.mn-row .linkish{justify-self:start;font-weight:600}.mn-out{font-weight:600;color:var(--ok)}.mn-dec{margin:2px 0 0 18px;padding:0}
 .hcard{position:fixed;z-index:1000;display:grid;gap:5px;width:max-content;max-width:280px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;pointer-events:none}.hcard[hidden]{display:none}
 .hc-top{display:flex;gap:8px;align-items:center}.hc-top .note{font-size:12px}.hc-hint{font-size:11.5px;color:var(--muted)}.hcard .chip{justify-self:start}.ib-need{grid-column:2;font-size:12.5px;font-weight:600;color:var(--warn);overflow-wrap:anywhere}
-.since{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:13px}
+.since{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:12.5px;color:var(--muted)}.since .chip{font-size:12px;padding:2px 8px}.since .btn-lite{font-size:12px;padding:2px 8px}
 .since b{margin-right:4px}
 .since .chip.go{cursor:pointer}
 .inbox-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:8px}
@@ -584,8 +584,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
-      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="row-wrap"><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
-      <div class="since" id="since" hidden></div>
+      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
     <div class="scene">
@@ -1502,7 +1501,7 @@ function renderSince(){
   if (!parts.length) { box.hidden = true; return; }
   const chip = ([n, w, fn]) => { const [one, many] = w.split("|"); const b = el("button", "chip go", `${n} ${n === 1 ? one : many || one}`); b.type = "button"; b.onclick = fn; return b; };
   const ok = el("button", "btn-lite", "Got it"); ok.type = "button"; ok.onclick = () => { seenAt = Date.now(); saveSeen(); renderSince(); };
-  box.replaceChildren(el("b", null, `Since you left (${ago(new Date(seenAt).toISOString())}):`), ...parts.map(chip), ok); box.hidden = false;
+  ok.textContent = "\u00d7"; ok.title = "Got it"; ok.setAttribute("aria-label", "Got it, clear"); box.replaceChildren(el("span", null, `· since ${ago(new Date(seenAt).toISOString())}:`), ...parts.map(chip), ok); box.hidden = false;
 }
 // Why an agent (or task) is stuck and what it needs from the owner: the agent's blocked_en / needs_en, the task's blocked_en, else the agent's last word.
 function blockInfo(a, t){
