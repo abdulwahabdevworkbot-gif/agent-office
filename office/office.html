@@ -392,6 +392,12 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag.late::after{content:"LATE";position:absolute;left:50%;bottom:-3%;transform:translateX(-50%);font:700 7px/1 var(--font);letter-spacing:.06em;color:#fff;background:#c23a3a;border-radius:3px;padding:1px 3px;pointer-events:none}
 @keyframes bang{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @media (prefers-reduced-motion:reduce){.ag .bang{animation:none}}
+.set-grid{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}.set-grid label,.set-chk{display:flex;gap:6px;align-items:center;font-size:14px}
+.set-grid select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+.mt-agenda{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:vertical}
+.mt-when select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+.agenda{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:13px}.agenda label{display:flex;gap:5px;align-items:center}.agenda label:has(input:checked) span{text-decoration:line-through;color:var(--muted)}
+.wrap-up{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}.wrap-up input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;min-width:0;width:min(260px,100%)}
 .office-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.office-split{grid-template-columns:1fr}}
 .chat{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;min-height:460px;min-width:0;overflow:hidden}
@@ -682,6 +688,19 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <div class="rs-wrap"><table class="rs" id="roomRules"></table></div>
       <div class="row-wrap"><button class="btn" type="button" id="rsSave">Save</button><button class="btn-lite" type="button" id="rsReset">Back to defaults</button><span class="note" id="rsNote"></span></div>
     </div>
+    <div class="panel" id="mtSet">
+      <h2>Meetings and rooms</h2>
+      <p class="note">A meeting books its room. Small meetings take a huddle table; bigger ones the meeting room (10, 20 or 30 seats by head count). The meeting room is never booked twice at the same time.</p>
+      <div class="set-grid"><label>Huddle table for up to <select id="mtHuddle"></select> people</label><label>Default length <select id="mtLen"></select></label></div>
+      <div class="row-wrap"><button class="btn" type="button" id="mtSave">Save</button><span class="note" id="mtNote"></span></div>
+    </div>
+    <div class="panel" id="whSet">
+      <h2>Working hours</h2>
+      <p class="note">Calendars plan each task inside these hours. Agents run around the clock unless you set hours here.</p>
+      <label class="set-chk"><input type="checkbox" id="whAll"> Around the clock</label>
+      <div class="set-grid" id="whBox"><label>From <select id="whStart"></select></label><label>To <select id="whEnd"></select></label><span class="mt-chips" id="whDays" role="group" aria-label="Working days"></span></div>
+      <div class="row-wrap"><button class="btn" type="button" id="whSave">Save</button><span class="note" id="whNote"></span></div>
+    </div>
   </section>
 
   <section role="tabpanel" id="panel-board" aria-labelledby="tab-board" class="stack" hidden>
@@ -730,7 +749,7 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- tabs ---------- */
 const TABS = ["office","roadmap","chat","board","calendar","reviews","team","settings"];
-const TAB_NAME = {office:"Office", roadmap:"Roadmap", chat:"Chat", board:"Task board"};
+const TAB_NAME = {office:"Office", roadmap:"Roadmap", chat:"Chat", board:"Task board", calendar:"Calendar", reviews:"Reviews", team:"Team", settings:"Settings"};
 let curTab = null, restoring = false;
 const navBack = [];
 const cloneF = f => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, v instanceof Set ? new Set(v) : v]));
@@ -1566,11 +1585,12 @@ function weekGrid(evs){
 function renderCalendar(){
   const sel = $("calWho"); if (!sel) return;
   const people = agents.filter(a => a.id !== "owner").sort((a, b) => nameOf(a.id).localeCompare(nameOf(b.id)));
-  const keep = calWho; sel.replaceChildren(new Option("Everyone", "")); people.forEach(a => sel.append(new Option(nameOf(a.id), a.id))); sel.value = people.some(a => a.id === keep) ? keep : ""; calWho = sel.value;
+  const keep = calWho; sel.replaceChildren(new Option("Everyone", ""), new Option("Rooms (bookings)", "@rooms")); people.forEach(a => sel.append(new Option(nameOf(a.id), a.id))); sel.value = keep === "@rooms" || people.some(a => a.id === keep) ? keep : ""; calWho = sel.value;
   const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : "";
   const box = $("calBody"); box.replaceChildren();
   const d0 = weekStart(calWeek), d6 = new Date(+d0 + 6 * DAY);
   $("calNote").textContent = `${d0.toLocaleDateString("en-GB", {day:"numeric", month:"short"})} – ${d6.toLocaleDateString("en-GB", {day:"numeric", month:"short"})}` + (lateN ? ` · ${lateN} late` : "");
+  if (calWho === "@rooms") { box.append(roomsWeek()); return; }
   if (calWho) { box.append(weekGrid(sched.byAgent[calWho] || [])); return; }
   const now = Date.now(), all = el("div","cal-all");
   people.map(a => ({a, l:(sched.byAgent[a.id] || []).filter(x => !x.done && x.e > now)})).filter(x => x.l.length)
@@ -2221,7 +2241,7 @@ let openSessAfter = null;
    click away), when (now or later, with a free-time finder), how long, and the room it will take. A later meeting is a
    session with state "scheduled": it sits in its members' calendars and opens by itself at its time. */
 const MEET_PURPOSE = [["discuss","Discussion"],["decide","Decision needed"],["follow","Follow-up"]];
-const roomForCount = n => n <= 6 ? {key:"huddle", name:"Huddle table", bg:"huddle"} : {key:"meet", name:`Meeting room (${meetBg(n).split("-")[1]} seats)`, bg:meetBg(n)};
+const roomForCount = n => n <= meetCfg().huddle_max ? {key:"huddle", name:"Huddle table", bg:"huddle"} : {key:"meet", name:`Meeting room (${meetBg(n).split("-")[1]} seats)`, bg:meetBg(n)};
 const busyAt = (id, s, e, skip) => (sched.byAgent[id] || []).find(x => x.kind === "meet" && x.sess.id !== skip && x.s < e && x.e > s);
 function suggestFor(topic, taskId){
   const score = new Map(), add = (id, n) => { if (id && id !== "owner" && agentById(id)) score.set(id, (score.get(id) || 0) + n); };
@@ -2234,11 +2254,12 @@ function suggestFor(topic, taskId){
   score.delete("coordinator");
   return [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([id]) => id);
 }
-function callMeeting(){
+function callMeeting(opts){
+  opts = opts && !(opts instanceof Event) ? opts : {};
   const body = $("meetBody"); body.replaceChildren(); body.classList.add("mt");
   const about = chatTask && tasks.find(t => t.id === chatTask); let aboutId = about ? about.id : null;
   const list = agents.filter(a => a.id !== "owner").sort((a, b) => (a.id !== "coordinator") - (b.id !== "coordinator") || nameOf(a.id).localeCompare(nameOf(b.id)));
-  const picked = new Set(["coordinator"]); let touched = false, purpose = "discuss", when = "now", dur = 30, atVal = "", q = "", dept = "";
+  const picked = new Set(["coordinator"]); let touched = false, purpose = "discuss", when = "now", dur = meetCfg().default_min, atVal = "", q = "", dept = "", roomPick = "auto", repeat = "";
   body.append(el("h3", null, "Call a meeting"));
   /* 1. topic */
   const ta = el("textarea"); ta.placeholder = "What do you want to talk about?"; ta.setAttribute("aria-label","Meeting topic"); ta.rows = 2; ta.className = "mt-topic";
@@ -2250,14 +2271,20 @@ function callMeeting(){
   const at = el("input"); at.type = "datetime-local"; at.hidden = true; at.setAttribute("aria-label","Meeting time");
   const freeB = el("button","linkish","Find a free time"); freeB.type = "button"; freeB.hidden = true;
   const durs = el("span","mt-chips"); [15, 30, 45, 60].forEach(m => { const b = el("button","chip-btn", `${m} min`); b.type = "button"; b.setAttribute("aria-pressed", String(m === dur)); b.onclick = () => { dur = m; [...durs.children].forEach(c => c.setAttribute("aria-pressed", String(c === b))); upd(); }; durs.append(b); });
-  const setWhen = w => { when = w; nowB.setAttribute("aria-pressed", String(w === "now")); laterB.setAttribute("aria-pressed", String(w === "later")); at.hidden = freeB.hidden = w !== "later"; if (w === "later" && !at.value) findFree(); upd(); };
+  const roomNow = () => roomPick === "auto" ? roomForCount(picked.size + 1) : roomPick === "huddle" ? {key:"huddle", name:"Huddle table", bg:"huddle"} : {key:"meet", name:`Meeting room (${meetBg(picked.size + 1).split("-")[1]} seats)`, bg:meetBg(picked.size + 1)};
+  const setWhen = w => { when = w; nowB.setAttribute("aria-pressed", String(w === "now")); laterB.setAttribute("aria-pressed", String(w === "later")); at.hidden = freeB.hidden = rep.hidden = w !== "later"; if (w === "later" && !at.value) findFree(); upd(); };
   nowB.onclick = () => setWhen("now"); laterB.onclick = () => setWhen("later"); at.onchange = () => upd();
   const toLocal = ms => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 6e4); return d.toISOString().slice(0, 16); };
   function findFree(){ const step = 15 * 6e4; let t = Math.ceil((Date.now() + 10 * 6e4) / step) * step;
-    for (let i = 0; i < 7 * 96; i++, t += step) if (![...picked].some(id => busyAt(id, t, t + dur * 6e4))) break;
+    for (let i = 0; i < 7 * 96; i++, t += step) if (![...picked].some(id => busyAt(id, t, t + dur * 6e4)) && !roomTakenBy(roomNow().key, t, t + dur * 6e4)) break;
     at.value = toLocal(t); upd(); }
   freeB.onclick = findFree;
-  wh.append(el("span","lbl","When"), nowB, laterB, at, freeB, el("span","lbl","How long"), durs);
+  const rep = el("select"); rep.setAttribute("aria-label","Repeat"); [["","Once"],["day","Every day"],["week","Every week"]].forEach(([v, l]) => rep.append(new Option(l, v))); rep.onchange = () => { repeat = rep.value; };
+  wh.append(el("span","lbl","When"), nowB, laterB, at, freeB, rep, el("span","lbl","How long"), durs);
+  const rmc = el("div","mt-when"); rmc.append(el("span","lbl","Room"));
+  [["auto","By head count"],["meet","Meeting room"],["huddle","Huddle table"]].forEach(([k, l]) => { const b = el("button","chip-btn", l); b.type = "button"; b.setAttribute("aria-pressed", String(k === roomPick)); b.onclick = () => { roomPick = k; [...rmc.querySelectorAll(".chip-btn")].forEach(c => c.setAttribute("aria-pressed", String(c === b))); upd(); }; rmc.append(b); });
+  const agenda = el("textarea","mt-agenda"); agenda.rows = 2; agenda.placeholder = "Agenda: one point per line (optional)"; agenda.setAttribute("aria-label","Agenda");
+  if (about) agenda.value = [`${about.id}: ${about.title_en || ""}`, ...depsOf(about).map(d => `Check ${d}: ${tasks.find(x => x.id === d)?.title_en || ""}`)].join("\n");
   /* 3. people */
   const ph = el("div","mt-ph"); const cnt = el("b"); const sugB = el("button","chip-btn","Suggested"), allB = el("button","chip-btn", `Everyone (${list.length})`), clrB = el("button","linkish","Only the Coordinator"); sugB.type = allB.type = clrB.type = "button";
   const search = el("input"); search.type = "search"; search.placeholder = "Search people or roles"; search.setAttribute("aria-label","Search people"); search.autocomplete = "off";
@@ -2285,26 +2312,29 @@ function callMeeting(){
   const foot = el("div","mt-foot"), info = el("div","mt-info"), thumb = el("span","mt-thumb"), note = el("span","note"), warn = el("div","mt-warn");
   const cancel = el("button","btn-lite","Cancel"), start = el("button","btn","Start meeting"); cancel.type = start.type = "button";
   info.append(thumb, el("span"), note); const btns = el("span","row-wrap"); btns.append(cancel, start); foot.append(info, btns);
-  function upd(){ const n = picked.size + 1, r = roomForCount(n); cnt.textContent = `${picked.size} invited + you`;
+  function upd(){ const n = picked.size + 1, r = roomNow(); cnt.textContent = `${picked.size} invited + you`;
     thumb.style.backgroundImage = `url(${A}rooms/${r.bg}.webp)`; info.children[1].textContent = `${n} people with you · ${r.name}`;
     start.textContent = when === "later" ? "Schedule meeting" : "Start meeting";
     warn.replaceChildren();
     if (when === "later") { const s = Date.parse(at.value), e = s + dur * 6e4;
       if (s) { const busy = [...picked].map(id => [id, busyAt(id, s, e)]).filter(([, b]) => b);
         if (busy.length) warn.append(el("span", null, `Busy then: ${busy.slice(0, 4).map(([id, b]) => `${nameOf(id)} (${b.sess.title_en || "a meeting"})`).join(", ")}${busy.length > 4 ? ` and ${busy.length - 4} more` : ""}. `), Object.assign(el("button","linkish","Find a free time"), {type:"button", onclick:findFree}));
-        else warn.append(el("span","mt-ok", `Everyone is free ${fmtWhen(s)}–${fmtHM(e)}.`)); } } }
-  body.append(ta, ab, pur, wh, ph, dch, sug, grid, warn, foot);
+        else warn.append(el("span","mt-ok", `Everyone is free ${fmtWhen(s)}–${fmtHM(e)}.`));
+        const tb = roomTakenBy(r.key, s, e); if (tb) { warn.append(el("div", null, `The meeting room is booked then: ${tb.title_en || "a meeting"}. `)); const hb = el("button","linkish","Use a huddle table"); hb.type = "button"; hb.onclick = () => rmc.querySelectorAll(".chip-btn")[2].click(); warn.lastChild.append(hb); } } } }
+  body.append(ta, ab, pur, agenda, wh, rmc, ph, dch, sug, grid, warn, foot);
   cancel.onclick = () => $("meetDlg").close();
   start.onclick = async () => {
     const text = ta.value.trim(); if (!text) { ta.focus(); note.textContent = "Write what the meeting is about."; return; }
     if (!db) { note.textContent = "Can't reach the office data right now."; return; }
     const later = when === "later", s = later ? Date.parse(at.value) : Date.now();
     if (later && (!s || s < Date.now() - 6e4)) { note.textContent = "Pick a time from now on."; at.focus(); return; }
+    if (later && roomTakenBy(roomNow().key, s, s + dur * 6e4)) { note.textContent = "The meeting room is booked then. Pick another time or a huddle table."; return; }
     start.disabled = true;
     try {
-      const now = new Date().toISOString(), atIso = new Date(s).toISOString(), members = ["owner", ...picked], r = roomForCount(members.length);
+      const now = new Date().toISOString(), atIso = new Date(s).toISOString(), members = ["owner", ...picked], r = roomNow();
+      const agendaL = agenda.value.split("\n").map(x => x.trim()).filter(Boolean);
       const doc = {kind:"meeting", task:aboutId, title_en:text.length > 70 ? text.slice(0, 67) + "…" : text, opened_by:"owner", author_id:me, members, relayed:false,
-        purpose, duration_min:dur, room:r.key, at:atIso, ...(later ? {state:"scheduled", scheduled_at:now} : {state:"open", opened_at:now})};
+        purpose, duration_min:dur, room:r.key, at:atIso, ...(agendaL.length ? {agenda:agendaL} : {}), ...(later && repeat ? {repeat} : {}), ...(later ? {state:"scheduled", scheduled_at:now} : {state:"open", opened_at:now})};
       const ref = await db.collection("sessions").add(doc);
       await db.collection("messages").add({at:now, from:"owner", to:"session", session:ref.id, task:aboutId, kind:purpose === "decide" ? "question" : "note", text:(purpose === "decide" ? "Decision needed: " : purpose === "follow" ? "Follow-up: " : "") + text, decided_by:null, author_id:me, relayed:false});
       if (!later) quickReplies({session:ref.id, members, task:aboutId, text});
@@ -2312,12 +2342,17 @@ function callMeeting(){
     } catch (err) { note.textContent = writeError(err); start.disabled = false; }
   };
   setWhen("now"); resuggest();
+  if (opts.at) { setWhen("later"); at.value = toLocal(opts.at); upd(); }
   closeDialogs(); $("meetDlg").showModal(); ta.focus();
 }
 /* a scheduled meeting opens by itself at its time, and walks its people into the room */
 function openDueMeetings(){
   if (!db || !canWrite) return;
-  sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now()).forEach(s => db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at}).catch(() => {}));
+  sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now()).forEach(s => {
+    db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at}).catch(() => {});
+    if (s.repeat) { const series = s.series || s.id, next = new Date(Date.parse(s.at) + (s.repeat === "week" ? 7 : 1) * DAY).toISOString();   // a repeating meeting books its next time
+      if (!sessions.some(x => (x.series || x.id) === series && x.at === next)) { const {id, ...rest} = s; db.collection("sessions").add({...rest, series, at:next, state:"scheduled", scheduled_at:new Date().toISOString(), opened_at:null}).catch(() => {}); } }
+  });
 }   // the snapshot that follows moves people into the room
 setInterval(openDueMeetings, 30000); setTimeout(openDueMeetings, 5000);
 $("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
@@ -2684,7 +2719,11 @@ function renderChatInfo(n){
     if (s?.task) box.append(taskLink(s.task));
     const w = el("button","linkish","Open in a window"); w.type = "button"; w.onclick = () => go("#session/" + encodeURIComponent(chatSess)); box.append(w, all());
     if (s && s.state === "open") box.append(peopleButton(s));
-    if (s && s.state === "open" && canWrite) box.append(doneButton(s));
+    if (s && s.state === "open" && canWrite) box.append(isMeeting(s) ? wrapButton(s) : doneButton(s));
+    if (Array.isArray(s?.agenda) && s.agenda.length) { const ag = el("div","agenda"); ag.append(el("span","lbl","Agenda")); const doneA = new Set(s.agenda_done || []);
+      s.agenda.forEach((a, i) => { const lab = el("label"); const cb = el("input"); cb.type = "checkbox"; cb.checked = doneA.has(i); cb.disabled = !canWrite || isDone(s);
+        cb.onchange = () => { const v = new Set(s.agenda_done || []); cb.checked ? v.add(i) : v.delete(i); db.doc("sessions/" + s.id).update({agenda_done:[...v]}).catch(() => {}); };
+        lab.append(cb, el("span", null, a)); ag.append(lab); }); box.append(ag); }
     if (isDone(s) && s.resolution_en) box.append(el("span","note", s.resolution_en));
     return; }
   if (chatPair) { const ids = chatPair.split("|"); const h = el("span","view-head"); const f = el("span","faces"); ids.forEach(m => f.append(avatar(m, 20))); h.append(f, el("b", null, ids.map(nameOf).join(" & ")));
@@ -2792,6 +2831,14 @@ function proposalBox(m){
 async function closeSession(id, by, resolution){
   await db.doc("sessions/" + id).update({state:"closed", closed_at:new Date().toISOString(), closed_by:by, resolution_en:resolution || null, relayed:false});
 }
+/* wrapping up a meeting: the owner writes the outcome; the Coordinator turns it into tasks */
+function wrapButton(s){
+  const w = el("span","wrap-up"), b = el("button","btn-lite","Wrap up"); b.type = "button";
+  b.onclick = () => { const ta = el("input"); ta.placeholder = "Outcome in one line (optional)"; ta.setAttribute("aria-label","Meeting outcome");
+    const ok = el("button","btn","Close meeting"), no = el("button","linkish","Cancel"); ok.type = no.type = "button";
+    ok.onclick = async () => { ok.disabled = true; try { await closeSession(s.id, "owner", ta.value.trim() || null); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
+    no.onclick = () => { w.replaceChildren(b); }; w.replaceChildren(ta, ok, no); ta.focus(); };
+  w.append(b); return w; }
 function doneButton(s){
   const b = el("button","btn-lite","Mark done"); b.type = "button"; b.title = "Close this " + (isMeeting(s) ? "meeting" : "session") + "; everyone goes back to work";
   b.onclick = async e => { e.stopPropagation();
@@ -2822,7 +2869,45 @@ $("rsSave").onclick = async () => { const rooms = {};
   try { await db.doc("meta/office").update({rooms}); $("rsNote").textContent = "Saved. Rooms open and close by the new sizes."; } catch (err) { $("rsNote").textContent = writeError(err); } };
 $("rsReset").onclick = async () => { $("rsNote").textContent = "Saving…";
   try { await db.doc("meta/office").update({rooms:{}}); document.activeElement.blur(); renderSettings(); $("rsNote").textContent = "Back to the defaults."; } catch (err) { $("rsNote").textContent = writeError(err); } };
-function renderAll(){ buildSchedule(); renderSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderDecisions(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+/* meetings and rooms (council round 2, the owner's "link meetings to the rooms") */
+const meetCfg = () => { const m = metaOffice?.meetings || {}; return {huddle_max:Math.min(8, Math.max(2, +m.huddle_max || 6)), default_min:[15,30,45,60].includes(+m.default_min) ? +m.default_min : 30}; };
+const DAYN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function renderMeetSettings(){
+  const p1 = $("mtSet"), p2 = $("whSet"); if (!p1) return;
+  if (!p1.contains(document.activeElement)) { const c = meetCfg(), h = $("mtHuddle"), l = $("mtLen"); h.replaceChildren(); l.replaceChildren();
+    for (let i = 2; i <= 8; i++) h.append(new Option(String(i), String(i), false, i === c.huddle_max)); [15,30,45,60].forEach(m => l.append(new Option(m + " min", String(m), false, m === c.default_min))); }
+  if (!p2.contains(document.activeElement)) { const w = metaOffice?.workday || {}, all = !w || w.start == null, wd = workday();
+    $("whAll").checked = all; $("whBox").hidden = all;
+    const s = $("whStart"), e = $("whEnd"); s.replaceChildren(); e.replaceChildren();
+    for (let i = 0; i < 24; i++) s.append(new Option(String(i).padStart(2, "0") + ":00", String(i), false, i === (all ? 9 : wd.start)));
+    for (let i = 1; i <= 24; i++) e.append(new Option(String(i).padStart(2, "0") + ":00", String(i), false, i === (all ? 17 : wd.end)));
+    const days = $("whDays"); days.replaceChildren(); const on = all ? [0,1,2,3,4] : wd.days;
+    DAYN.forEach((d, i) => { const b = el("button","chip-btn", d); b.type = "button"; b.dataset.d = i; b.setAttribute("aria-pressed", String(on.includes(i))); b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true")); days.append(b); }); }
+}
+$("whAll").onchange = e => { $("whBox").hidden = e.target.checked; };
+$("mtSave").onclick = async () => { $("mtNote").textContent = "Saving…";
+  try { await db.doc("meta/office").update({meetings:{huddle_max:+$("mtHuddle").value, default_min:+$("mtLen").value}}); document.activeElement.blur(); $("mtNote").textContent = "Saved."; } catch (err) { $("mtNote").textContent = writeError(err); } };
+$("whSave").onclick = async () => { $("whNote").textContent = "Saving…";
+  const v = $("whAll").checked ? {} : {start:+$("whStart").value, end:+$("whEnd").value, days:[...$("whDays").children].filter(b => b.getAttribute("aria-pressed") === "true").map(b => +b.dataset.d)};
+  if (!$("whAll").checked && (!v.days.length || v.end <= v.start)) { $("whNote").textContent = "Pick at least one day, and an end after the start."; return; }
+  try { await db.doc("meta/office").update({workday:v}); document.activeElement.blur(); $("whNote").textContent = "Saved. Calendars use the new hours."; } catch (err) { $("whNote").textContent = writeError(err); } };
+/* bookings: scheduled and open meetings hold their room for their time */
+const bookings = () => sessions.filter(s => isMeeting(s) && (s.state === "scheduled" || s.state === "open")).map(s => ({s, sp:meetSpan(s), room:s.room || "meet"})).filter(b => b.sp);
+const roomTakenBy = (room, s, e, skip) => room !== "meet" ? null : bookings().find(b => b.room === "meet" && b.s.id !== skip && b.sp.s < e && b.sp.e > s)?.s || null;
+const tableOf = (b, all) => all.filter(x => x.room === "huddle" && x.sp.s < b.sp.e && x.sp.e > b.sp.s && String(x.s.at || x.s.opened_at) < String(b.s.at || b.s.opened_at)).length + 1;
+function roomsWeek(){
+  const g = el("div","cal-week"), d0 = weekStart(calWeek), today = new Date().toDateString(), all = bookings();
+  for (let i = 0; i < 7; i++) { const d = new Date(d0); d.setDate(d0.getDate() + i); const s = +d, e = s + DAY;
+    const col = el("div","cal-day" + (d.toDateString() === today ? " today" : "")), list = all.filter(b => b.sp.s < e && b.sp.e > s).sort((a, b) => a.sp.s - b.sp.s);
+    const h = el("div","cal-dh"); h.append(el("span", null, d.toLocaleDateString("en-GB", {weekday:"short", day:"numeric", month:"short"})), el("span", null, list.length ? String(list.length) : "")); col.append(h);
+    list.forEach(b => { const x = el("button","cal-ev meet"); x.type = "button"; x.style.setProperty("--c", b.room === "huddle" ? "var(--ok)" : "var(--warn)");
+      x.append(el("span","tm", `${fmtHM(Math.max(b.sp.s, s))}–${fmtHM(Math.min(b.sp.e, e))}`), el("b", null, b.room === "huddle" ? `Huddle table ${tableOf(b, all)}` : "Meeting room"), el("span", null, b.s.title_en || "Meeting"), el("span","note", `${(b.s.members || []).length} people${b.s.repeat ? " · every " + b.s.repeat : ""}`));
+      x.onclick = () => go("#session/" + encodeURIComponent(b.s.id)); col.append(x); });
+    if (e > Date.now() && canWrite) { const add = el("button","linkish","+ Book a meeting"); add.type = "button";
+      add.onclick = () => { const t = new Date(d); if (d.toDateString() === today) { const n = new Date(); n.setMinutes(0, 0, 0); n.setHours(n.getHours() + 1); callMeeting({at:+n}); } else { t.setHours(10, 0, 0, 0); callMeeting({at:+t}); } }; col.append(add); }
+    g.append(col); }
+  return g; }
+function renderAll(){ buildSchedule(); renderSettings(); renderMeetSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderDecisions(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);
