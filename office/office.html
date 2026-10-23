@@ -223,6 +223,38 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag-box h3{margin:0;font-size:15px}
 .ag-sprites{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
 .ag-sp{all:unset;cursor:pointer;height:56px;border:2px solid var(--line);border-radius:7px;background:var(--bg) no-repeat 50% 8%/140% auto}
+.rv-filters{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:8px 0}.rv-filters label{display:inline-flex;gap:6px;align-items:center;font-size:13px}
+.rv-out{display:inline-flex;flex-wrap:wrap;gap:6px}
+.rv-list{display:grid;gap:8px}
+.rv-task{border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.rv-task>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:10px 12px;list-style:none}.rv-task>summary::-webkit-details-marker{display:none}
+.rv-task>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:10px}
+.rv-task .who{display:inline-flex;gap:6px;align-items:center}
+.rv-badge{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;color:#fff;white-space:nowrap}
+.rv-badge.approved{background:#2b8a3e}.rv-badge.approved-notes{background:#1971c2}.rv-badge.changes{background:#c92a2a}
+.rv-n{font-size:12.5px;color:var(--muted,#667)}.rv-n b{color:inherit}
+.rv-rounds{display:grid;gap:8px;padding:0 12px 12px}
+.rv-round{border-left:3px solid var(--line);padding:4px 0 4px 10px;display:grid;gap:4px;font-size:13px}
+.rv-round.changes{border-left-color:#c92a2a}.rv-round.approved{border-left-color:#2b8a3e}.rv-round.approved-notes{border-left-color:#1971c2}
+.rv-round ul{margin:0;padding-left:18px}.rv-sub{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.org{overflow-x:auto;padding:8px 0 12px}
+.org ul{display:flex;justify-content:center;gap:0;margin:0;padding:22px 0 0;list-style:none;position:relative}
+.org li{position:relative;padding:22px 8px 0;display:flex;flex-direction:column;align-items:center}
+.org>ul{padding-top:0}.org>ul>li{padding-top:0}
+.org li::before,.org li::after{content:"";position:absolute;top:0;width:50%;height:22px;border-top:2px solid var(--line)}
+.org li::before{right:50%}.org li::after{left:50%;border-left:2px solid var(--line)}
+.org li:only-child::before,.org li:only-child::after{display:none}.org li:only-child{padding-top:22px}
+.org li:first-child::before,.org li:last-child::after{border:0}.org li:last-child::before{border-right:2px solid var(--line);border-radius:0 6px 0 0}.org li:first-child::after{border-radius:6px 0 0 0}
+.org ul ul::before{content:"";position:absolute;top:0;left:50%;height:22px;border-left:2px solid var(--line)}
+.org>ul>li::before,.org>ul>li::after{display:none}
+.org-node{all:unset;cursor:pointer;display:grid;justify-items:center;gap:2px;min-width:104px;max-width:140px;padding:8px 8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);text-align:center;font-size:12px}
+.org-node:hover,.org-node:focus-visible{border-color:var(--accent);outline:none}
+.org-node b{font-size:12.5px;line-height:1.25;overflow-wrap:anywhere}.org-node .pos{color:var(--muted,#667)}
+.org-node.me{border-color:var(--accent);cursor:default}.org-node.lead{border-color:#f0c75e}
+.org-pair{display:flex;gap:10px;align-items:center}.org-pair .side{opacity:.95}
+.org-dept{font-size:11px;font-weight:700;letter-spacing:.04em;color:#fff;border-radius:4px;padding:1px 6px;margin-bottom:2px}
+.ag-opts{display:grid;gap:8px;margin:10px 0}.ag-opt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.ag-opt .lbl{min-width:70px;color:var(--muted,#667);font-size:12.5px}
+.chip-btn{all:unset;cursor:pointer;font-size:12.5px;padding:3px 10px;border:1px solid var(--line);border-radius:999px}.chip-btn[aria-pressed="true"]{border-color:var(--accent);background:var(--doing-bg)}.chip-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .ag-sp[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--doing-bg)}.ag-sp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .ag-colors{display:grid;gap:8px}.ag-crow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .ag-color{display:flex;gap:8px;align-items:center;font-size:13.5px}.ag-color input{width:42px;height:28px;padding:0;border:1px solid var(--line);border-radius:5px;background:none;cursor:pointer}
@@ -429,6 +461,8 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <button role="tab" id="tab-roadmap" aria-controls="panel-roadmap" aria-selected="false" tabindex="-1">Roadmap</button>
     <button role="tab" id="tab-chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">Chat<span class="count" id="chatCount"></span></button>
     <button role="tab" id="tab-board" aria-controls="panel-board" aria-selected="false" tabindex="-1">Task board<span class="count" id="taskCount"></span></button>
+    <button role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" tabindex="-1">Reviews<span class="count" id="revCount"></span></button>
+    <button role="tab" id="tab-team" aria-controls="panel-team" aria-selected="false" tabindex="-1">Team</button>
   </div>
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
@@ -505,6 +539,30 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     </div>
   </section>
 
+  <section role="tabpanel" id="panel-reviews" aria-labelledby="tab-reviews" class="stack" hidden>
+    <div class="panel">
+      <h2>Reviews</h2>
+      <p class="note">Every time the Reviewer checks another agent's work: approved clean, approved with notes, or sent back with changes. Open a task to see each round, the changes asked, the sub-tasks opened for them and the chat.</p>
+      <div class="rv-filters">
+        <label>Agent <select id="rvAgent"></select></label>
+        <label>Reviewer <select id="rvReviewer"></select></label>
+        <label>Sent back <select id="rvRej"><option value="0">Any</option><option value="1">1+ times</option><option value="2">2+ times</option><option value="3">3+ times</option></select></label>
+        <span class="rv-out" role="group" aria-label="Latest result" id="rvOut"></span>
+        <label class="rv-chk"><input type="checkbox" id="rvOpenSub"> Only with open sub-tasks</label>
+      </div>
+      <p class="note" id="rvSum"></p>
+      <div id="rvList" class="rv-list"></div>
+    </div>
+  </section>
+
+  <section role="tabpanel" id="panel-team" aria-labelledby="tab-team" class="stack" hidden>
+    <div class="panel">
+      <h2>Who reports to whom</h2>
+      <p class="note">From you down: your assistant and the Coordinator, then each department's Director, its group Managers and their people. Click anyone to open their page.</p>
+      <div class="org" id="org"></div>
+    </div>
+  </section>
+
   <section role="tabpanel" id="panel-board" aria-labelledby="tab-board" class="stack" hidden>
     <div class="board-head">
       <h2>Tasks by stage and agent</h2>
@@ -534,7 +592,7 @@ const AGENT_STATE = {
 const KIND = {question:"Question", answer:"Answer", decision:"Decision", owner:"You", note:"Note", proposal:"Proposed tasks"};
 const PALETTE = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d9480f","#5c940d","#1971c2","#a61e4d","#087f5b","#862e9c"];
 
-let agents = [], tasks = [], msgs = [], sessions = [], filter = "", feat = "", selectedAgent = null, me = null, canWrite = true, db = null, user = null;
+let agents = [], tasks = [], msgs = [], sessions = [], reviews = [], filter = "", feat = "", selectedAgent = null, me = null, canWrite = true, db = null, user = null;
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const agentById = id => agents.find(a => a.id === id);
@@ -547,7 +605,7 @@ const fmt = iso => { try { return new Date(iso).toLocaleString("en-GB", {day:"nu
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- tabs ---------- */
-const TABS = ["office","roadmap","chat","board"];
+const TABS = ["office","roadmap","chat","board","reviews","team"];
 const TAB_NAME = {office:"Office", roadmap:"Roadmap", chat:"Chat", board:"Task board"};
 let curTab = null, restoring = false;
 const navBack = [];
@@ -593,7 +651,7 @@ TABS.forEach((t, i) => {
   $("tab-"+t).onkeydown = e => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { showTab(TABS[(i + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length], true); e.preventDefault(); } };
 });
 const startHash = location.hash;
-showTab(/^#board/.test(startHash) ? "board" : /^#chat/.test(startHash) ? "chat" : /^#roadmap/.test(startHash) ? "roadmap" : "office");
+showTab(/^#board/.test(startHash) ? "board" : /^#team/.test(startHash) ? "team" : /^#reviews/.test(startHash) ? "reviews" : /^#chat/.test(startHash) ? "chat" : /^#roadmap/.test(startHash) ? "roadmap" : "office");
 navBack.length = 0;
 if (/^#(task|session|board|agent)\//.test(startHash)) try { history.replaceState(null, "", startHash); } catch {}
 
@@ -671,15 +729,22 @@ const HUDDLE = {"tables":[{"table":{"x":44.705,"y":40.94254464285714,"w":14.59,"
 
 /* looks: each agent can pick a character and recolor its hair and shirt (masks mark those pixels) */
 const CHARS = [{"id": "gulf-thobe", "label_en": "Gulf man in thobe and ghutra", "featured": true, "hair": false}, {"id": "saudi-shemagh", "label_en": "Saudi man in red shemagh", "featured": true, "hair": false}, {"id": "gulf-abaya", "label_en": "Gulf woman in abaya and shayla", "featured": true, "hair": false}, {"id": "arab-hijab", "label_en": "Arab woman in hijab and blazer", "featured": true, "hair": false}, {"id": "india-sari", "label_en": "Indian woman in sari", "featured": true, "hair": true}, {"id": "sikh-dastar", "label_en": "Sikh man in dastar", "featured": true, "hair": false}, {"id": "china-qipao", "label_en": "Chinese woman in qipao-style top", "featured": true, "hair": true}, {"id": "japan-suit", "label_en": "Japanese man in suit", "featured": true, "hair": true}, {"id": "nigeria-gele", "label_en": "Nigerian woman in gele and ankara", "featured": true, "hair": false}, {"id": "brazil-curls", "label_en": "Brazilian woman with curls", "featured": true, "hair": true}, {"id": "arab-thobe-goatee", "label_en": "Arab man in thobe with goatee", "featured": false, "hair": true}, {"id": "arab-blazer-goatee", "label_en": "Arab man in blazer with goatee", "featured": false, "hair": true}, {"id": "arab-young", "label_en": "Young Arab man, smart casual", "featured": false, "hair": true}, {"id": "arab-thobe", "label_en": "Arab man in white thobe", "featured": false, "hair": true}, {"id": "arab-black-hijab", "label_en": "Arab woman in black hijab and abaya", "featured": false, "hair": false}, {"id": "arab-niqab", "label_en": "Arab woman in niqab and abaya", "featured": false, "hair": false}, {"id": "saudi-mutawa", "label_en": "Saudi man in shemagh without agal", "featured": false, "hair": false}, {"id": "saudi-agal-beard", "label_en": "Saudi man in shemagh with full beard", "featured": false, "hair": false}];
-const LOOK_SPRITES = CHARS.map(c => c.id), CHAR_LABEL = Object.fromEntries(CHARS.map(c => [c.id, c.label_en]));
-const NO_HAIR = new Set(CHARS.filter(c => !c.hair).map(c => c.id));
-/* long robes and cultural dress keep their own colors unless the owner picks one */
-const ROBES = new Set(["gulf-thobe","saudi-shemagh","gulf-abaya","india-sari","nigeria-gele","arab-thobe-goatee","arab-thobe","arab-black-hijab","arab-niqab","saudi-mutawa","saudi-agal-beard"]);
+const LOOK_SPRITES = CHARS.map(c => c.id), CHAR_LABEL = Object.fromEntries(CHARS.map(c => [c.id, c.label_en])), CHAR = Object.fromEntries(CHARS.map(c => [c.id, c]));
+/* options the owner can switch per agent (the owner's rule): beard and glasses for men, hijab / abaya / niqab for women */
+const OPT_LABEL = {beard:{none:"None", goatee:"Goatee", light:"Light beard", full:"Full beard"}, cover:{none:"None", hijab:"Hijab", "hijab-abaya":"Hijab + abaya", niqab:"Niqab"}};
+const optsOf = c => (c && c.options) || {};
+function looksOf(base, lk){
+  const c = CHAR[base] || {}, o = optsOf(c), d = c.defaults || {}, pickOf = k => (o[k] || []).includes(lk[k]) ? lk[k] : (o[k] || []).includes(d[k]) ? d[k] : "none";
+  return {beard:o.beard ? pickOf("beard") : "none", cover:o.cover ? pickOf("cover") : "none", glasses:o.glasses ? (typeof lk.glasses === "boolean" ? lk.glasses : !!d.glasses) : false};
+}
+const keyOf = (base, cover) => cover && cover !== "none" ? `${base}_${cover}` : base;
+const hasHair = (base, lk) => !!(CHAR[base] || {}).hair && looksOf(base, lk).cover === "none";
+const isRobe = (base, lk) => !!(CHAR[base] || {}).robe || ["hijab-abaya","niqab"].includes(looksOf(base, lk).cover);
 const SHIRTS = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d9480f","#5c940d","#a61e4d","#087f5b","#862e9c","#495057"];
 const hashOf = id => [...String(id)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);
 /* the owner's rule: an agent without a saved look still gets its own shirt color, so two agents on one character differ */
 const lookOf = id => { const a = agentById(id), lk = (a || {}).look || {};
-  if (!a || okHex(lk.shirt) || id === "owner" || id === ASSISTANT || SPRITE[id] || ROBES.has(LOOK_SPRITES.includes(lk.sprite) ? lk.sprite : spriteBase(id))) return lk;
+  if (!a || okHex(lk.shirt) || id === "owner" || id === ASSISTANT || SPRITE[id] || isRobe(LOOK_SPRITES.includes(lk.sprite) ? lk.sprite : spriteBase(id), lk)) return lk;
   return {...lk, shirt:SHIRTS[(hashOf(id) >> 3) % SHIRTS.length]}; };
 const spriteOf = id => { const s = lookOf(id).sprite; return LOOK_SPRITES.includes(s) ? s : spriteBase(id); };
 const tinted = new Map(), tinting = new Set();
@@ -687,25 +752,28 @@ const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload
 const hexRgb = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 function okHex(h){ return /^#[0-9a-f]{6}$/i.test(String(h || "")); }
 async function tint(base, facing, lk){
-  const [im, mk] = await Promise.all([loadImg(`${A}chars/${base}-${facing}.webp`), loadImg(`${A}masks/${base}-${facing}.png`)]);
+  const lo = looksOf(base, lk), key = keyOf(base, lo.cover), acc = [lo.beard !== "none" ? lo.beard : "", lo.glasses ? "glasses" : ""].filter(Boolean);
+  const [im, mk, ...ov] = await Promise.all([loadImg(`${A}chars/${key}-${facing}.webp`), loadImg(`${A}masks/${key}-${facing}.png`), ...acc.map(k => loadImg(`${A}acc/${base}-${facing}-${k}.webp`))]);
   const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas"); c.width = w; c.height = h;
   const x = c.getContext("2d", {willReadFrequently:true});
+  const recolor = (p, sel, col) => { const t = hexRgb(col); let sum = 0, n = 0; const lum = i => .299 * p[i] + .587 * p[i + 1] + .114 * p[i + 2];
+    for (let i = 0; i < p.length; i += 4) if (sel(i)) { sum += lum(i); n++; }
+    if (!n) return; const ref = Math.max(10, sum / n);
+    for (let i = 0; i < p.length; i += 4) if (sel(i)) { const k = Math.min(1.7, lum(i) / ref); for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, t[j] * k); } };
   x.drawImage(mk, 0, 0); const m = x.getImageData(0, 0, w, h).data;
   x.clearRect(0, 0, w, h); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, w, h), p = d.data;
-  const lum = i => .299 * p[i] + .587 * p[i + 1] + .114 * p[i + 2];
-  [[0, lk.hair], [1, lk.shirt]].forEach(([ch, col]) => {
-    if (!okHex(col)) return; const t = hexRgb(col); let sum = 0, n = 0;
-    for (let i = 0; i < p.length; i += 4) if (m[i + ch] > 127) { sum += lum(i); n++; }
-    if (!n) return; const ref = Math.max(10, sum / n);
-    for (let i = 0; i < p.length; i += 4) if (m[i + ch] > 127) { const k = Math.min(1.7, lum(i) / ref); for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, t[j] * k); }
-  });
+  [[0, lk.hair], [1, lk.shirt]].forEach(([ch, col]) => { if (okHex(col)) recolor(p, i => m[i + ch] > 127, col); });
   x.putImageData(d, 0, 0);
+  acc.forEach((k, n) => { const o = ov[n];
+    if (k === "glasses" || !okHex(lk.hair)) { x.drawImage(o, 0, 0); return; }
+    const oc = document.createElement("canvas"); oc.width = w; oc.height = h; const ox = oc.getContext("2d", {willReadFrequently:true}); ox.drawImage(o, 0, 0);
+    const od = ox.getImageData(0, 0, w, h); recolor(od.data, i => od.data[i + 3] > 20, lk.hair); ox.putImageData(od, 0, 0); x.drawImage(oc, 0, 0); });
   return await new Promise((ok, no) => c.toBlob(b => b ? ok(URL.createObjectURL(b)) : no(), "image/png"));
 }
 function lookUrl(base, facing, lk){
-  const plain = `${A}chars/${base}-${facing}.webp`;
-  if (!okHex(lk.hair) && !okHex(lk.shirt)) return plain;
-  const key = [base, facing, lk.hair || "", lk.shirt || ""].join("|");
+  const lo = looksOf(base, lk), plain = `${A}chars/${keyOf(base, lo.cover)}-${facing}.webp`;
+  if (!okHex(lk.hair) && !okHex(lk.shirt) && lo.beard === "none" && !lo.glasses) return plain;
+  const key = [base, facing, lk.hair || "", lk.shirt || "", lo.beard, lo.cover, lo.glasses].join("|");
   if (tinted.has(key)) return tinted.get(key);
   if (!tinting.has(key)) { tinting.add(key); tint(base, facing, lk).then(u => { tinted.set(key, u); refreshLooks(); }, () => tinted.set(key, plain)); }
   return plain;
@@ -1402,7 +1470,7 @@ function openAgent(id){
   const sp = el("div","ag-sprites"); sp.setAttribute("role","group"); sp.setAttribute("aria-label","Character");
   const pick = () => sp.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s === (agentDraft.look.sprite || spriteOf(id)))));
   LOOK_SPRITES.forEach(s => { const b = el("button","ag-sp"); b.type = "button"; b.dataset.s = s; b.title = CHAR_LABEL[s] || s; b.setAttribute("aria-label","Character: " + (CHAR_LABEL[s] || s));
-    b.style.backgroundImage = `url(${A}chars/${s}-front-left.webp)`; b.onclick = () => { agentDraft.look.sprite = s; pick(); colors(); dirty(); agentPreview(); }; sp.append(b); });
+    b.style.backgroundImage = `url(${A}chars/${keyOf(s, looksOf(s, {}).cover)}-front-left.webp)`; b.onclick = () => { agentDraft.look.sprite = s; pick(); drawOpts(); colors(); dirty(); agentPreview(); }; sp.append(b); });
   lookBox.append(sp);
   const cols = el("div","ag-colors");
   const colorRow = (key, label) => { const l = el("label","ag-color"); const i = el("input"); i.type = "color"; i.value = okHex(agentDraft.look[key]) ? agentDraft.look[key] : (key === "hair" ? "#5a3a24" : "#3b5bdb");
@@ -1412,9 +1480,16 @@ function openAgent(id){
     rs.onclick = () => { delete agentDraft.look[key]; show(); dirty(); agentPreview(); };
     show(); l.append(el("span", null, label), i, st); const w = el("div","ag-crow"); w.append(l, rs); w.dataset.k = key; return w; };
   const hairRow = colorRow("hair","Hair color"), shirtRow = colorRow("shirt","Shirt color"), noHair = el("div","note","This character has no hair to color.");
-  const colors = () => { const bald = NO_HAIR.has(agentDraft.look.sprite || spriteOf(id)); hairRow.hidden = bald; noHair.hidden = !bald; };
-  cols.append(hairRow, noHair, shirtRow); lookBox.append(cols);
-  pick(); colors();
+  const opts = el("div","ag-opts");
+  const curBase = () => agentDraft.look.sprite || spriteOf(id);
+  const drawOpts = () => { opts.replaceChildren(); const base = curBase(), o = optsOf(CHAR[base]), lo = looksOf(base, agentDraft.look);
+    ["beard","cover"].forEach(k => { if (!o[k]) return; const g = el("div","ag-opt"); g.setAttribute("role","group"); g.setAttribute("aria-label", k === "beard" ? "Beard" : "Covering"); g.append(el("span","lbl", k === "beard" ? "Beard" : "Covering"));
+      o[k].forEach(v => { const b = el("button","chip-btn", OPT_LABEL[k][v] || v); b.type = "button"; b.setAttribute("aria-pressed", String(lo[k] === v)); b.onclick = () => { agentDraft.look[k] = v; drawOpts(); colors(); dirty(); agentPreview(); }; g.append(b); });
+      opts.append(g); });
+    if (o.glasses) { const l = el("label","ag-opt"); const c = el("input"); c.type = "checkbox"; c.checked = lo.glasses; c.onchange = () => { agentDraft.look.glasses = c.checked; dirty(); agentPreview(); }; l.append(c, el("span", null, "Glasses")); opts.append(l); } };
+  const colors = () => { const base = curBase(), bald = !hasHair(base, agentDraft.look) && looksOf(base, agentDraft.look).beard === "none"; hairRow.hidden = bald; noHair.hidden = !bald; };
+  cols.append(hairRow, noHair, shirtRow); lookBox.append(opts, cols);
+  pick(); drawOpts(); colors();
   /* profile */
   const prof = el("section","ag-box"); prof.append(el("h3", null, "Profile"));
   PROFILE.forEach(([k, label, hint]) => { const l = el("label","ag-field"); l.append(el("span","lbl", label));
@@ -1430,7 +1505,7 @@ function openAgent(id){
   const save = el("div","row-wrap ag-save"); const sb = el("button","btn","Save"); sb.type = "submit"; const sn = el("span","note", canWrite ? "" : "You can read this page but not change it."); sb.disabled = !canWrite;
   const dirty = () => { sn.textContent = "Unsaved changes."; };
   sb.onclick = async () => { sb.disabled = true; sn.textContent = "Saving…";
-    const look = {}; if (LOOK_SPRITES.includes(agentDraft.look.sprite)) look.sprite = agentDraft.look.sprite; if (okHex(agentDraft.look.hair)) look.hair = agentDraft.look.hair; if (okHex(agentDraft.look.shirt)) look.shirt = agentDraft.look.shirt;
+    const look = {}; if (LOOK_SPRITES.includes(agentDraft.look.sprite)) look.sprite = agentDraft.look.sprite; if (okHex(agentDraft.look.hair)) look.hair = agentDraft.look.hair; if (okHex(agentDraft.look.shirt)) look.shirt = agentDraft.look.shirt; { const o = optsOf(CHAR[look.sprite || spriteOf(id)]); ["beard","cover"].forEach(k => { if ((o[k] || []).includes(agentDraft.look[k])) look[k] = agentDraft.look[k]; }); if (o.glasses && typeof agentDraft.look.glasses === "boolean") look.glasses = agentDraft.look.glasses; }
     const doc = {look, hobbies:agentDraft.hobbies, profile_updated_at:new Date().toISOString(), relayed:false}; PROFILE.forEach(([k]) => { doc[k] = agentDraft[k].trim(); });
     try { await db.doc("agents/" + id).update(doc); sn.textContent = "Saved. The Coordinator passes the changes on to " + nameOf(id) + "."; } catch (err) { sn.textContent = writeError(err); }
     sb.disabled = !canWrite; };
@@ -1500,6 +1575,95 @@ function nowPhase(v){
 }
 const rmap = {vers:null, phases:new Set(PHASES.map(p => p.k)), subs:new Set(SUB_KEYS), open:new Set(), tasks:true};
 function rmCheck(label, on, cb, cls){ return ck(label, null, on, cb, cls); }
+/* reviews (the owner's rule): the Reviewer's verdict on another agent's work, round by round, with the changes asked,
+   the sub-tasks opened for them and the chat; filter by agent, reviewer, times sent back and open sub-tasks */
+const RV_OUT = {approved:"Approved, no notes", "approved-notes":"Approved with notes", changes:"Changes requested"};
+const rvF = {agent:"", reviewer:"", rej:0, out:"", openSub:false};
+const subsOf = (taskId, list) => { const ids = new Set(list.flatMap(r => Array.isArray(r.subtasks) ? r.subtasks : [])); tasks.filter(t => t.parent === taskId).forEach(t => ids.add(t.id)); return [...ids].map(id => tasks.find(t => t.id === id) || {id, missing:true}); };
+function rvSelect(sel, vals, cur, all){ const keep = cur; sel.replaceChildren(); const o = el("option", null, all); o.value = ""; sel.append(o);
+  vals.forEach(v => { const x = el("option", null, nameOf(v)); x.value = v; sel.append(x); }); sel.value = vals.includes(keep) ? keep : ""; }
+function renderReviews(){
+  const list = $("rvList"); if (!list) return;
+  const byTask = new Map();
+  reviews.forEach(r => { if (!r.task) return; if (!byTask.has(r.task)) byTask.set(r.task, []); byTask.get(r.task).push(r); });
+  byTask.forEach(v => v.sort((a, b) => (a.round ?? 0) - (b.round ?? 0) || String(a.at || "").localeCompare(String(b.at || ""))));
+  const ownerOf = id => (tasks.find(t => t.id === id) || {}).session || (byTask.get(id) || [])[0]?.agent || "";
+  rvSelect($("rvAgent"), [...new Set([...byTask.keys()].map(ownerOf).filter(Boolean))], rvF.agent, "All agents");
+  rvSelect($("rvReviewer"), [...new Set(reviews.map(r => r.reviewer).filter(Boolean))], rvF.reviewer, "All reviewers");
+  const outBox = $("rvOut"); outBox.replaceChildren();
+  [["","All"], ...Object.entries(RV_OUT)].forEach(([k, t]) => { const b = el("button","chip-btn", t); b.type = "button"; b.setAttribute("aria-pressed", String(rvF.out === k)); b.onclick = () => { rvF.out = k; renderReviews(); }; outBox.append(b); });
+  const rows = [...byTask.entries()].map(([id, rs]) => ({id, rs, t:tasks.find(t => t.id === id), owner:ownerOf(id), rej:rs.filter(r => r.outcome === "changes").length, last:rs[rs.length - 1], subs:subsOf(id, rs)}))
+    .filter(x => (!rvF.agent || x.owner === rvF.agent) && (!rvF.reviewer || x.rs.some(r => r.reviewer === rvF.reviewer)) && x.rej >= rvF.rej && (!rvF.out || x.last.outcome === rvF.out) && (!rvF.openSub || x.subs.some(t => !t.missing && !isClosed(t))))
+    .sort((a, b) => String(b.last.at || "").localeCompare(String(a.last.at || "")));
+  const all = [...byTask.values()].flat();
+  $("revCount").textContent = byTask.size ? String([...byTask.values()].filter(rs => rs[rs.length - 1].outcome === "changes").length || "") : "";
+  $("rvSum").textContent = reviews.length ? `${byTask.size} task${byTask.size === 1 ? "" : "s"} reviewed · ${all.filter(r => r.outcome === "approved").length} approved clean · ${all.filter(r => r.outcome === "approved-notes").length} with notes · ${all.filter(r => r.outcome === "changes").length} sent back · showing ${rows.length}` : "";
+  const open = new Set([...list.querySelectorAll("details[open]")].map(d => d.dataset.task));
+  list.replaceChildren();
+  if (!reviews.length) { list.append(el("p","note","No reviews yet. They appear here when the Reviewer checks someone's work.")); return; }
+  if (!rows.length) { list.append(el("p","note","No task matches these filters.")); return; }
+  rows.forEach(x => { const d = el("details","rv-task"); d.dataset.task = x.id; d.open = open.has(x.id);
+    const sm = el("summary"); sm.append(el("span","rv-badge " + x.last.outcome, RV_OUT[x.last.outcome] || x.last.outcome || "?"));
+    sm.append(x.t ? boardLink(x.id, x.id) : el("span","mono", x.id), el("b", null, x.t?.title_en || x.last.title_en || ""));
+    if (x.owner) { const w = el("span","who"); w.append(avatar(x.owner, 22), link(nameOf(x.owner), "#agent/" + encodeURIComponent(x.owner))); sm.append(w); }
+    const n = el("span","rv-n"); n.append(`${x.rs.length} round${x.rs.length === 1 ? "" : "s"} · sent back `, el("b", null, String(x.rej)), ` time${x.rej === 1 ? "" : "s"}` + (x.subs.length ? ` · ${x.subs.filter(t => !t.missing && isClosed(t)).length}/${x.subs.length} sub-tasks done` : "")); sm.append(n);
+    d.append(sm);
+    const body = el("div","rv-rounds");
+    x.rs.forEach((r, i) => { const rd = el("div","rv-round " + (r.outcome || ""));
+      const h = el("div","rv-sub"); h.append(el("b", null, `Round ${r.round ?? i + 1}`), el("span","rv-badge " + r.outcome, RV_OUT[r.outcome] || r.outcome || "?"));
+      if (r.reviewer) h.append(el("span","note","by"), link(nameOf(r.reviewer), "#agent/" + encodeURIComponent(r.reviewer)));
+      if (r.at) h.append(el("span","note", new Date(r.at).toLocaleString("en-GB", {calendar:"gregory", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})));
+      if (r.session && sessions.some(s => s.id === r.session)) h.append(sessLink(r.session, "Open the chat"));
+      rd.append(h);
+      if (r.notes_en) { const p = el("div"); p.dir = "auto"; p.textContent = r.notes_en; rd.append(p); }
+      const ch = Array.isArray(r.changes_en) ? r.changes_en : [];
+      if (ch.length) { rd.append(el("span","note","Changes asked:")); const ul = el("ul"); ch.forEach(c => { const li = el("li"); li.dir = "auto"; li.textContent = c; ul.append(li); }); rd.append(ul); }
+      const subs = (Array.isArray(r.subtasks) ? r.subtasks : []).map(id => tasks.find(t => t.id === id) || {id, missing:true});
+      if (subs.length) { rd.append(el("span","note","Sub-tasks:")); subs.forEach(t => { const row = el("div","rv-sub"); row.append(t.missing ? el("span","mono", t.id) : boardLink(t.id, t.id), el("span", null, t.title_en || ""));
+        if (!t.missing) { row.append(el("span","note", STATES.find(s => s.k === (t.state || "todo"))?.en || t.state)); if (t.session) row.append(link(nameOf(t.session), "#agent/" + encodeURIComponent(t.session))); }
+        rd.append(row); }); }
+      body.append(rd); });
+    d.append(body); list.append(d); });
+}
+$("rvAgent").onchange = e => { rvF.agent = e.target.value; renderReviews(); };
+$("rvReviewer").onchange = e => { rvF.reviewer = e.target.value; renderReviews(); };
+$("rvRej").onchange = e => { rvF.rej = +e.target.value; renderReviews(); };
+$("rvOpenSub").onchange = e => { rvF.openSub = e.target.checked; renderReviews(); };
+/* project hierarchy (the owner's rule): the owner, then managers, then the people who report to them */
+function parentOf(a, ids){
+  if (a.reports_to && ids.has(a.reports_to) && a.reports_to !== a.id) return a.reports_to;
+  const top = ids.has("coordinator") ? "coordinator" : "owner";
+  if (a.id === "coordinator" || a.id === ASSISTANT) return "owner";
+  const d = deptById(deptOf(a.id));
+  if (!d) return top;
+  const dir = (d.director && ids.has(d.director) ? d.director : "") || (agents.find(x => deptOf(x.id) === d.id && x.position === "director") || {}).id || "";
+  if (a.id === dir) return top;
+  const grp = (d.groups || []).find(g => g.id === a.group || g.name_en === a.group);
+  const mgr = grp && grp.manager && ids.has(grp.manager) ? grp.manager : "";
+  if (mgr && mgr !== a.id) return mgr;
+  return dir || top;
+}
+function renderTeam(){
+  const box = $("org"); if (!box) return;
+  const ids = new Set(agents.map(a => a.id)), kids = new Map(), up = new Map();
+  agents.forEach(a => up.set(a.id, parentOf(a, ids)));
+  up.forEach((p, id) => { let x = p, seen = new Set([id]); while (x && x !== "owner") { if (seen.has(x)) { up.set(id, "owner"); break; } seen.add(x); x = up.get(x); } });
+  up.forEach((p, id) => { if (id === ASSISTANT) return; if (!kids.has(p)) kids.set(p, []); kids.get(p).push(id); });
+  const order = id => { const a = agentById(id); return [-rankOf(a), a?.desk ?? 999]; };
+  const node = id => { const b = el("button","org-node"); b.type = "button";
+    if (id === "owner") { b.classList.add("me"); b.tabIndex = -1; b.append(avatar("owner", 40), el("b", null, "You"), el("span","pos","Owner")); return b; }
+    const a = agentById(id), d = deptById(deptOf(id));
+    if (d && a?.position === "director") { const t = el("span","org-dept", d.code + " · " + d.name_en); t.style.background = d.color; b.append(t); b.classList.add("lead"); }
+    const nm = el("b"); const dc = dcode(id); if (dc) nm.append(dc, " "); nm.append(el("bdi", null, plainName(id)));
+    b.append(avatar(id, 40), nm, el("span","pos", titleOf(a) || roleOf(a) || (id === ASSISTANT ? "Your assistant" : "")), stateChip(idleSince(a) ? "idle" : a?.state));
+    b.title = [nameOf(id), titleOf(a), roleOf(a), yearsOf(a)].filter(Boolean).join(" · "); b.onclick = () => selectAgent(id); return b; };
+  const branch = id => { const li = el("li");
+    if (id === "owner" && ids.has(ASSISTANT)) { const pr = el("div","org-pair"); const side = node(ASSISTANT); side.classList.add("side"); pr.append(node("owner"), side); li.append(pr); } else li.append(node(id));
+    const ch = (kids.get(id) || []).sort((x, y) => { const [a1, a2] = order(x), [b1, b2] = order(y); return a1 - b1 || a2 - b2; });
+    if (ch.length) { const ul = el("ul"); ch.forEach(c => ul.append(branch(c))); li.append(ul); }
+    return li; };
+  const root = el("ul"); root.append(branch("owner")); box.replaceChildren(root);
+}
 function renderRoadmap(){
   const box = $("roadmap"); if (!box) return; box.replaceChildren();
   const vs = versions().filter(Boolean);
@@ -2162,7 +2326,7 @@ function enterSends(ta, send){
   ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); send(); } });
 }
 enterSends($("text"), () => $("compose").requestSubmit());
-function renderAll(){ if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); }
+function renderAll(){ if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderStats, 30000);
@@ -2177,6 +2341,7 @@ renderLegend(); renderAll(); setInterval(setRoomBg, 60000); setInterval(renderSt
   db.collection("tasks").onSnapshot(s => { tasks = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
   db.collection("messages").orderBy("at").limit(500).onSnapshot(s => { msgs = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
   db.collection("sessions").onSnapshot(s => { sessions = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
+  db.collection("reviews").onSnapshot(s => { reviews = s.docs.map(d => ({id:d.id, ...d.data()})); renderReviews(); }, () => {});
 })();
 })();
 </script>

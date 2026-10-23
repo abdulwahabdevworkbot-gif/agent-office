@@ -88,3 +88,43 @@ Clicking a count lists its tasks. Each row has:
 The rooms point at those agents with a bouncing marker. Clicking the count again or pressing Escape closes the list.
 
 New task fields: `due` (`YYYY-MM-DD`, or `due_at` ISO) and `done_at` (ISO; `updated_at` is the fallback). A task belongs to the department of its `session` agent.
+
+## Team tab
+
+The owner's rule: the Team tab (`#team`) shows the project's hierarchy as a top-down chart.
+
+- **Top:** the owner, with the assistant (`office-manager`) beside them.
+- **Under the owner:** the Coordinator.
+- **Under the Coordinator:** the headquarters agents and each department's Director.
+- **Under a Director:** the group Managers and anyone without a group.
+- **Under a Manager:** the group's people.
+
+An agent's `reports_to` overrides this. Cycles fall back to the owner. Each card shows the avatar, the department code, the name, the position or role and the state, and opens the agent's page.
+
+## Look options
+
+The owner's rule: characters can carry options in `characters.json`:
+
+- `options.beard`: none / goatee / light / full;
+- `options.glasses`;
+- `options.cover`: none / hijab / hijab-abaya / niqab;
+- `defaults` for each.
+
+The agent page shows them as buttons and saves `look.beard`, `look.glasses` and `look.cover`.
+
+Cover variants are full sprites (`chars/<id>_<cover>-<facing>.webp` with masks). Beard and glasses are overlays (`acc/<id>-<facing>-<goatee|light|full|glasses>.webp`). A beard takes the hair color. `tools/art/embed_chars.py` copies the list into the page.
+
+## Reviews tab
+
+The owner's rule: the Reviews tab (`#reviews`, with a count of tasks whose latest review asked for changes) lists every task the Reviewer checked.
+
+- **Each row:** the latest result, the task (linked to the board), its owner agent, the number of rounds, how many times it was sent back, and sub-tasks done out of total.
+- **Opening a row:** shows each round:
+  - its reviewer and time;
+  - the notes;
+  - the changes asked;
+  - the sub-tasks opened for them, with their state and owner;
+  - a link to the chat where it was discussed.
+- **Filters:** agent, reviewer, times sent back (1+, 2+, 3+), latest result (approved with no notes / approved with notes / changes requested) and "only with open sub-tasks".
+
+Data: `reviews/<id>` holds `task`, `round`, `reviewer`, `outcome` (`approved` / `approved-notes` / `changes`), `at`, `notes_en`, `changes_en[]`, `subtasks[]` (task ids) and `session` (chat id). A task may also carry `parent` (the task it was split from), which counts as a sub-task too.

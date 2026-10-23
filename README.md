@@ -71,6 +71,8 @@ Intern ← Developer / Analyst ← Senior ← Consultant ← Senior Consultant �
 | Roadmap | النسخ ومراحلها |
 | Chat | المحادثات وغرفتها بجنبها |
 | Task board | لوحة المهام |
+| Reviews | المراجعات: قبول، قبول بملاحظات، أو رفض مع التعديلات المطلوبة والمهام الفرعية والشات |
+| Team | الهيكل: أنت، ثم المدراء، ثم اللي تحتهم |
 
 ![الشات وغرفته](docs/images/chat.webp)
 
@@ -147,6 +149,8 @@ All of them: [characters-all](docs/images/characters-all.webp). Thirty more are 
 | Roadmap | Versions and their phases |
 | Chat | Conversations, with their room beside them |
 | Task board | The task kanban |
+| Reviews | Review rounds: approved, approved with notes, or sent back with the changes, sub-tasks and chat |
+| Team | The hierarchy: you, then the managers, then their people |
 
 ![Roadmap](docs/images/roadmap.webp)
 
