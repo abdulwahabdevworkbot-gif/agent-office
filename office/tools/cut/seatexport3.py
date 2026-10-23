@@ -3,7 +3,7 @@ import numpy as np, json, os
 from PIL import Image
 from seatcomp import ROW
 from build import tag
-A="/home/claude/agent-office/office/assets"
+A=os.path.join(os.path.dirname(os.path.abspath(__file__)),"../../assets")
 OLD2NEW={1:1,2:2,3:4,4:5,5:6,6:7,7:8,8:9,9:10,10:11,11:12,12:13}
 FIXROW={17:14}                      # woman with a bun in a cream shirt: blouse and trousers
 # seat type -> sheet column: 1 front, 2 side, 3 back, 4 3/4 back, 5 3/4 front, 6 crossed legs (visitor), 7 one leg crossed (meeting),

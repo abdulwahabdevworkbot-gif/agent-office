@@ -2,7 +2,7 @@
 import numpy as np, os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from scipy import ndimage as ndi
-A="/home/claude/agent-office/office/assets/rooms"
+A=os.path.join(os.path.dirname(os.path.abspath(__file__)),"../../assets/rooms")
 im=np.asarray(Image.open("src/hi/nochairs.png").convert("RGB")).astype(float)
 XS=[(0,508),(515,1020),(1028,1536)]; YS=[(0,351),(359,684),(694,1024)]
 NAMES=[["main-b","main-a","boss"],["huddle","meet-10","meet-20"],["meet-30","game","idle"]]

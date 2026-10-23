@@ -42,6 +42,6 @@ json.dump(meta,open("turnheads.json","w"))
 S=Image.new("RGB",(41*70,3*90),(90,110,140))
 for i in range(1,42):
     for j,v in enumerate(("f","b","r")):
-        p=f"{A}/c{i:02d}-{v}.png" if v!="f" else f"/home/claude/agent-office/office/assets/heads/c{i:02d}.webp"
+        p=f"{A}/c{i:02d}-{v}.png" if v!="f" else os.path.join(os.path.dirname(os.path.abspath(__file__)),f"../../assets/heads/c{i:02d}.webp")
         if os.path.exists(p): h=Image.open(p).convert("RGBA"); h.thumbnail((66,86)); S.paste(h,((i-1)*70+2,j*90+2),h)
 S.save("turnheads.png")
