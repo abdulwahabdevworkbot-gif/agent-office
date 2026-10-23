@@ -355,6 +355,9 @@ h2{font-weight:700;font-size:19px;margin:0}
 .cal-ev b{font-weight:600}.cal-ev .tm{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
 .cal-ev .why{color:var(--bad);font-size:11.5px}
 .cal-all{display:grid;gap:6px}
+.health{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin-bottom:10px}
+.health .chip.go{cursor:pointer}.health .chip[aria-pressed="true"]{outline:2px solid var(--accent)}.health .h-warn{color:var(--bad);font-weight:600}
+.health-list{display:grid;gap:6px;margin-bottom:12px}
 .cal-row{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%;display:grid;grid-template-columns:minmax(160px,220px) minmax(0,1fr) minmax(0,1.3fr) 190px;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--bg)}
 .cal-row:hover{border-color:var(--accent)}.cal-row .who{display:flex;gap:8px;align-items:center}.cal-row .note{overflow-wrap:anywhere}
 @media (max-width:760px){.cal-row{grid-template-columns:1fr}}
@@ -1588,7 +1591,30 @@ function timeBox(t){   // the task dialog's Time row
   const after = tasks.filter(x => depsOf(x).includes(t.id)); if (after.length) { const q = el("div","t-time"); q.append(el("span","note","Then:")); after.forEach(x => q.append(taskLink(x.id))); d.append(q); }
   if (p && (p.lateBy || p.lateDeps?.length)) d.append(el("div","t-warn", [lateText(p), p.lateDeps?.length ? whyText(p) : ""].filter(Boolean).join(". ")));
   return d; }
-let calWho = "", calWeek = 0;
+let calWho = "", calWeek = 0, calHealth = "";
+// Plan health: what in the computed plan needs a look, above the Everyone list.
+function planHealth(){
+  const open = tasks.filter(t => !isClosed(t)), P = t => sched.byTask[t.id] || {};
+  const kinds = [
+    {k:"late", en:"Late", warn:true, f:t => P(t).lateBy, why:t => lateText(P(t))},
+    {k:"moved", en:"Moved by a late task", warn:true, f:t => P(t).lateDeps?.length, why:t => whyText(P(t))},
+    {k:"loop", en:"Dependencies loop", warn:true, f:t => P(t).cycle, why:t => whyText(P(t))},
+    {k:"noest", en:"No estimate yet", f:t => !t.estimate_min, why:() => "Planned as 1 h until it has an estimate"},
+    {k:"nodue", en:"No deadline", f:t => !t.due_at && !t.due, why:() => "Never shows as late"}];
+  const box = el("div","health"), last = open.reduce((a, t) => Math.max(a, P(t).e || 0), 0);
+  box.append(el("b", null, "Plan health"), el("span","note", last ? `All open work done by ${fmtWhen(last)}` : "No open work"));
+  let rows = [];
+  kinds.forEach(K => { const l = open.filter(K.f); if (!l.length) return; const c = el("button", "chip go" + (K.warn ? " h-warn" : "")); c.type = "button";
+    c.textContent = `${K.en}: ${l.length}`; c.setAttribute("aria-pressed", String(calHealth === K.k)); c.onclick = () => { calHealth = calHealth === K.k ? "" : K.k; renderCalendar(); }; box.append(c);
+    if (calHealth === K.k) rows = l.map(t => [t, K.why(t)]); });
+  if (!box.querySelector("button")) box.append(el("span","chip","All clear"));
+  const wrap = el("div","stack"); wrap.append(box);
+  if (rows.length) { const list = el("div","health-list"); rows.sort((a, b) => (P(a[0]).e || 0) - (P(b[0]).e || 0)).forEach(([t, why]) => { const r = el("button","cal-row"); r.type = "button";
+      const w = el("span","who"); w.append(avatar(t.session || "coordinator", 24), el("b", null, `${t.id} ${t.title_en || ""}`));
+      r.append(w, el("span","note", nameOf(t.session || "")), el("span","note", why || ""), el("span","note", P(t).e ? "Ends " + fmtWhen(P(t).e) : "")); r.onclick = () => openTask(t.id); list.append(r); });
+    wrap.append(list); } else calHealth = "";
+  return wrap;
+}
 function calEvent(ev){
   const b = el("button","cal-ev" + (ev.kind === "meet" ? " meet" : "") + (ev.done ? " done" : ""));
   b.type = "button";
@@ -1621,6 +1647,7 @@ function renderCalendar(){
   $("calNote").textContent = `${d0.toLocaleDateString("en-GB", {day:"numeric", month:"short"})} – ${d6.toLocaleDateString("en-GB", {day:"numeric", month:"short"})}` + (lateN ? ` · ${lateN} late` : "");
   if (calWho === "@rooms") { box.append(roomsWeek()); return; }
   if (calWho) { box.append(weekGrid(sched.byAgent[calWho] || [])); return; }
+  box.append(planHealth());
   const now = Date.now(), all = el("div","cal-all");
   people.map(a => ({a, l:(sched.byAgent[a.id] || []).filter(x => !x.done && x.e > now)})).filter(x => x.l.length)
     .sort((x, y) => (y.l.some(e => sched.byTask[e.t?.id]?.lateBy) - x.l.some(e => sched.byTask[e.t?.id]?.lateBy)) || x.l[0].s - y.l[0].s)
