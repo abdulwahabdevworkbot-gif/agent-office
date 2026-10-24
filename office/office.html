@@ -343,6 +343,12 @@ h2{font-weight:700;font-size:19px;margin:0}
 .since[hidden]{display:none}
 .dlg.walk{display:flex;flex-direction:column;gap:12px}.walk-head{display:flex;justify-content:space-between;align-items:center}.walk-card{display:grid;grid-template-columns:110px minmax(0,1fr);gap:16px;border-left:4px solid var(--c);padding-left:12px}.walk-pic{width:110px;height:150px;object-fit:contain;object-position:bottom}.walk-tx{display:grid;gap:6px;align-content:start}.walk-tx h3{margin:0}.walk-said{display:grid;gap:3px}.walk-nav{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px}.walk-done{font-size:16px;font-weight:600;margin:0}.walk-day{margin:0;padding-left:18px;display:grid;gap:4px}
 @media (max-width:600px){.walk-card{grid-template-columns:70px minmax(0,1fr)}.walk-pic{width:70px;height:96px}}
+.walk-bar{display:grid;gap:8px}.walk-bar .ib-a,.walk-tx > *{grid-column:auto}.walk-undo{font-size:12.5px}
+@media (max-width:520px){#walkDlg{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0}#walkDlg .dlg.walk{min-height:100dvh;box-sizing:border-box}
+  .walk-card{grid-template-columns:1fr;justify-items:center;text-align:center;border-left:0;border-top:4px solid var(--c);padding:10px 0 0}.walk-pic{width:96px;height:130px}.walk-tx{width:100%;text-align:left}
+  .walk-bar{margin-top:auto;position:sticky;bottom:0;background:var(--panel);padding:10px 0 max(10px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+  .walk-bar .ib-a{flex-wrap:nowrap;overflow-x:auto}.walk-bar .ib-a .btn{flex:1 0 auto}.walk-bar button{min-height:44px;font-size:15px}.walk-bar .walk-nav{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}.walk-swipe{display:block}}
+.walk-swipe{display:none;font-size:11.5px;color:var(--muted);text-align:center}
 .minutes{display:grid;gap:8px}.mn-row{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}.mn-row.up{border-style:dashed}.mn-row .linkish{justify-self:start;font-weight:600}.mn-out{font-weight:600;color:var(--ok)}.mn-dec{margin:2px 0 0 18px;padding:0}
 .hcard{position:fixed;z-index:1000;display:grid;gap:5px;width:max-content;max-width:280px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;pointer-events:none}.hcard[hidden]{display:none}
 .hc-top{display:flex;gap:8px;align-items:center}.hc-top .note{font-size:12px}.hc-hint{font-size:11.5px;color:var(--muted)}.hcard .chip{justify-self:start}.ib-need{grid-column:2;font-size:12.5px;font-weight:600;color:var(--warn);overflow-wrap:anywhere}
@@ -1270,6 +1276,10 @@ function meetingGroups(){
     if (ids.has(m.from) && ids.has(m.to) && m.from !== m.to) { const k = [m.from, m.to].sort().join("|"); pairs.set(k, pairs.get(k) || false); } });
   /* when you write in two agents' talk you join it: you sit with them in the room */
   groups.forEach(g => { const s = g.key.startsWith("s:") && sessions.find(x => x.id === g.key.slice(2)); g.meeting = isMeeting(s) ? 1 : 0; g.prefer = s?.room === "huddle" ? "huddle" : ""; });
+  /* members gather (council round 14, Product Lead): 5 minutes before a meeting the owner is in, its members walk to the room; blocked or waiting ones stay put */
+  sessions.filter(s => s.state === "scheduled" && (s.members || []).includes("owner") && Date.parse(s.at || "") - Date.now() <= 5 * 6e4 && Date.parse(s.at || "") > Date.now() - 6e4).forEach(s => {
+    const all = (s.members || []).filter(m => m !== "owner" && ids.has(m)), come = all.filter(m => !["blocked", "waiting"].includes(agentById(m)?.state)); if (!come.length) return;
+    groups.push({key:"g:" + s.id, label:`Gathering · ${s.title_en || "Meeting"} · ${fmtHM(Date.parse(s.at))} · ${come.length} of ${all.length + 1} here`, ids:come, meeting:1, prefer:s.room === "huddle" ? "huddle" : ""}); });
   pairs.forEach((withOwner, k) => groups.push({key:"p:" + k, label:k.split("|").map(nameOf).join(" & ") + (withOwner ? " & You" : ""), ids:[...(withOwner ? ["owner"] : []), ...k.split("|")]}));
   /* you sit with the talk you wrote in last */
   const lastOwner = msgs.filter(m => m.from === "owner" && (m.session || m.pair)).sort((x, y) => String(y.at).localeCompare(String(x.at)))[0];
@@ -1601,7 +1611,7 @@ const outbox = () => { const firstR = [...msgs, ...sessions].filter(x => x.relay
 function renderNext3(){
   const box = $("next3"); if (!box) return; const now = Date.now(), end = now + 3 * 36e5, parts = [];
   const mt = sessions.filter(x => isMeeting(x) && (x.members || []).includes("owner") && (x.state === "open" || (x.state === "scheduled" && Date.parse(x.at || "") <= end))).sort((a, b) => (meetSpan(a)?.s || 0) - (meetSpan(b)?.s || 0))[0];
-  if (mt) { const live = mt.state === "open", w = el("span","n3"); w.append(el("b", null, live ? "Now" : fmtHM(Date.parse(mt.at))), ` ${mt.title_en || "Meeting"} `); const j = el("button","linkish", live ? "Join" : "Open"); j.type = "button"; j.onclick = () => { showTab("chat"); viewSession(mt.id); }; w.append(j); w.dataset.t = live ? 0 : Date.parse(mt.at); parts.push(w); }
+  if (mt) { const live = mt.state === "open", soon = !live && Date.parse(mt.at) - now <= 5 * 6e4, w = el("span","n3"); w.append(el("b", null, live ? "Now" : fmtHM(Date.parse(mt.at))), ` ${mt.title_en || "Meeting"}${soon ? " · gathering now" : ""} `); const j = el("button","linkish", live ? "Join" : "Open"); j.type = "button"; j.onclick = () => { showTab("chat"); viewSession(mt.id); }; w.append(j); w.dataset.t = live ? 0 : Date.parse(mt.at); parts.push(w); }
   const due = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.due > now && sched.byTask[t.id].due <= end).sort((a, b) => sched.byTask[a.id].due - sched.byTask[b.id].due)[0];
   if (due) { const p = sched.byTask[due.id], w = el("span","n3" + (p.lateBy ? " late" : "")); w.append(el("b", null, fmtHM(p.due)), " ", taskLink(due.id), ` due · ${p.lateBy ? "will be late" : "on time"}`); w.dataset.t = p.due; parts.push(w); }
   const rv = tasks.filter(t => t.state === "doing" && agentById(t.session)?.state !== "blocked" && !sched.byTask[t.id]?.lateBy && (sched.byTask[t.id]?.e || 0) > now + 6 * 6e4 && sched.byTask[t.id].e <= end).sort((a, b) => sched.byTask[a.id].e - sched.byTask[b.id].e);
@@ -1777,6 +1787,7 @@ function openWalk(){ floor = {list:inboxItems.filter(it => !(it.key && inboxSent
 function drawWalk(focus = true){
   const body = $("walkBody"); if (!floor) return; body.replaceChildren(); if (focus) requestAnimationFrame(() => body.querySelector(".walk-h")?.focus());
   const n = floor.list.length, it = floor.list[floor.i];
+  if (floor.undo && floor.undo.until > Date.now()) { const u = floor.undo, b = el("button","linkish walk-undo","Snoozed for 3 h · Undo"); b.type = "button"; b.onclick = () => { snooze([u.k], null); floor.i = u.i; floor.undo = null; drawWalk(); }; setTimeout(() => { if (floor?.undo === u) { floor.undo = null; if ($("walkDlg").open && !document.activeElement?.matches("input, textarea")) drawWalk(false); } }, u.until - Date.now() + 50); requestAnimationFrame(() => body.prepend(b)); }
   const head = el("div","walk-head"); const hd = el("h2","walk-h", it ? `${floor.i + 1} of ${n}` : "All clear"); hd.tabIndex = -1; head.append(hd); const x = el("button","btn-lite","Close"); x.type = "button"; x.onclick = () => $("walkDlg").close(); head.append(x); body.append(head);
   if (!it) { const sent = inboxSent.size - floor.start, now = Date.now(), end = new Date(); end.setHours(23, 59, 59, 999);
     const meets = sessions.filter(s => (s.state === "scheduled" || s.state === "open") && (s.members || []).includes("owner") && (meetSpan(s)?.s || 0) <= +end && (meetSpan(s)?.e || 0) >= now).sort((a, b) => meetSpan(a).s - meetSpan(b).s);
@@ -1796,13 +1807,17 @@ function drawWalk(focus = true){
   const said = msgs.filter(m => m.from === it.who && (m.text_en || m.text)).slice(-3);
   if (said.length) { const l = el("div","walk-said"); said.forEach(m => l.append(el("div","note", `${ago(m.at)}: ${(m.text_en || m.text).slice(0, 160)}`))); tx.append(el("div","lbl","Last said"), l); }
   card.append(pic, tx); body.append(card);
-  const sent = it.key && sentEl(it.key), acts = el("div","ib-a");
+  const sent = it.key && sentEl(it.key), acts = el("div","ib-a"), bar = el("div","walk-bar");   /* one thumb (council round 14): on phones the answers, Later and Next sit in a bar at the bottom; swipe left for Later, right for Next */
   if (sent) acts.append(sent);
   else it.acts.forEach(([lab, fn, main]) => { if (fn === "inline") return; const b = el("button", main ? "btn" : "btn-lite", lab); b.type = "button"; b.onclick = async e => { await fn(e); setTimeout(() => { if ($("walkDlg").open && !document.activeElement?.matches("input, textarea")) drawWalk(); }, 400); }; acts.append(b); });
-  body.append(acts);
   if (!sent && it.inline) { const r = it.inline(); body.append(r); }
   const nav = el("div","walk-nav"), back = el("button","btn-lite","Back"), next = el("button","btn", floor.i + 1 < n ? "Next" : "Finish"); back.type = next.type = "button"; back.disabled = !floor.i;
-  back.onclick = () => { floor.i--; drawWalk(); }; next.onclick = () => { floor.i++; drawWalk(); }; nav.append(back, next); body.append(nav);
+  back.onclick = () => { floor.i--; drawWalk(); }; next.onclick = () => { floor.i++; drawWalk(); };
+  const later = () => { if (!it.key || !ownerView() || sent) return; const k = snzKey(it); snooze([k], Date.now() + 3 * 36e5); floor.undo = {k, i:floor.i, until:Date.now() + 5000}; floor.i++; drawWalk(); };
+  if (it.key && ownerView() && !sent) { const lt = el("button","btn-lite","Later"); lt.type = "button"; lt.title = "Snooze 3 hours"; lt.onclick = later; nav.append(back, lt, next); } else nav.append(back, next);
+  bar.append(acts, nav, el("div","walk-swipe","Swipe left: later · right: next")); body.append(bar);
+  let sx = null; card.addEventListener("touchstart", e => { sx = e.touches[0].clientX; }, {passive:true});
+  card.addEventListener("touchend", e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (dx < -70) later(); else if (dx > 70) next.onclick(); }, {passive:true});
 }
 function renderInbox(){
   renderSince();
