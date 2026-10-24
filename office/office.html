@@ -51,14 +51,14 @@ h2{font-weight:700;font-size:19px;margin:0}
 .tabs::-webkit-scrollbar{display:none}.tabs [role="tab"]{flex:0 0 auto}
 .tabs button{font:inherit;font-weight:600;font-size:15px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;cursor:pointer;margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
-.tabs .tab-end{margin-left:auto;display:flex;gap:8px;align-items:center;position:sticky;right:0;background:var(--bg);padding-left:8px;flex:0 0 auto}
+.tabs .tab-end{margin-left:auto;display:flex;gap:8px;align-items:center;position:sticky;right:0;background:linear-gradient(90deg,transparent,var(--bg) 18px);padding-left:22px;flex:0 0 auto}
 .tabs .need-pill{align-self:center;flex:0 0 auto;border:0;border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--warn);color:var(--bg)}
 .tabs .find-btn{font-size:13px;font-weight:500;align-self:center;padding:4px 10px;border:1px solid var(--line);border-radius:8px}
 .find input{width:100%;box-sizing:border-box;font-size:16px}.find-list{display:grid;gap:2px;margin-top:10px;max-height:60vh;overflow:auto}.find-row{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:baseline;padding:7px 8px;border-radius:6px;cursor:pointer}
 .find-row:hover,.find-row:focus-visible,.find-row.on{background:var(--chip, rgba(127,127,127,.12))}.find-row .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:88px}.find-row .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .tabs .count{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-left:6px}
-.tabs .count:not(:empty){color:var(--warn);font-weight:700}#chatCount:not(:empty){color:var(--accent)}#taskCount:not(:empty){color:var(--bad)}#calCount:not(:empty){color:var(--late)}
+.tabs .count:not(:empty){color:var(--warn);font-weight:700;font-family:var(--font)}#chatCount:not(:empty){color:var(--accent)}#taskCount:not(:empty){color:var(--bad)}#calCount:not(:empty){color:var(--late)}
 [role="tabpanel"][hidden]{display:none}
 .stack{display:grid;gap:18px}
 /* scene */
@@ -116,7 +116,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 @media (max-width:600px){.board-scroll{scroll-snap-type:x proximity}.lanes .hd{scroll-snap-align:start}#summary{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}}
 @media (max-width:600px){header .sub{display:none}#summary{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#summary>*{flex:0 0 auto}#summary::-webkit-scrollbar{display:none}.inbox-head .row-wrap{margin-left:0}}
 .room .label{position:absolute;top:2.5%;left:3%;z-index:6000;overflow:hidden;text-overflow:ellipsis;max-width:94%;background:rgba(10,14,22,.82);color:#e8edf5;border:1px solid #2c3546;border-radius:12px;padding:1px 11px;font-size:clamp(10px,2.6cqi,15px);font-weight:700;white-space:normal;line-height:1.35}   /* wraps, so every table's conversation stays readable */
-.room .label small{color:#9aa6b8;font-weight:500;margin-left:6px}
+.room .label small{color:#9aa6b8;font-weight:500;margin-left:6px}.room .label{white-space:nowrap}
 .room .label .lbl-next{all:unset;cursor:pointer;color:#ffd479;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}.room .label .lbl-next:focus-visible{outline:2px solid #ffd479}
 .sp{position:absolute;transform:translate(-50%,-100%);pointer-events:none}
 .ag{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:pointer;border:0;background:none;padding:0}
@@ -373,7 +373,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .fl-star{margin-inline-start:8px;font-size:13px}
 .rooms.dim .ag:not(.point){opacity:.35;transition:opacity .2s}.ib .av.go,.ib img.go{cursor:pointer}
 .t-chain{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:13px}.t-chain .arr{color:var(--muted)}.t-chain .late{color:var(--late);font-weight:700}.health .t-chain{flex-basis:100%}
-.dc-list{display:grid;gap:4px;margin:8px 0}.dc-row{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-inline-start:3px solid var(--warn);border-radius:6px}.t-edit{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:8px}
+.dc-list{display:grid;gap:4px;margin:8px 0}.dc-row{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-inline-start:3px solid var(--warn);border-radius:6px}.t-edit .est-min{width:72px}.t-edit{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:8px}
 .door-list{display:grid;gap:6px;margin:8px 0 12px}.door-row{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;cursor:pointer}
 .door-row.free{border-left-color:var(--ok);cursor:default}.door-row .tm{font-variant-numeric:tabular-nums;font-weight:600;min-width:96px}.door-row .btn-lite{margin-left:auto}.door-row:focus-visible{outline:2px solid var(--accent)}
 .ib-pend{align-self:center;font-size:12.5px;color:var(--muted)}.ib-err{align-self:center;font-size:12.5px;color:var(--bad);font-weight:600}
@@ -439,9 +439,9 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag.need-w .bang,.ag.need-b .bang{display:grid}.ag.need-b .bang{background:#ff6b6b;color:#2a0505}
 .ag.late::after{content:"LATE";position:absolute;left:50%;bottom:-3%;transform:translateX(-50%);font:700 7px/1 var(--font);letter-spacing:.06em;color:#fff;background:#c4500f;border-radius:3px;padding:1px 3px;pointer-events:none}
 /* halos (council round 10, UX): a soft glow around whoever is blocked, waiting or late, in the Needs-you colors */
-.ag.need-b img.body{filter:drop-shadow(0 0 2px rgba(255,80,80,1)) drop-shadow(0 0 7px rgba(255,80,80,.75))}
-.ag.need-w img.body{filter:drop-shadow(0 0 2px rgba(240,168,60,1)) drop-shadow(0 0 7px rgba(240,168,60,.75))}
-.ag.late:not(.need-b):not(.need-w) img.body{filter:drop-shadow(0 0 2px rgba(255,130,60,1)) drop-shadow(0 0 7px rgba(255,130,60,.7))}
+.ag.need-b:not(.dormant):not(.sel):not(:focus-visible) img.body{filter:drop-shadow(0 0 3px rgba(255,70,70,1)) drop-shadow(0 0 10px rgba(255,70,70,.9))}
+.ag.need-w:not(.dormant):not(.sel):not(:focus-visible) img.body{filter:drop-shadow(0 0 3px rgba(255,180,40,1)) drop-shadow(0 0 10px rgba(255,180,40,.9))}
+.ag.late:not(.need-b):not(.need-w):not(.dormant):not(.sel):not(:focus-visible) img.body{filter:drop-shadow(0 0 3px rgba(255,120,40,1)) drop-shadow(0 0 10px rgba(255,120,40,.85))}
 @keyframes bang{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @media (prefers-reduced-motion:reduce){.ag .bang{animation:none}}
 .set-grid{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}.set-grid label,.set-chk{display:flex;gap:6px;align-items:center;font-size:14px}
@@ -1555,22 +1555,25 @@ function laterPick(row, key){
   const opts = [["1 hour", Date.now() + 36e5], ["3 hours", Date.now() + 3 * 36e5], ["Tomorrow 09:00", +tm]].map(([l, t]) => { const b = el("button","btn-lite", l); b.type = "button"; b.onclick = () => snooze([key], t); return b; });
   const back = el("button","linkish","Back"); back.type = "button"; back.onclick = () => { row.replaceChildren(...keep); keep.find(n => n.textContent === "Later")?.focus(); };
   row.replaceChildren(el("span","note","Snooze until"), ...opts, back); opts[0].focus(); }
-const outbox = () => { if (!msgs.some(m => m.relayed === true) && !sessions.some(x => x.relayed === true)) return [];
-  const cut = Date.now() - 10 * 6e4; return msgs.filter(m => m.from === "owner" && m.relayed === false && (Date.parse(m.at || "") || Infinity) < cut); };
+const outbox = () => { const firstR = [...msgs, ...sessions].filter(x => x.relayed === true).reduce((m, x) => Math.min(m, Date.parse(x.relayed_at || x.at || x.opened_at || "") || Infinity), Infinity); if (firstR === Infinity) return [];
+  const cut = Date.now() - 10 * 6e4; return msgs.filter(m => { const t = Date.parse(m.at || ""); return m.from === "owner" && m.relayed === false && t < cut && t >= firstR; }); };   // only since agents began marking pick-ups
 /* next 3 hours (council round 10, Product Lead): the owner's next meeting, the next deadline, and work coming up for review */
 function renderNext3(){
   const box = $("next3"); if (!box) return; const now = Date.now(), end = now + 3 * 36e5, parts = [];
   const mt = sessions.filter(x => isMeeting(x) && (x.members || []).includes("owner") && (x.state === "open" || (x.state === "scheduled" && Date.parse(x.at || "") <= end))).sort((a, b) => (meetSpan(a)?.s || 0) - (meetSpan(b)?.s || 0))[0];
-  if (mt) { const live = mt.state === "open", w = el("span","n3"); w.append(el("b", null, live ? "Now" : fmtHM(Date.parse(mt.at))), ` ${mt.title_en || "Meeting"} `); const j = el("button","linkish", live ? "Join" : "Open"); j.type = "button"; j.onclick = () => viewSession(mt.id); w.append(j); w.dataset.t = live ? 0 : Date.parse(mt.at); parts.push(w); }
+  if (mt) { const live = mt.state === "open", w = el("span","n3"); w.append(el("b", null, live ? "Now" : fmtHM(Date.parse(mt.at))), ` ${mt.title_en || "Meeting"} `); const j = el("button","linkish", live ? "Join" : "Open"); j.type = "button"; j.onclick = () => { showTab("chat"); viewSession(mt.id); }; w.append(j); w.dataset.t = live ? 0 : Date.parse(mt.at); parts.push(w); }
   const due = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.due > now && sched.byTask[t.id].due <= end).sort((a, b) => sched.byTask[a.id].due - sched.byTask[b.id].due)[0];
   if (due) { const p = sched.byTask[due.id], w = el("span","n3" + (p.lateBy ? " late" : "")); w.append(el("b", null, fmtHM(p.due)), " ", taskLink(due.id), ` due · ${p.lateBy ? "will be late" : "on time"}`); w.dataset.t = p.due; parts.push(w); }
-  const rv = tasks.filter(t => t.state === "doing" && (sched.byTask[t.id]?.e || 0) > now + 6 * 6e4 && sched.byTask[t.id].e <= end).sort((a, b) => sched.byTask[a.id].e - sched.byTask[b.id].e);
+  const rv = tasks.filter(t => t.state === "doing" && agentById(t.session)?.state !== "blocked" && !sched.byTask[t.id]?.lateBy && (sched.byTask[t.id]?.e || 0) > now + 6 * 6e4 && sched.byTask[t.id].e <= end).sort((a, b) => sched.byTask[a.id].e - sched.byTask[b.id].e);
   if (rv.length) { const w = el("span","n3"); w.append(el("b", null, fmtHM(sched.byTask[rv[0].id].e)), " ready for review: "); rv.slice(0, 3).forEach((t, i) => { if (i) w.append(", "); w.append(taskLink(t.id)); }); if (rv.length > 3) w.append(` +${rv.length - 3}`); w.dataset.t = sched.byTask[rv[0].id].e; parts.push(w); }
   box.hidden = !parts.length; box.replaceChildren(); if (!parts.length) return; box.append(el("span","lbl","Next 3 hours")); parts.sort((x, y) => x.dataset.t - y.dataset.t).forEach(x => box.append(x)); }
 /* follow a task (council round 10, from round 8): a star in the task dialog; followed tasks sit in a strip above the office (up to 8) */
 const following = () => (Array.isArray(metaOffice?.follow) ? metaOffice.follow : []).filter(id => tasks.some(t => t.id === id));
-async function toggleFollow(id){ if (!db) return; const f = following(), on = f.includes(id), next = on ? f.filter(x => x !== id) : [...f, id].slice(-8);
-  try { await db.doc("meta/office").update({follow:next}); announce(on ? `Stopped following ${id}.` : `Following ${id}.`); } catch (err) { announce(writeError(err)); } }
+let followPend = null;
+async function toggleFollow(id){ if (!db || !tasks.length) return; const f = followPend || following(), on = f.includes(id);
+  if (!on && f.length >= 8) { announce("You follow 8 tasks already. Unfollow one first."); return false; }
+  const next = on ? f.filter(x => x !== id) : [...f, id]; followPend = next; setTimeout(() => { if (followPend === next) followPend = null; }, 10000);   // two quick stars both stick
+  try { await db.doc("meta/office").update({follow:next}); announce(on ? `Stopped following ${id}.` : `Following ${id}.`); return true; } catch (err) { followPend = null; announce(writeError(err)); return false; } }
 function renderFollow(){
   const box = $("followStrip"); if (!box) return; const f = following(); box.hidden = !f.length; if (!f.length) return;
   box.replaceChildren(el("span","lbl","Following"));
@@ -1586,12 +1589,15 @@ function openBye(){
   body.append(el("div","lbl","Still open"));
   if (!open.length) body.append(el("p","walk-done","Nothing is waiting for you."));
   else { const ul = el("ul","walk-day"); open.slice(0, 8).forEach(it => ul.append(el("li", null, `${it.k}: ${it.t}`))); if (open.length > 8) ul.append(el("li","note", `and ${open.length - 8} more`)); body.append(ul);
-    if (ownerView()) { const sz = el("button","btn", `Snooze the rest to ${fmtWhen(+tm)}`); sz.type = "button"; sz.onclick = async () => { sz.disabled = true; await snooze(open.filter(it => it.key).map(snzKey), +tm); sz.textContent = "Snoozed. Nothing was answered for you."; }; body.append(el("div","row-wrap"), sz); } }
+    const quietable = open.filter(it => it.key && it.k !== "Blocked");   // a blocked agent stays in view
+    if (ownerView() && quietable.length) { const sz = el("button","btn", `Snooze ${quietable.length} until ${fmtWhen(+tm)} (blocked ones stay)`); sz.type = "button"; let tmr = 0;
+      sz.onclick = () => { if (tmr) { clearTimeout(tmr); tmr = 0; sz.textContent = `Snooze ${quietable.length} until ${fmtWhen(+tm)} (blocked ones stay)`; return; }
+        sz.textContent = "Snoozing in 5 s · Undo"; tmr = setTimeout(async () => { tmr = 0; sz.disabled = true; await snooze(quietable.map(snzKey), +tm); sz.textContent = "Snoozed. Nothing was answered for you."; }, 5000); }; body.append(sz); } }
   const now = Date.now(), due = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.due && sched.byTask[t.id].due <= +tm).sort((a, b) => sched.byTask[a.id].due - sched.byTask[b.id].due);
   body.append(el("div","lbl","Due before then"));
   const ul2 = el("ul","walk-day"); due.slice(0, 8).forEach(t => { const p = sched.byTask[t.id]; ul2.append(el("li", p.lateBy ? "t-warn" : null, `${t.id} ${ttl(t)}: due ${fmtWhen(p.due)}${p.lateBy ? ", " + lateText(p).toLowerCase() : ", on time"}`)); }); if (!due.length) ul2.append(el("li", null, "Nothing is due overnight.")); body.append(ul2);
-  const first = sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") > now).sort((a, b) => Date.parse(a.at) - Date.parse(b.at))[0];
-  body.append(el("div","lbl","Next meeting"), el("p", null, first ? `${first.title_en || "Meeting"}, ${fmtWhen(Date.parse(first.at))} (${(first.members || []).length} people)` : "None booked."));
+  const first = sessions.filter(s => s.state === "scheduled" && (s.members || []).includes("owner") && Date.parse(s.at || "") > now).sort((a, b) => Date.parse(a.at) - Date.parse(b.at))[0];
+  body.append(el("div","lbl","Your next meeting"), el("p", null, first ? `${first.title_en || "Meeting"}, ${fmtWhen(Date.parse(first.at))} (${(first.members || []).length} people)` : "None booked."));
   body.append(el("div","lbl","A note for the Coordinator"));
   const inp = el("input"); inp.placeholder = "Anything for the night (optional)"; inp.setAttribute("aria-label", "Note for the Coordinator"); const sn = el("button","btn-lite","Send"), nt = el("span","note"); sn.type = "button";
   sn.onclick = async () => { const v = inp.value.trim(); if (!v || !db) return; sn.disabled = true; try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:"coordinator", task:null, kind:"note", text:v, author_id:me, relayed:false}); inp.value = ""; nt.textContent = "Sent."; } catch (err) { nt.textContent = writeError(err); } sn.disabled = false; };
@@ -1783,7 +1789,7 @@ function renderInbox(){
     box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
     const c = el("div","ib"); c.style.setProperty("--c", it.c);
-    if (figs.has(it.who)) { c.onmouseenter = () => { cardPoint.keep ??= [...pointed]; pointAt([it.who]); $("roomsHQ").classList.add("dim"); }; c.onmouseleave = () => { pointAt(cardPoint.keep || []); cardPoint.keep = null; $("roomsHQ").classList.remove("dim"); }; }   // pointing at a card lights its person in the office
+    if (figs.has(it.who)) { c.onmouseenter = () => { cardPoint.keep ??= [...pointed]; pointAt([it.who]); $("roomsHQ").classList.add("dim"); }; c.onmouseleave = () => { pointAt(cardPoint.keep || []); cardPoint.keep = null; $("roomsHQ").classList.remove("dim"); }; c.addEventListener("focusin", c.onmouseenter); c.addEventListener("focusout", e => { if (!c.contains(e.relatedTarget)) c.onmouseleave(); }); }   // pointing at a card lights its person in the office
     const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", it.rel || ago(it.at)));
     const a = el("div","ib-a"), open = it.key && inboxOpen.has(it.key), sent = it.key && sentEl(it.key);
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
@@ -1824,8 +1830,10 @@ const meetSpan = s => { const dur = (Number(s.duration_min) || 30) * 6e4;
   const st = Date.parse((s.state === "scheduled" ? s.at : s.opened_at || s.at) || ""); if (!st) return null; const end = Date.parse(s.closed_at || "") || st + dur; return {s:st, e:Math.max(end, st + 5 * 6e4)}; };
 let sched = {byTask:{}, byAgent:{}};
 /* estimates that learn (council round 10, from round 8): each agent's median of actual / estimate over its last 10 done tasks (3 or more), kept between 0.5 and 3 */
-function paceOf(){ const by = {};
-  tasks.filter(t => isClosed(t) && +t.estimate_min > 0 && Date.parse(t.started_at || "") && Date.parse(t.done_at || "")).sort((a, b) => String(b.done_at).localeCompare(String(a.done_at))).forEach(t => { const l = by[t.session || "-"] ||= []; if (l.length < 10) l.push((Date.parse(t.done_at) - Date.parse(t.started_at)) / 6e4 / +t.estimate_min); });
+function workMins(a, b, wd){ if (wd.start === 0 && wd.end === 24 && wd.days.length === 7) return (b - a) / 6e4;   // working minutes only, so nights and days off don't count
+  let m = 0; const d = new Date(a); d.setHours(0, 0, 0, 0); for (let i = 0; i < 90 && +d < b; i++, d.setDate(d.getDate() + 1)) { if (!wd.days.includes(d.getDay())) continue; const s = new Date(d), e = new Date(d); s.setHours(wd.start, 0, 0, 0); e.setHours(wd.end, 0, 0, 0); m += Math.max(0, Math.min(b, +e) - Math.max(a, +s)) / 6e4; } return m; }
+function paceOf(){ const by = {}, wd = workday();
+  tasks.filter(t => isClosed(t) && +t.estimate_min > 0 && Date.parse(t.started_at || "") && Date.parse(t.done_at || "")).sort((a, b) => String(b.done_at).localeCompare(String(a.done_at))).forEach(t => { const l = by[t.session || "-"] ||= []; if (l.length < 10) l.push(workMins(Date.parse(t.started_at), Date.parse(t.done_at), wd) / +t.estimate_min); });
   const out = {}; Object.entries(by).forEach(([who, l]) => { if (l.length < 3) return; l.sort((a, b) => a - b); const m = l[Math.floor(l.length / 2)]; out[who] = {f:Math.min(3, Math.max(.5, Math.round(m * 10) / 10)), n:l.length}; }); return out; }
 /* what a meeting costs (council round 8, Owner Advocate): plan once with the meeting and once without, and list the tasks it pushes */
 function meetCost(members, at, min){
@@ -1869,7 +1877,7 @@ function buildSchedule(){
   }
   tasks.filter(done).forEach(t => (byAgent[t.session || "-"] ||= []).push({kind:"task", s:byTask[t.id].s, e:byTask[t.id].e, t, done:true}));
   Object.values(byAgent).forEach(l => l.sort((a, b) => a.s - b.s));
-  sched = {byTask, byAgent};
+  sched = {byTask, byAgent, pace:learn};
 }
 const fmtWhen = ms => !ms || isNaN(ms) ? "no time set" : new Date(ms).toLocaleString("en-GB", {weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
 const fmtHM = ms => new Date(ms).toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
@@ -1883,7 +1891,7 @@ function whyTime(t){
   else if (p.why === "dep") out.push(p.s - p.depEnd > 6e4 ? `${p.after} ends ${fmtWhen(p.depEnd)}; it starts at the next working time, ${fmtWhen(p.s)}` : `Starts ${fmtWhen(p.s)} because ${p.after} ends then`);
   else if (p.why === "queue") out.push(`Starts ${fmtWhen(p.s)} after ${p.prev || "earlier work"} in ${nameOf(t.session)}'s queue`);
   else out.push(`Starts ${fmtWhen(p.s)}, the next free time`);
-  if (p.why !== "started" && p.why !== "report") { const pc = metaOffice?.learn_estimates && paceOf()[t.session]; out.push(`${fmtDur(estOf(t))} estimate${t.estimate_min ? "" : " (default)"}` + (pc && pc.f !== 1 ? `, planned × ${pc.f} from ${nameOf(t.session)}'s last ${pc.n} tasks` : "")); }
+  if (p.why !== "started" && p.why !== "report") { const pc = sched.pace?.[t.session]; out.push(`${fmtDur(estOf(t))} estimate${t.estimate_min ? "" : " (default)"}` + (pc && pc.f !== 1 ? `, planned × ${pc.f} from ${nameOf(t.session)}'s last ${pc.n} tasks` : "")); }
   const mt = (sched.byAgent[t.session] || []).filter(x => x.kind === "meet" && x.s < p.e && x.e > p.s); if (mt.length) out.push(`${mt.length} meeting${mt.length === 1 ? "" : "s"} in between (${fmtDur(Math.round(mt.reduce((m, x) => m + Math.min(x.e, p.e) - Math.max(x.s, p.s), 0) / 6e4))})`);
   if (p.lateDeps?.length) out.push(`moved by ${p.lateDeps.join(", ")} running late`);
   return out.join("; ") + "."; }
@@ -1908,16 +1916,18 @@ function timeBox(t){   // the task dialog's Time row
 function planWith(t, patch){
   const keepT = tasks, keepP = sched; let out = [];
   try { buildSchedule(); const base = sched; tasks = keepT.map(x => x.id === t.id ? {...x, ...patch} : x); buildSchedule();
-    out = tasks.filter(x => !isClosed(x)).map(x => { const a = base.byTask[x.id], b = sched.byTask[x.id]; return a && b ? {t:x, d:b.e - a.e, late:!a.lateBy && !!b.lateBy, ok:!!a.lateBy && !b.lateBy} : null; }).filter(x => x && (Math.abs(x.d) >= 6e4 || x.late || x.ok)); }
+    out = tasks.filter(x => !isClosed(x)).map(x => { const a = base.byTask[x.id], b = sched.byTask[x.id]; return a && b ? {t:x, d:b.e - a.e, e:b.e, was:a.e, late:!a.lateBy && !!b.lateBy, ok:!!a.lateBy && !b.lateBy} : null; }).filter(x => x && (Math.abs(x.d) >= 6e4 || x.late || x.ok)); }
   finally { tasks = keepT; sched = keepP; }
   return out; }
 const reaches = (from, to) => { const seen = new Set(), st = [from]; while (st.length) { const id = st.pop(); if (id === to) return true; if (seen.has(id)) continue; seen.add(id); const x = tasks.find(y => y.id === id); if (x) st.push(...depsOf(x)); } return false; };
 function timeEdit(t){
   const d = el("div","t-edit"), toLocal = ms => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-  let est = estOf(t), deps = depsOf(t).slice(), dueV = Date.parse(t.due_at || (t.due ? t.due + "T23:59:00" : "")) || 0;
+  let est = estOf(t), deps = depsOf(t).slice(), dueV = Date.parse(t.due_at || (t.due ? t.due + "T23:59:00" : "")) || 0; const was = {est, deps:deps.join(","), dueV};
   d.append(el("div","lbl","Time and order"));
   const er = el("div","mt-chips"); er.append(el("span","note","Takes"));
-  [[15,"15 min"],[30,"30 min"],[60,"1 h"],[120,"2 h"],[180,"3 h"],[240,"4 h"],[480,"8 h"],[960,"2 days"]].forEach(([m, l]) => { const b = el("button","chip-btn", l); b.type = "button"; b.setAttribute("aria-pressed", String(m === est)); b.onclick = () => { est = m; [...er.querySelectorAll(".chip-btn")].forEach(c => c.setAttribute("aria-pressed", String(c === b))); prev(); }; er.append(b); });
+  [[15,"15 min"],[30,"30 min"],[60,"1 h"],[120,"2 h"],[180,"3 h"],[240,"4 h"],[480,"8 h"],[960,"2 days"]].forEach(([m, l]) => { const b = el("button","chip-btn", l); b.type = "button"; b.setAttribute("aria-pressed", String(m === est)); b.onclick = () => { est = m; cm.value = ""; [...er.querySelectorAll(".chip-btn")].forEach(c => c.setAttribute("aria-pressed", String(c === b))); prev(); }; er.append(b); });
+  const cm = el("input"); cm.type = "number"; cm.min = "5"; cm.step = "5"; cm.className = "est-min"; cm.setAttribute("aria-label", "Minutes"); cm.placeholder = "min"; if (![15,30,60,120,180,240,480,960].includes(est)) cm.value = est;
+  cm.oninput = () => { const v = Math.round(+cm.value); if (v >= 5) { est = v; [...er.querySelectorAll(".chip-btn")].forEach(c => c.setAttribute("aria-pressed", "false")); prev(); } }; er.append(el("span","note","or"), cm, el("span","note","min"));   // any length, like 90 min or 5 h
   const dr = el("div","row-wrap"), du = el("input"); du.type = "datetime-local"; du.setAttribute("aria-label","Deadline"); if (dueV) du.value = toLocal(dueV); const nd = el("button","linkish","No deadline"); nd.type = "button";
   du.onchange = () => { dueV = Date.parse(du.value) || 0; prev(); }; nd.onclick = () => { du.value = ""; dueV = 0; prev(); }; dr.append(el("span","note","Deadline"), du, nd);
   const pr = el("div","row-wrap"), list = el("span","row-wrap"), add = el("select"); add.setAttribute("aria-label","Add a task it needs first");
@@ -1925,15 +1935,17 @@ function timeEdit(t){
     add.replaceChildren(new Option("Add a task it needs first…", "")); tasks.filter(x => x.id !== t.id && !deps.includes(x.id)).sort((a, b) => String(a.id).localeCompare(String(b.id))).forEach(x => { const o = new Option(`${x.id} · ${ttl(x)}${reaches(x.id, t.id) ? " (would loop)" : ""}`, x.id); o.disabled = reaches(x.id, t.id); add.append(o); }); };   // a task that already waits for this one can't come first
   add.onchange = () => { if (add.value) { deps.push(add.value); drawDeps(); prev(); } };
   pr.append(el("span","note","Needs first"), list, add); drawDeps();
-  const pv = el("div","mt-cost"), ok = el("button","btn","Save"), no = el("button","btn-lite","Cancel"), nt = el("span","note"); ok.type = no.type = "button";
-  const patch = () => ({estimate_min:est, due_at:dueV ? new Date(dueV).toISOString() : null, due:null, depends_on:deps});
-  function prev(){ const c = planWith(t, patch()), mv = c.filter(x => x.d >= 6e4), bk = c.filter(x => x.d <= -6e4);
-    pv.className = "mt-cost" + (c.some(x => x.late) ? " t-warn" : ""); pv.textContent = !c.length ? "Moves nothing else." : [mv.length ? `Moves ${mv.length} task${mv.length === 1 ? "" : "s"} later` : "", bk.length ? `${bk.length} earlier` : "", c.filter(x => x.late).map(x => `${x.t.id} now late`).join(", "), c.filter(x => x.ok).map(x => `${x.t.id} back on time`).join(", ")].filter(Boolean).join("; ") + "."; pv.title = c.map(x => `${x.t.id} ${x.d >= 0 ? "+" : "−"}${fmtDur(Math.round(Math.abs(x.d) / 6e4))}`).join("\n"); }
-  ok.onclick = async () => { ok.disabled = true; const pa = patch(), parts = [`takes ${fmtDur(pa.estimate_min)}`, pa.due_at ? `due ${fmtWhen(Date.parse(pa.due_at))}` : "no deadline", deps.length ? `needs ${deps.join(", ")} first` : "needs nothing first"];
+  const pv = el("div","mt-cost"); pv.setAttribute("aria-live", "polite"); const ok = el("button","btn","Save"), no = el("button","btn-lite","Cancel"), nt = el("span","note"); ok.type = no.type = "button";
+  const patch = () => { const o = {}; if (est !== was.est) o.estimate_min = est; if (dueV !== was.dueV) { o.due_at = dueV ? new Date(dueV).toISOString() : null; o.due = null; } if (deps.join(",") !== was.deps) o.depends_on = deps; return o; };   // only what changed: no invented estimate
+  function prev(){ const pa = patch(); ok.disabled = !Object.keys(pa).length; if (!Object.keys(pa).length) { pv.className = "mt-cost"; pv.textContent = "No change yet."; return; }
+    const all = planWith(t, pa), me = all.find(x => x.t.id === t.id), c = all.filter(x => x.t.id !== t.id), mv = c.filter(x => x.d >= 6e4), bk = c.filter(x => x.d <= -6e4);   // the task itself isn't one of the "others" it moves
+    pv.className = "mt-cost" + (c.some(x => x.late) ? " t-warn" : ""); pv.textContent = (me ? `Ends ${fmtWhen(me.e)} (was ${fmtWhen(me.was)})${me.late ? ", late" : me.ok ? ", on time again" : ""}. ` : "") + (!c.length ? "Moves nothing else." : [mv.length ? `Moves ${mv.slice(0, 3).map(x => x.t.id).join(", ")}${mv.length > 3 ? ` and ${mv.length - 3} more` : ""} later` : "", bk.length ? `${bk.slice(0, 3).map(x => x.t.id).join(", ")}${bk.length > 3 ? ` and ${bk.length - 3} more` : ""} earlier` : "", c.filter(x => x.late).map(x => `${x.t.id} now late`).join(", "), c.filter(x => x.ok).map(x => `${x.t.id} back on time`).join(", ")].filter(Boolean).join("; ") + "."); pv.title = c.map(x => `${x.t.id} ${x.d >= 0 ? "+" : "−"}${fmtDur(Math.round(Math.abs(x.d) / 6e4))}`).join("\n"); }
+  ok.onclick = async () => { const pa = patch(); if (!Object.keys(pa).length) return; ok.disabled = true; const parts = [..."estimate_min" in pa ? [`takes ${fmtDur(pa.estimate_min)}`] : [], ..."due_at" in pa ? [pa.due_at ? `due ${fmtWhen(Date.parse(pa.due_at))}` : "no deadline"] : [], ..."depends_on" in pa ? [deps.length ? `needs ${deps.join(", ")} first` : "needs nothing first"] : []];
     try { await db.doc("tasks/" + t.id).update({...pa, updated_at:new Date().toISOString(), plan_changed_by:"owner"});
       if (t.session) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:t.session, task:t.id, kind:"update", text:`Plan change for ${t.id}: ${parts.join("; ")}.`, author_id:me, relayed:false});
-      Object.assign(t, pa); renderAll(); announce(`Saved. ${nameOf(t.session)} was told.`); openTask(t.id); } catch (err) { nt.textContent = writeError(err); ok.disabled = false; } };
+      Object.assign(t, pa); planDirty = false; buildSchedule(); renderAll(false); announce(`Saved. ${nameOf(t.session)} was told.`); openTask(t.id); } catch (err) { nt.textContent = writeError(err); ok.disabled = false; } };
   no.onclick = () => openTask(t.id);
+  d.addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); no.onclick(); } });   // Escape leaves the editor, not the whole dialog
   const btns = el("div","row-wrap"); btns.append(ok, no, nt); d.append(er, dr, pr, pv, btns); prev(); requestAnimationFrame(() => er.querySelector("[aria-pressed=true]")?.focus() || er.querySelector(".chip-btn")?.focus()); return d; }
 let calWho = "", calWeek = 0, calHealth = "";
 // Plan health: what in the computed plan needs a look, above the Everyone list.
@@ -1954,6 +1966,7 @@ function drift(){
     rows.push([t, `${fmtWhen(b.e)} → ${fmtWhen(p.e)} (+${fmtDur(Math.round(d / 6e4))}). ` + (estOf(t) !== b.est ? `Re-estimated: ${fmtDur(b.est)} → ${fmtDur(estOf(t))}` : whyText(p) || "Took longer than planned"), d]); });
   const now = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
   return {rows, slipped:rows.filter(r => r[2]).length, added:rows.filter(r => !r[2]).length, at:baseline.at, was:baseline.done_by || 0, now}; }
+const askEst = {state:"", tm:0, n:0};
 function planHealth(){
   const open = tasks.filter(t => !isClosed(t)), P = t => sched.byTask[t.id] || {};
   const kinds = [
@@ -1973,11 +1986,12 @@ function planHealth(){
   if (!box.querySelector("button")) box.append(el("span","chip","All clear"));
   /* ask for estimates (council round 10, Owner Advocate): one tap, 5 seconds to Undo, one message per agent; never sent by itself */
   const miss = open.filter(t => t.session && (!t.estimate_min || (!t.due_at && !t.due))), whoM = [...new Set(miss.map(t => t.session))];
-  if (canWrite && whoM.length) { const ask = el("button","linkish", `Ask ${whoM.length} agent${whoM.length === 1 ? "" : "s"} for estimates`); ask.type = "button"; ask.title = "Asks each agent to add an estimate and a deadline to their tasks that lack one";
-    let tm = 0; ask.onclick = () => { if (tm) { clearTimeout(tm); tm = 0; ask.textContent = `Ask ${whoM.length} agent${whoM.length === 1 ? "" : "s"} for estimates`; return; }
-      ask.textContent = `Asking ${whoM.length} in 5 s · Undo`; tm = setTimeout(async () => { tm = 0; try { for (const who of whoM) { const ids = miss.filter(t => t.session === who).map(t => t.id);
-        await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:who, task:ids.length === 1 ? ids[0] : null, kind:"question", text:`Please add an estimate (estimate_min) and a deadline (due_at) to: ${ids.join(", ")}.`, author_id:me, relayed:false}); }
-        ask.textContent = `Asked ${whoM.length}`; ask.disabled = true; } catch (err) { ask.textContent = writeError(err); } }, 5000); }; box.append(ask); }
+  if (canWrite && ownerView() && (whoM.length || askEst.state)) { const ask = el("button","linkish", askEst.state === "wait" ? `Asking ${askEst.n} in 5 s · Undo` : askEst.state || `Ask ${whoM.length} agent${whoM.length === 1 ? "" : "s"} for estimates`); ask.type = "button"; ask.title = "Asks each agent to add an estimate and a deadline to their tasks that lack one";
+    ask.disabled = !!askEst.state && askEst.state !== "wait";
+    ask.onclick = () => { if (askEst.state === "wait") { clearTimeout(askEst.tm); askEst.state = ""; renderCalendar(); return; }   // the pending ask lives outside the redraw, so Undo survives it and nothing goes twice
+      const plan = whoM.map(who => [who, miss.filter(t => t.session === who).map(t => t.id)]); askEst.state = "wait"; askEst.n = plan.length;
+      askEst.tm = setTimeout(async () => { try { for (const [who, ids] of plan) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:who, task:ids.length === 1 ? ids[0] : null, kind:"question", text:`Please add an estimate (estimate_min) and a deadline (due_at) to: ${ids.join(", ")}.`, author_id:me, relayed:false});
+        askEst.state = `Asked ${plan.length}`; } catch (err) { askEst.state = ""; announce(writeError(err)); } renderCalendar(); }, 5000); renderCalendar(); }; box.append(ask); }
   const dr = drift();
   if (dr) { const line = el("div","drift"), moved = dr.now && dr.was ? Math.round((dr.now - dr.was) / 6e4) : 0;
     const t0 = Date.parse(dr.at); line.append(el("b", null, `Since the plan was locked, ${localDay(t0) === localDay(Date.now()) ? fmtHM(t0) : fmtWhen(t0)}:`), el("span","note", moved > 15 ? `done-by moved ${fmtDur(moved)} later` : moved < -15 ? `done-by moved ${fmtDur(-moved)} earlier` : "done-by holds"));
@@ -2023,7 +2037,7 @@ function renderCalendar(){
   const sel = $("calWho"); if (!sel) return;
   const people = agents.filter(a => a.id !== "owner").sort((a, b) => nameOf(a.id).localeCompare(nameOf(b.id)));
   const keep = calWho; sel.replaceChildren(new Option("Everyone", ""), new Option("Rooms (bookings)", "@rooms")); people.forEach(a => sel.append(new Option(nameOf(a.id), a.id))); sel.value = keep === "@rooms" || people.some(a => a.id === keep) ? keep : ""; calWho = sel.value;
-  const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? `${lateN} late` : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : "";
+  const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : "";
   document.querySelectorAll(".cal-pills button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === calWho)));
   const box = $("calBody"); box.replaceChildren();
   const d0 = weekStart(calWeek), d6 = new Date(+d0 + 6 * DAY);
@@ -2083,7 +2097,7 @@ function renderSummary(){
   box.append(el("span","sum-lbl","Work"));
   box.append(goChip(el("span","chip", `Open tasks: ${open}`), () => showTab("board"), "Open the task board"));
   const os = sessions.filter(x => x.state === "open").length; if (os) box.append(goChip(el("span","chip", `Open sessions: ${os}`), () => showTab("chat"), "Open the chat"));
-  const blk = tasks.filter(t => t.state === "blocked").length; $("taskCount").textContent = blk ? `${blk} blocked` : ""; $("tab-board").title = blk ? `${blk} task${blk === 1 ? "" : "s"} blocked` : "";   // a tab number means "look here"
+  const blk = tasks.filter(t => t.state === "blocked").length; $("taskCount").textContent = blk ? String(blk) : ""; $("tab-board").title = blk ? `${blk} task${blk === 1 ? "" : "s"} blocked` : "";   // a tab number means "look here"
   const latest = [...agents.map(a=>a.updated_at), ...tasks.map(t=>t.updated_at)].filter(Boolean).sort().pop();
   $("updated").textContent = latest ? `Last update: ${fmt(latest)}` : "";
 }
@@ -2186,7 +2200,7 @@ function openTask(id){
   const t = tasks.find(x => x.id === id); if (!t) return;
   const body = $("taskBody"); body.replaceChildren();
   const top = el("div"); top.append(el("span","mono", `${t.id} · ${nameOf(t.session)}`), el("h3", null, ttl(t))); body.append(top);
-  if (canWrite && ownerView()) { const on = following().includes(t.id), st = el("button","btn-lite fl-star", on ? "★ Following" : "☆ Follow"); st.type = "button"; st.setAttribute("aria-pressed", String(on)); st.title = "Keep this task in the strip above the office"; st.onclick = async () => { await toggleFollow(t.id); st.textContent = st.textContent.startsWith("★") ? "☆ Follow" : "★ Following"; }; top.append(st); }
+  if (canWrite && ownerView()) { const on = following().includes(t.id), st = el("button","btn-lite fl-star", on ? "★ Following" : "☆ Follow"); st.type = "button"; st.setAttribute("aria-pressed", String(on)); st.title = "Keep this task in the strip above the office"; st.onclick = async () => { if (await toggleFollow(t.id) === false) return; st.textContent = st.textContent.startsWith("★") ? "☆ Follow" : "★ Following"; }; top.append(st); }
   const st = STATES.find(s => s.k === t.state); const sr = el("div"); sr.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center"; const sc = el("span","chip"); sc.textContent = st ? st.en : (t.state || ""); sr.append(sc); if (t.feature) sr.append(flabel(t.feature)); if (versions().length) sr.append(el("span","chip", verName(verOf(t)))); sr.append(el("span","chip", "Phase: " + phaseName(phaseOf(t)))); body.append(sr);
   if (t.summary_en) { const d = el("div"); d.append(el("div","lbl","Summary"), el("div", null, t.summary_en)); body.append(d); }
   body.append(timeBox(t));
@@ -3373,12 +3387,12 @@ const CONTRACT = {
   messages:{at:{en:T_TIME, req:1, time:1}}};
 const isTime = v => typeof v === "string" && !isNaN(Date.parse(v)) && /(Z|[+-]\d\d:?\d\d)$/.test(v);
 function dataCheck(){
-  const out = [], src = {agents, tasks, sessions, messages:msgs.slice(-200)};
+  const out = [], src = {agents, tasks:tasks.filter(t => !isClosed(t)), sessions:sessions.filter(x => x.state !== "closed"), messages:msgs.slice(-200)};   // done and closed docs can't be fixed, so they don't count
   Object.entries(CONTRACT).forEach(([col, F]) => (src[col] || []).forEach(d => Object.entries(F).forEach(([k, r]) => { const v = d[k];
     if (v == null || v === "") { if (r.req) out.push({col, id:d.id, k, v, en:r.en}); return; }
     if (r.time ? !isTime(v) : r.ok && !r.ok(v)) out.push({col, id:d.id, k, v, en:r.en}); })));
   return out; }
-function renderPace(){ const on = $("paceOn"); if (!on) return; on.checked = !!metaOffice?.learn_estimates; const pc = paceOf(), l = Object.entries(pc);
+function renderPace(){ const on = $("paceOn"); if (!on) return; on.checked = !!metaOffice?.learn_estimates; on.disabled = !canWrite || !ownerView(); const pc = paceOf(), l = Object.entries(pc);
   $("paceList").textContent = l.length ? l.map(([who, x]) => `${nameOf(who)} × ${x.f} (${x.n} tasks)`).join(" · ") : "No agent has 3 finished tasks with start and done times yet.";
   on.onchange = async () => { try { await db.doc("meta/office").update({learn_estimates:on.checked}); } catch (err) { $("paceList").textContent = writeError(err); on.checked = !on.checked; } }; }
 function renderDataCheck(){
@@ -3521,7 +3535,7 @@ function renderAll(plan = true){ if (plan) planDirty = true; if (renderQueued) r
 const TAB_DRAW = {office:() => { drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); }, chat:() => { drawScene(); renderMsgs(); renderDecisions(); },
   board:() => renderBoard(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); renderDataCheck(); renderPace(); }};
 function drawTab(t){ staleTabs.delete(t); TAB_DRAW[t]?.(); }
-function calBadge(){ const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? `${lateN} late` : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : ""; }
+function calBadge(){ const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : ""; }
 function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } watchBaseline();
   Object.keys(TAB_DRAW).forEach(t => staleTabs.add(t)); drawTab(curTab || "office");
   if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route();
@@ -3542,7 +3556,7 @@ renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000); setInterval(() =>
   const subscribeAll = () => { const keep = u => { live.unsubs.push(u); return u; };
   live.unsubs.forEach(u => { try { u(); } catch {} }); live.unsubs = []; live.got = new Set();
   keep(db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("agents"); $("conn").textContent = "Connected. Updates appear live."; renderAll(); }, onErr));
-  keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; renderAll(); const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {}));
+  keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; const sk = JSON.stringify([metaOffice.workday, metaOffice.learn_estimates]); renderAll(sk !== live.schedKey); live.schedKey = sk; /* stars and snoozes do not replan */ const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {}));
   keep(db.collection("tasks").onSnapshot(s => { tasks = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("tasks"); renderAll(); }, onErr));
   /* the newest 500 messages (an ascending query with a limit would keep the oldest); falls back if the db can't sort descending */
   let msgGot = false;   // the ascending fallback is only for a db that can't sort; a later error reconnects instead
