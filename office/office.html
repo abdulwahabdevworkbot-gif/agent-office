@@ -376,6 +376,10 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag.cheer img.body{filter:drop-shadow(0 0 4px #ffd43b) drop-shadow(0 0 12px rgba(255,212,59,.9));animation:cheer 1s ease-out 2}
 @keyframes cheer{50%{transform:translateY(-4%)}}
 @media (prefers-reduced-motion:reduce){.ag.cheer img.body{animation:none}.done-toast{transition:none}}
+.rp-chips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.rp-chips .chip-btn{font-size:12px;padding:2px 9px}
+.room::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 75%,rgba(255,190,110,.18),transparent 60%),rgba(18,28,78,.42);mix-blend-mode:multiply;opacity:0;transition:opacity 2s;border-radius:inherit}
+.rooms.night .room::after{opacity:1}
+@media (prefers-reduced-motion:reduce){.room::after{transition:none}}
 .next3{display:flex;gap:6px 16px;flex-wrap:wrap;align-items:baseline;font-size:13px;padding:6px 10px;margin:0 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.n3 b{font-variant-numeric:tabular-nums;margin-inline-end:2px}.n3.late{color:var(--late)}
 .follow-strip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.fl-chip{all:unset;box-sizing:border-box;display:flex;gap:6px;align-items:center;max-width:100%;padding:5px 10px;border:1px solid var(--line);border-inline-start:3px solid var(--accent);border-radius:8px;background:var(--panel);cursor:pointer;font-size:13px}
 .fl-chip span:not(.note){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}.fl-chip.late{border-inline-start-color:var(--late)}.fl-chip.blk{border-inline-start-color:var(--bad)}.fl-chip.done{border-inline-start-color:var(--ok);opacity:.75}.fl-chip:focus-visible{outline:2px solid var(--accent)}
@@ -706,7 +710,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
         <h2 id="talkTitle">Meeting room</h2>
         <div class="room" id="talkRoom" aria-label="The room of this conversation"><span class="label">Meeting room<small></small></span></div>
         <p class="hint" id="talkHint"></p>
-        <div class="dec-log"><h2>Your decisions</h2><div id="decList"></div></div>
+        <div class="dec-log"><div class="row-wrap" style="justify-content:space-between"><h2>Decisions</h2><span class="mt-chips" role="group" aria-label="Whose decisions"><button type="button" class="chip-btn" id="decMine" aria-pressed="true">Yours</button><button type="button" class="chip-btn" id="decOthers" aria-pressed="false">Without you</button></span></div><div id="decList"></div></div>
       </aside>
     </div>
   </section>
@@ -1240,6 +1244,7 @@ const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 18
 function setRoomBg(){
   const bg = (k, n) => { const b = typeOf(k) === "meet" ? meetBg(meetCount) : ROOM_BG[typeOf(k)]; return b ? `url(${A}rooms/${Array.isArray(b) ? b[(n - 1) % b.length] : b}.webp)` : ""; };
   Object.entries(ROOMS).forEach(([k, r]) => { const n = k === baseOf(k) ? 1 : +k.split("-").pop() || 1; r.style.backgroundImage = bg(k, n); });
+  $("roomsHQ").classList.toggle("night", isNight());   // night in the office (council round 12, UX): a blue tint over the rooms, people on top
   const d = new Date(); $("clock").textContent = (isNight() ? "NIGHT " : "DAY ") + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
 }
 let built = false;
@@ -1409,6 +1414,7 @@ function hoverCard(id){
   const top = el("div","hc-top"), nm = el("div"); nm.append(el("b", null, nameOf(id)), el("div","note", id === "owner" ? "You" : [titleOf(a || {}), roleOf(a || {})].filter(Boolean).join(" · ")));
   top.append(avatar(id, 34), nm); const rows = [top];
   if (a) { const dz = idleSince(a); rows.push(dz ? el("div","note", "Idle since " + idleDate(dz)) : stateChip(a.state)); }
+  if (a) { const w = waitsOf(id); if (w.on.length) rows.push(el("div","note", "Waiting on: " + w.on.map(([who, why]) => `${nameOf(who)} (${why[0]}${why.length > 1 ? ` +${why.length - 1}` : ""})`).join(", "))); if (w.me.length) rows.push(el("div","note", "Waiting on them: " + w.me.map(([who]) => nameOf(who)).join(", "))); }
   if (a?.state === "blocked") { const bi = blockInfo(a, l.find(x => x.kind === "task")?.t); if (bi.why) rows.push(el("div","blk-why", bi.why)); if (bi.needs) rows.push(el("div","blk-why need", "Needs from you: " + bi.needs)); }
   else if (a?.doing_en) rows.push(el("div", null, a.doing_en));
   if (cur) rows.push(el("div","note", "Now: " + lab(cur) + " · until " + fmtHM(cur.e)));
@@ -1662,7 +1668,10 @@ function inlineReply(key, target, ph){
       quickReplies({session:doc.session || null, task:doc.task || null, to:doc.to, text, decision}); renderInbox(); }
     catch (err) { note.textContent = writeError(err); send.disabled = dec.disabled = false; } };
   send.onclick = () => go1(false); dec.onclick = () => go1(true); enterSends(ta, () => go1(false));
-  const r = el("div","row-wrap"); r.append(send, dec, note); w.append(ta, r);
+  /* reply templates (council round 12, Product Lead): a chip fills the box; "I'll answer when I'm back" sends with 5 s Undo and snoozes the card 3 h */
+  const tp = el("div","rp-chips"); [["Yes, go ahead"], ["No, wait"], ["Explain in one line"], ["I'll answer when I'm back", true]].forEach(([t, later]) => { const c = el("button","chip-btn", t); c.type = "button";
+    c.onclick = () => { if (!later) { ta.value = t + "."; ta.oninput(); ta.focus(); return; } const it = inboxItems.find(x => x.key === key); quickSend(key, target.to, target.task, "I'll answer when I'm back.", "owner"); if (it && ownerView()) setTimeout(() => { if (inboxSent.has(key)) snooze([snzKey(it)], Date.now() + 3 * 36e5); }, 5600); }; tp.append(c); });
+  const r = el("div","row-wrap"); r.append(send, dec, note); w.append(ta, tp, r);
   if (inboxOpen.get(key)?.focus) { inboxOpen.set(key, {draft:ta.value}); setTimeout(() => ta.focus(), 0); }   // focus only when the owner opens it, never on a redraw
   return w; }
 /* the "!" over a character opens its card in Needs you, ready to answer */
@@ -1926,6 +1935,17 @@ function whyTime(t){
   const mt = (sched.byAgent[t.session] || []).filter(x => x.kind === "meet" && x.s < p.e && x.e > p.s); if (mt.length) out.push(`${mt.length} meeting${mt.length === 1 ? "" : "s"} in between (${fmtDur(Math.round(mt.reduce((m, x) => m + Math.min(x.e, p.e) - Math.max(x.s, p.s), 0) / 6e4))})`);
   if (p.lateDeps?.length) out.push(`moved by ${p.lateDeps.join(", ")} running late`);
   return out.join("; ") + "."; }
+/* who waits on whom (council round 12, Engineer): from depends_on across agents, plus an optional agents.blocked_on */
+function waitsOf(id){
+  const on = new Map(), me = new Map();
+  tasks.filter(t => !isClosed(t)).forEach(t => depsOf(t).forEach(d => { const x = tasks.find(y => y.id === d); if (!x || isClosed(x) || !x.session || x.session === t.session) return;
+    if (t.session === id) on.set(x.session, [...(on.get(x.session) || []), `${t.id} needs ${x.id}`]);
+    if (x.session === id) me.set(t.session, [...(me.get(t.session) || []), `${t.id} needs ${x.id}`]); }));
+  const bo = agentById(id)?.blocked_on; if (bo) { const x = tasks.find(t => t.id === bo), who = x ? x.session : agentById(bo) ? bo : ""; if (who && who !== id) on.set(who, [...(on.get(who) || []), x ? `blocked on ${x.id}` : "blocked on them"]); }
+  return {on:[...on], me:[...me]}; }
+function bottlenecks(){ const n = new Map(), end = Date.now() + DAY;
+  tasks.filter(t => !isClosed(t) && (sched.byTask[t.id]?.s || 0) <= end).forEach(t => depsOf(t).forEach(d => { const x = tasks.find(y => y.id === d); if (x && !isClosed(x) && x.session && x.session !== t.session) n.set(x.session, (n.get(x.session) || new Set()).add(t.id)); }));
+  return [...n].map(([who, s]) => [who, s.size]).sort((a, b) => b[1] - a[1]).slice(0, 5); }
 /* what sets the date (council round 10, Owner Advocate): walk back from a task through the dependency or queue that set its start */
 function chainOf(id){ const out = [], seen = new Set(); let cur = id;
   while (cur && !seen.has(cur) && out.length < 8) { seen.add(cur); out.unshift(cur); const p = sched.byTask[cur]; if (!p || p.done) break; cur = p.why === "dep" ? p.after : p.why === "queue" ? p.prev : ""; }
@@ -2015,6 +2035,8 @@ function planHealth(){
     c.textContent = `${K.en}: ${l.length}`; c.setAttribute("aria-pressed", String(calHealth === K.k)); c.onclick = () => { calHealth = calHealth === K.k ? "" : K.k; renderCalendar(); }; box.append(c);
     if (calHealth === K.k) rows = l.map(t => [t, K.why(t)]); });
   if (!box.querySelector("button")) box.append(el("span","chip","All clear"));
+  const bn = bottlenecks(); if (bn.length && bn[0][1] > 1) { const c = el("button","chip go", `Bottleneck: ${nameOf(bn[0][0])} holds ${bn[0][1]} tasks`); c.type = "button"; c.title = "Agents whose open work others wait on (next 24 h): " + bn.map(([w, k]) => `${nameOf(w)} ${k}`).join(", "); c.setAttribute("aria-pressed", String(calHealth === "bneck")); c.onclick = () => { calHealth = calHealth === "bneck" ? "" : "bneck"; renderCalendar(); }; box.append(c);
+    if (calHealth === "bneck") rows = bn.flatMap(([w]) => tasks.filter(x => x.session === w && !isClosed(x) && tasks.some(t => !isClosed(t) && t.session !== w && depsOf(t).includes(x.id))).map(x => [x, `Others wait on it: ${tasks.filter(t => !isClosed(t) && t.session !== w && depsOf(t).includes(x.id)).map(t => t.id).join(", ")}`])); }
   /* dropped baton (council round 12, Engineer): everything it needs is done, 30+ min ago, nobody started it, and its agent has nothing in progress */
   const idleAg = id => !tasks.some(x => x.session === id && (x.state === "doing" || x.state === "review")), now0 = Date.now();
   const baton = open.filter(t => t.state === "todo" && !t.started_at && t.session && depsOf(t).length && depsOf(t).every(d => { const x = tasks.find(y => y.id === d); return x && isClosed(x); }) && idleAg(t.session)
@@ -3035,8 +3057,20 @@ function renderSelects(){
 }
 $("sendDecision").onclick = () => { if (!$("text").value.trim()) { $("text").focus(); return; } $("isDecision").checked = true; $("compose").requestSubmit(); };
 /* the owner's decisions, newest first, each with where it was said and Reopen (B9, council 2026-10-23) */
+/* decided without you (council round 12, Owner Advocate): others' decisions, closures and outcomes of meetings the owner wasn't in; Reopen sends one message after 5 s, with Undo */
+let decMode = "mine"; const decPend = new Map();
 function renderDecisions(){
-  const box = $("decList"); if (!box) return; box.replaceChildren();
+  const box = $("decList"); if (!box) return; box.replaceChildren(); $("decMine").setAttribute("aria-pressed", String(decMode === "mine")); $("decOthers").setAttribute("aria-pressed", String(decMode !== "mine"));
+  if (decMode !== "mine") { const L = [...msgs.filter(m => m.kind === "decision" && m.from !== "owner").map(m => ({at:m.at, who:m.from, text:m.text_en || m.text || "", task:m.task, to:m.from, key:"m" + m.id, open:() => m.session ? viewSession(m.session) : null})),
+      ...sessions.filter(x => x.state === "closed" && !x.cancelled && !x.missed && x.closed_by !== "owner" && (x.resolution_en || x.outcome_en) && !(x.members || []).includes("owner")).map(x => ({at:x.closed_at, who:x.closed_by || "coordinator", text:`${x.title_en || "Conversation"}: ${x.resolution_en || x.outcome_en}`, task:x.task, to:x.closed_by && agentById(x.closed_by) ? x.closed_by : "coordinator", key:"s" + x.id, open:() => viewSession(x.id)}))]
+      .sort((a, b) => String(b.at || "").localeCompare(String(a.at || ""))).slice(0, 10);
+    if (!L.length) { box.append(el("div","note","Nothing was decided without you.")); return; }
+    L.forEach(d => { const r = el("div","dec"), top = el("div","dec-top"); top.append(el("span","note", fmt(d.at)), el("span","note", nameOf(d.who))); if (d.task) top.append(taskLink(d.task));
+      const acts = el("div","row-wrap"), op = el("button","linkish","Open"); op.type = "button"; op.onclick = d.open; acts.append(op);
+      if (canWrite) { const re = el("button","linkish", decPend.has(d.key) ? "Reopening in 5 s · Undo" : decPend.get(d.key + "!") || "Reopen"); re.type = "button";
+        re.onclick = () => { if (decPend.has(d.key)) { clearTimeout(decPend.get(d.key)); decPend.delete(d.key); renderDecisions(); return; }
+          decPend.set(d.key, setTimeout(async () => { decPend.delete(d.key); try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:d.to, task:d.task || null, kind:"owner", text:`I'm reopening this: "${d.text.slice(0, 200)}". Please hold it until we talk.`, author_id:me, relayed:false}); decPend.set(d.key + "!", "Reopened"); } catch (err) { announce(writeError(err)); } renderDecisions(); }, 5000)); renderDecisions(); }; acts.append(re); }
+      r.append(top, el("div","dec-t", d.text), acts); box.append(r); }); return; }
   const list = msgs.filter(m => m.from === "owner" && m.kind === "decision").sort((a, b) => String(b.at || "").localeCompare(String(a.at || ""))).slice(0, 8);
   if (!list.length) { box.append(el("div","note","None yet. Press \u201cSend as decision\u201d and it is kept here.")); return; }
   list.forEach(m => { const r = el("div","dec" + (m.reopened ? " reopened" : "")); const s = m.session && sessions.find(x => x.id === m.session);
@@ -3050,6 +3084,7 @@ function renderDecisions(){
       acts.append(re); } else if (m.reopened) acts.append(el("span","tp-tag closed","Reopened"));
     r.append(top, el("div","dec-t", m.text || ""), acts); box.append(r); });
 }
+$("decMine").onclick = () => { decMode = "mine"; renderDecisions(); }; $("decOthers").onclick = () => { decMode = "others"; renderDecisions(); };
 $("compose").addEventListener("submit", async e => {
   e.preventDefault();
   const text = $("text").value.trim(); if (!text) return;
