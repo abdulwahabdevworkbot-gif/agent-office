@@ -383,6 +383,12 @@ h2{font-weight:700;font-size:19px;margin:0}
 .room::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 75%,rgba(255,190,110,.18),transparent 60%),rgba(18,28,78,.42);mix-blend-mode:multiply;opacity:0;transition:opacity 2s;border-radius:inherit}
 .rooms.night .room::after{opacity:1}
 @media (prefers-reduced-motion:reduce){.room::after{transition:none}}
+.night-strip{display:grid;gap:4px;margin:0 0 10px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:12.5px}.ns-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ns-track{overflow-x:auto}
+.ns-line{position:relative;height:34px;min-width:340px;margin:0 8px}.ns-line::before{content:"";position:absolute;left:0;right:0;top:11px;border-top:1px solid var(--line)}
+.ns-dot{position:absolute;top:3px;width:16px;height:16px;margin-left:-8px;border-radius:50%;border:2px solid var(--panel);background:var(--c);padding:0;cursor:pointer;font:600 9px/12px system-ui,sans-serif;color:#fff;transition:transform .2s}.ns-dot:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ns-dot.on{transform:scale(1.35);box-shadow:0 0 0 2px var(--ink)}.ns-tick{position:absolute;bottom:0;font-size:10px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}.ns-cap{min-height:1.3em}.ns-cap ul{margin:2px 0 0;padding-inline-start:18px}
+@media (prefers-reduced-motion:reduce){.ns-dot{transition:none}}
+.ib-free + .ib-s{grid-column:2}.ib-free{grid-column:2;font-size:12px;font-weight:600;color:var(--accent)}
 .next3{display:flex;gap:6px 16px;flex-wrap:wrap;align-items:baseline;font-size:13px;padding:6px 10px;margin:0 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.n3 b{font-variant-numeric:tabular-nums;margin-inline-end:2px}.n3.late{color:var(--late)}
 .follow-strip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.fl-chip{all:unset;box-sizing:border-box;display:flex;gap:6px;align-items:center;max-width:100%;padding:5px 10px;border:1px solid var(--line);border-inline-start:3px solid var(--accent);border-radius:8px;background:var(--panel);cursor:pointer;font-size:13px}
 .fl-chip span:not(.note){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}.fl-chip.late{border-inline-start-color:var(--late)}.fl-chip.blk{border-inline-start-color:var(--bad)}.fl-chip.done{border-inline-start-color:var(--ok);opacity:.75}.fl-chip:focus-visible{outline:2px solid var(--accent)}
@@ -643,6 +649,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
       <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite ph-more" id="moreBtn" type="button" aria-expanded="false">More</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
       <div class="next3" id="next3" hidden></div>
+      <div class="night-strip" id="nightStrip" hidden></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
     <div class="follow-strip" id="followStrip" hidden></div>
@@ -1694,7 +1701,7 @@ addEventListener("pagehide", saveSeen);
 function renderSince(){
   const box = $("since"); if (!box) return;
   const after = iso => (Date.parse(iso || "") || 0) > seenAt;
-  if (!seenAt || Date.now() - seenAt < 2 * 6e4) { box.hidden = true; return; }   // nothing to say "since just now"
+  if (!seenAt || Date.now() - seenAt < 2 * 6e4) { box.hidden = true; renderNight(); return; }   // nothing to say "since just now"
   const newMsgs = msgs.filter(m => m.from !== "owner" && after(m.at)).length,
     done = tasks.filter(t => t.state === "done" && after(t.done_at || t.updated_at)).length,
     added = tasks.filter(t => after(t.created_at)).length,
@@ -1707,11 +1714,46 @@ function renderSince(){
   const parts = [[newMsgs, "new message|new messages", () => showTab("chat")], [done, "task done|tasks done", stat("done")], [added, "new task|new tasks", () => showTab("board")],
     [blocked, "newly blocked", () => $("inbox").scrollIntoView({block:"start"})], [late, "running late", stat("late")], [sentBack, "sent back by review", () => showTab("reviews")],
     [meets, "new meeting|new meetings", () => showTab("chat")], [closedM, "meeting closed|meetings closed", () => showTab("chat")]].filter(x => x[0]);
-  if (!parts.length) { box.hidden = true; return; }
+  if (!parts.length) { box.hidden = true; renderNight(); return; }
   const chip = ([n, w, fn]) => { const [one, many] = w.split("|"); const b = el("button", "chip go", `${n} ${n === 1 ? one : many || one}`); b.type = "button"; b.onclick = fn; return b; };
   const ok = el("button", "btn-lite", "Got it"); ok.type = "button"; ok.onclick = () => { seenAt = Date.now(); saveSeen(); renderSince(); };
+  renderNight();
   ok.textContent = "\u00d7"; ok.title = "Got it"; ok.setAttribute("aria-label", "Got it, clear"); box.replaceChildren(el("span", null, `· since ${ago(new Date(seenAt).toISOString())}:`), ...parts.map(chip), ok); box.hidden = false;
 }
+/* the night strip (council round 14, all four): what happened since the last visit, in order, as dots; Play walks through them and lights each agent */
+const nsPlay = {tm:0, i:-1, sig:""};
+function nightEvents(){
+  const from = seenAt, now = Date.now(), T = v => Date.parse(v || "") || 0, out = [], add = (at, c, rank, who, text, href) => { if (at > from && at <= now + 6e4) out.push({at, c, rank, who, text, href}); };
+  tasks.forEach(t => { if (isClosed(t)) add(T(t.done_at || t.updated_at), "var(--ok)", 1, t.session, `${nameOf(t.session)} finished ${t.id} ${ttl(t)}`, "#task/" + encodeURIComponent(t.id)); });
+  agents.forEach(a => { if (a.state === "blocked") add(T(a.waiting_since || a.updated_at), "var(--bad)", 5, a.id, `${nameOf(a.id)} got blocked`, "#agent/" + encodeURIComponent(a.id)); });
+  sessions.forEach(x => { const h = "#session/" + encodeURIComponent(x.id); if (x.missed) add(T(x.closed_at), "var(--warn)", 4, "coordinator", `Missed: ${x.title_en || "a meeting"}`, h); else if (isMeeting(x) && x.opened_at) add(T(x.opened_at), "var(--accent)", 2, (x.members || []).find(m => m !== "owner") || "coordinator", `${x.title_en || "A meeting"} started`, h); });
+  msgs.forEach(m => { if (m.kind === "decision" && m.from !== "owner" && m.decided_by !== "owner") add(T(m.at), "#c99a00", 3, m.from, `${nameOf(m.from)} decided: ${(m.text_en || m.text || "").slice(0, 70)}`, m.session ? "#session/" + encodeURIComponent(m.session) : ""); });
+  if (baseline?.by === "auto") add(T(baseline.at), "var(--idle)", 0, "coordinator", "The day's plan was locked by itself", "");
+  return out.sort((a, b) => a.at - b.at); }
+function renderNight(){
+  const box = $("nightStrip"); if (!box) return; const now = Date.now();
+  if (!seenAt || now - seenAt < 3 * 36e5) { box.hidden = true; return; }   // only after a real absence
+  const ev = nightEvents(), sig = seenAt + "|" + ev.map(e => e.at + e.text).join();
+  if (!ev.length) { box.hidden = true; return; } if (sig === nsPlay.sig && !box.hidden) return; if (nsPlay.tm) return; nsPlay.sig = sig;
+  const span = Math.max(1, now - seenAt), pos = at => Math.min(100, Math.max(0, (at - seenAt) / span * 100)), B = 30 * 6e4, groups = new Map();
+  ev.forEach(e => { const k = Math.floor((e.at - seenAt) / B); groups.set(k, [...(groups.get(k) || []), e]); });
+  const head = el("div","ns-head"), play = el("button","btn-lite","Play the night"), cap = el("div","ns-cap"); play.type = "button"; cap.setAttribute("aria-live", "polite");
+  head.append(el("b", null, "Last night"), el("span","note", `${ev.length} event${ev.length === 1 ? "" : "s"} since ${fmtWhen(seenAt)}`), play);
+  const line = el("div","ns-line"), track = el("div","ns-track"), dots = [];
+  for (let h = Math.ceil(seenAt / 36e5) * 36e5; h < now; h += 36e5 * Math.max(1, Math.round(span / 36e5 / 8))) { const tk = el("span","ns-tick", fmtHM(h)); tk.style.left = pos(h) + "%"; line.append(tk); }
+  [...groups.values()].slice(-40).forEach(g => { const top = [...g].sort((a, b) => b.rank - a.rank)[0], d = el("button","ns-dot", g.length > 1 ? String(Math.min(9, g.length)) : "");
+    d.type = "button"; d.style.left = pos(g[0].at) + "%"; d.style.setProperty("--c", top.c); d.title = g.map(e => `${fmtHM(e.at)} · ${e.text}`).join("\n"); d.setAttribute("aria-label", d.title);
+    const hi = () => { cardPoint.keep ??= [...pointed]; pointAt(g.map(e => e.who).filter(w => figs.has(w))); cap.textContent = g.length === 1 ? `${fmtHM(top.at)} · ${top.text}` : `${fmtHM(g[0].at)}: ${g.length} things · ${top.text}…`; }, lo = () => { pointAt(cardPoint.keep || []); cardPoint.keep = null; };
+    d.onmouseenter = d.onfocus = hi; d.onmouseleave = d.onblur = lo; d.onclick = () => { const h = g.find(e => e.href)?.href; if (h) go(h); };
+    g.forEach(e => dots.push([e, d])); line.append(d); });
+  track.append(line);
+  const stop = () => { clearTimeout(nsPlay.tm); nsPlay.tm = 0; nsPlay.i = -1; play.textContent = "Play the night"; dots.forEach(([, d]) => d.classList.remove("on")); };
+  play.onclick = () => { if (nsPlay.tm) { stop(); return; } const list = ev.slice(-12);
+    if (reduce) { const ul = el("ul"); list.forEach(e => ul.append(el("li", null, `${fmtHM(e.at)} · ${e.text}`))); cap.replaceChildren(ul); return; }
+    play.textContent = "Stop"; const step = i => { dots.forEach(([, d]) => d.classList.remove("on")); if (i >= list.length) { nsPlay.tm = 0; play.textContent = "Play again"; const todo = inboxItems.filter(it => !(it.key && inboxSent.has(it.key))).length; cap.textContent = `Now: ${todo ? `${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you` : "nothing needs you"}.`; return; }
+      const e = list[i]; dots.find(([x]) => x === e)?.[1].classList.add("on"); cap.textContent = `${fmtHM(e.at)} · ${e.text}`; const f = figs.get(e.who); if (f) { f.b.classList.add("cheer"); setTimeout(() => f.b.classList.remove("cheer"), 1100); }
+      nsPlay.tm = setTimeout(() => step(i + 1), 1300); }; step(0); };
+  box.replaceChildren(head, track, cap); box.hidden = false; }
 // Why an agent (or task) is stuck and what it needs from the owner: the agent's blocked_en / needs_en, the task's blocked_en, else the agent's last word.
 function blockInfo(a, t){
   const last = a ? [...msgs].reverse().find(m => m.from === a.id && (m.text_en || m.text)) : null;
@@ -1821,7 +1863,9 @@ function renderInbox(){
   items.forEach(it => { if (!it.key || !inboxSent.has(it.key)) return; const v = String(it.at || ""); if (!sentVer.has(it.key)) sentVer.set(it.key, v); else if (sentVer.get(it.key) !== v) { inboxSent.delete(it.key); foldAt.delete(it.key); sentVer.delete(it.key); } });   /* an answer covers that version of the card; a new question is a new card */
   const w = agents.filter(a => a.state === "working").length, isSent = it => it.key && inboxSent.has(it.key), todo = items.filter(it => !isSent(it)).length;
   const held = it => it.k === "Waiting for you" || it.k === "Blocked";   // whoever has waited longest on the owner comes first
-  items.sort((x, y) => isSent(x) - isSent(y) || held(y) - held(x) || (held(x) ? (Date.parse(x.at || "") || 0) - (Date.parse(y.at || "") || 0) : 0));
+  const freesOf = t => { const out = new Set(), q = t ? [t.id] : []; while (q.length) { const id = q.shift(); tasks.forEach(x => { if (!isClosed(x) && !out.has(x.id) && x.id !== t.id && depsOf(x).includes(id)) { out.add(x.id); q.push(x.id); } }); } return [...out]; };
+  items.forEach(it => { if (held(it)) it.free = freesOf(openOf(it.who)); });   /* frees N (council round 14, Owner Advocate): answering this unblocks the work that waits on it, down the chain */
+  items.sort((x, y) => isSent(x) - isSent(y) || held(y) - held(x) || (y.free?.length || 0) - (x.free?.length || 0) || (held(x) ? (Date.parse(x.at || "") || 0) - (Date.parse(y.at || "") || 0) : 0));
   { const base = $("title").textContent || "Product Office"; document.title = (todo ? `(${todo}) ` : "") + base; }
   $("inboxSum").textContent = items.length ? (todo ? `${todo} thing${todo === 1 ? "" : "s"} for you` : "All answered") + ` · ${w} agents working` : "";
   if (slept.length) { const wk = el("button","linkish", `${slept.length} snoozed: show`); wk.type = "button"; wk.title = slept.map(it => `${it.t}: until ${fmtWhen(Date.parse(snz[snzKey(it)]))}`).join("\n"); wk.setAttribute("aria-expanded", String(!!inboxShowSnz)); wk.onclick = () => { inboxShowSnz = !inboxShowSnz; renderInbox(); }; $("inboxSum").append(" · ", wk);
@@ -1831,7 +1875,8 @@ function renderInbox(){
   const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`;
   $("officeCount").textContent = todo || ""; renderFollow(); renderNext3();
   { const h = new Date().getHours(), hi = h < 5 ? "Working late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening", lt = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).length, end = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0), nx = sessions.filter(x => x.state === "scheduled" && (x.members || []).includes("owner")).sort((a, b) => String(a.at).localeCompare(String(b.at)))[0];
-    $("greet").textContent = `${hi}. ` + (todo ? `${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you; ${lt ? `${lt} task${lt === 1 ? " is" : "s are"} running late${(pb => pb ? `, ${pb} pushed back by it` : "")(tasks.filter(t => !isClosed(t) && !sched.byTask[t.id]?.lateBy && sched.byTask[t.id]?.why === "dep" && tasks.some(x => x.id === sched.byTask[t.id].after && sched.byTask[x.id]?.lateBy)).length)}` : "the rest is on track"}.` : `All clear${nx ? `. Next: ${nx.title_en || "a meeting"} at ${fmtWhen(Date.parse(nx.at))}` : ""}.`) + (end ? ` Open work finishes by ${fmtWhen(end)}.` : ""); }   // the greeting line (council round 12, UX)
+    const first = items.find(it => !isSent(it) && (it.free?.length || 0) >= 2);
+    $("greet").textContent = `${hi}. ` + (first ? `Start with ${nameOf(first.who)}: answering frees ${first.free.length} tasks. ` : "") + (todo ? `${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you; ${lt ? `${lt} task${lt === 1 ? " is" : "s are"} running late${(pb => pb ? `, ${pb} pushed back by it` : "")(tasks.filter(t => !isClosed(t) && !sched.byTask[t.id]?.lateBy && sched.byTask[t.id]?.why === "dep" && tasks.some(x => x.id === sched.byTask[t.id].after && sched.byTask[x.id]?.lateBy)).length)}` : "the rest is on track"}.` : `All clear${nx ? `. Next: ${nx.title_en || "a meeting"} at ${fmtWhen(Date.parse(nx.at))}` : ""}.`) + (end ? ` Open work finishes by ${fmtWhen(end)}.` : ""); }   // the greeting line (council round 12, UX)
   $("byeBtn").classList.toggle("btn", new Date().getHours() >= 17); $("byeBtn").classList.toggle("btn-lite", new Date().getHours() < 17);   // the end-of-day check stands out after 17:00
   /* outbox (council round 10, Engineer): what the owner wrote that no agent has picked up after 10 minutes; shown only once agents mark pick-ups (relayed:true) */
   /* "without you" (council round 12, Owner Advocate): what changed since the last visit without the owner's tap; the page's own bookings can be cancelled */
@@ -1855,7 +1900,7 @@ function renderInbox(){
     if (!sent && it.key && ownerView()) { const lt = el("button","btn-lite","Later"); lt.type = "button"; lt.title = "Snooze this card"; lt.onclick = () => laterPick(a, snzKey(it)); a.append(lt); }
     if (sent) { a.replaceChildren(sent); if (it.key && inboxSent.has(it.key) && !inboxSent.get(it.key).startsWith("Not sent")) { foldAt.has(it.key) || foldAt.set(it.key, Date.now() + 2500); if (Date.now() >= foldAt.get(it.key)) { c.classList.add("folded"); } else { c.classList.add("folding"); foldTm ||= setTimeout(() => { foldTm = 0; const f = document.activeElement?.closest?.("#inboxList .ib"); renderInbox(); if (f && !f.isConnected) document.querySelector("#inboxList .ib:not(.folded) .ib-a button")?.focus(); }, Math.max(0, Math.min(...[...foldAt.values()].filter(x => x > Date.now())) - Date.now()) + 50); } } }   // an answered card folds away after a moment (council round 12)
     const av = avatar(it.who, 34); if (figs.has(it.who)) { av.classList.add("go"); av.title = `Show ${nameOf(it.who)} in the office`; av.tabIndex = 0; av.setAttribute("role", "button"); av.setAttribute("aria-label", av.title); av.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); av.onclick(); } }; av.onclick = () => { const f = figs.get(it.who); f?.b.scrollIntoView({block:"center", behavior:reduce ? "auto" : "smooth"}); f?.b.focus({preventScroll:true}); }; }
-    c.append(av, k, el("div","ib-t", it.t), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
+    c.append(av, k, el("div","ib-t", it.t), ...(it.free?.length && !sent ? [el("div","ib-free", `Answering frees ${it.free.length} task${it.free.length === 1 ? "" : "s"} (${it.free.slice(0, 2).join(", ")}${it.free.length > 2 ? ` +${it.free.length - 2}` : ""})`)] : []), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
     if (open && it.inline) { const x = el("div","ib-x"); x.append(it.inline()); c.append(x); }
     box.append(c); });
   if (items.length > 6) { const m = el("button","linkish inbox-more", inboxAll ? "Show fewer" : `Show all ${items.length}`); m.type = "button"; m.onclick = () => { inboxAll = !inboxAll; renderInbox(); }; box.append(m); }
