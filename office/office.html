@@ -290,6 +290,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .org ul ul::before{content:"";position:absolute;top:0;left:50%;height:22px;border-left:2px solid var(--line)}
 .org>ul>li::before,.org>ul>li::after{display:none}
 .org ul.wrap{flex-wrap:wrap;gap:10px 6px;max-width:1100px;margin:22px auto 0;padding:14px 8px 0;border-top:2px solid var(--line);border-radius:10px 10px 0 0}.org ul.wrap > li{padding-top:0}.org ul.wrap > li::before,.org ul.wrap > li::after{display:none}.org ul.wrap::before{top:-24px}
+.new-btn{border-color:var(--accent);color:var(--accent)}.nw-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}.nw-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.nw-list b{font-size:13.5px}.nw-list p{margin:0;grid-column:1;font-size:12.5px;color:var(--muted)}.nw-list .btn-lite{grid-row:1 / span 2;grid-column:2}
 .org ul.depts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;max-width:1400px;margin:26px auto 0;padding:0 8px;align-items:start}.org ul.depts::before{display:none}.org ul.depts > li{padding:12px 10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);min-width:0}.org ul.depts > li::before,.org ul.depts > li::after{display:none}.org ul.depts > li > ul{flex-wrap:wrap;gap:10px 6px;padding-top:14px;margin-top:10px;border-top:2px solid var(--line)}.org ul.depts > li > ul::before{top:-12px;height:10px}.org ul.depts > li > ul > li{padding-top:0}.org ul.depts > li > ul > li::before,.org ul.depts > li > ul > li::after{display:none}.org ul.depts .org-node{min-width:92px}.org .org-hq{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:center;margin:18px 0 -10px}
 .org-node{all:unset;cursor:pointer;display:grid;justify-items:center;gap:2px;min-width:104px;max-width:140px;padding:8px 8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);text-align:center;font-size:12px}
 .org-node:hover,.org-node:focus-visible{border-color:var(--accent);outline:none}
@@ -695,7 +696,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
-      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite ph-more" id="moreBtn" type="button" aria-expanded="false">More</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
+      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite new-btn" id="newBtn" type="button" hidden>What's new</button><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite ph-more" id="moreBtn" type="button" aria-expanded="false">More</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
       <div class="next3" id="next3" hidden></div>
       <div id="awayBox"></div>
       <div class="night-strip" id="nightStrip" hidden></div>
@@ -872,6 +873,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 <dialog id="taskDlg"><div class="dlg" id="taskBody"></div></dialog>
 <dialog id="sessDlg"><div class="dlg" id="sessBody"></div></dialog>
 <dialog id="meetDlg"><div class="dlg" id="meetBody"></div></dialog>
+<dialog id="newDlg" aria-labelledby="newH"><div class="dlg" id="newBody"></div></dialog>
 <dialog id="findDlg" aria-label="Find anything"><div class="dlg find" id="findBody"></div></dialog>
 <dialog id="doorDlg" aria-label="Room bookings"><div class="dlg door" id="doorBody"></div></dialog>
 <dialog id="agentDlg" aria-label="Agent"><div class="dlg" id="agentBody"></div></dialog>
@@ -1684,6 +1686,26 @@ function renderNext3(){
   const rv = tasks.filter(t => t.state === "doing" && agentById(t.session)?.state !== "blocked" && !sched.byTask[t.id]?.lateBy && (sched.byTask[t.id]?.e || 0) > now + 6 * 6e4 && sched.byTask[t.id].e <= end).sort((a, b) => sched.byTask[a.id].e - sched.byTask[b.id].e);
   if (rv.length) { const w = el("span","n3"); w.append(el("b", null, fmtHM(sched.byTask[rv[0].id].e)), " ready for review: "); rv.slice(0, 3).forEach((t, i) => { if (i) w.append(", "); w.append(taskLink(t.id)); }); if (rv.length > 3) w.append(` +${rv.length - 3}`); w.dataset.t = sched.byTask[rv[0].id].e; parts.push(w); }
   box.hidden = !parts.length; box.replaceChildren(); if (!parts.length) return; box.append(el("span","lbl","Next 3 hours")); parts.sort((x, y) => x.dataset.t - y.dataset.t).forEach(x => box.append(x)); }
+/* what's new (council round 24, Owner Advocate's tour): one list of what changed overnight, each with Show me; the button goes once it has been opened */
+const NEW_VER = "2026-10-24", NEW_LIST = [
+  ["One morning brief", "After a long time away, one card says what happened: three tiles, the night on a timeline with Play, and Start my round.", "office"],
+  ["Your calls", "The questions left for you overnight, answered with one tap, under the cards.", "office"],
+  ["Walk the floor and roll call", "Go through what needs you one card at a time (one thumb on phones), or hear each person say what they are on.", "office"],
+  ["Hand-offs and progress at the desk", "Finished work glides to the next person, who shows Your turn; a ring at each working agent's feet fills with progress.", "office"],
+  ["An agent's page opens with Now and Today", "What they are on, who they wait on, and what they did today.", "#agent/coordinator"],
+  ["Rooms through the day", "Calendar › Rooms: a row per room and table across the hours; click a free time to book it.", "calendar"],
+  ["A person's week with hours", "Calendar with one person picked: their days by the hour; click a free time to meet them.", "calendar"],
+  ["Meeting clock in Chat", "A countdown before a meeting, a time-left bar while it runs, Over by N min after.", "chat"],
+  ["Team side by side", "Departments as cards next to each other.", "team"],
+  ["Settings save themselves", "Change a setting and it is kept; no Save button to find.", "settings"],
+  ["Light through the day", "The office follows the clock: dawn, day, dusk and night.", "office"]];
+function renderNewBtn(){ const b = $("newBtn"); if (!b) return; let seen = ""; try { seen = localStorage.getItem("office.new") || ""; } catch {} b.hidden = seen === NEW_VER; b.textContent = `What's new (${NEW_LIST.length})`; }
+function openNew(){ const box = $("newBody"); box.replaceChildren(); const h = el("h2", null, "What's new"); h.id = "newH"; const x = el("button","btn-lite","Close"); x.type = "button"; x.onclick = () => $("newDlg").close();
+  const head = el("div","row-wrap"); head.style.justifyContent = "space-between"; head.append(h, x); const ul = el("ul","nw-list");
+  NEW_LIST.forEach(([t, d, to]) => { const li = el("li"), s = el("button","btn-lite","Show me"); s.type = "button"; s.onclick = () => { $("newDlg").close(); if (to.startsWith("#")) go(to); else showTab(to); }; li.append(el("b", null, t), s, el("p", null, d)); ul.append(li); });
+  box.append(head, el("p","note", "Built overnight by four helpers who took turns to plan, build and check. Nothing was switched on that changes what agents do."), ul);
+  try { localStorage.setItem("office.new", NEW_VER); } catch {} renderNewBtn(); $("newDlg").showModal(); }
+$("newBtn").onclick = openNew; renderNewBtn();
 /* the browser tab (council round 24, from round 20): the title and a small drawn icon carry the Needs-you count; the phone's browser bar takes the page colour */
 let tabTodo = 0, tabSig = "";
 function tabMark(n = tabTodo){ tabTodo = n; const base = $("title").textContent || "Product Office"; document.title = (n ? `(${n}) ` : "") + base;
