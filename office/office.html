@@ -543,6 +543,27 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag.late:not(.need-b):not(.need-w):not(.dormant):not(.sel):not(:focus-visible) img.body{filter:drop-shadow(0 0 3px rgba(255,120,40,1)) drop-shadow(0 0 10px rgba(255,120,40,.85))}
 @keyframes bang{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @media (prefers-reduced-motion:reduce){.ag .bang{animation:none}}
+/* Rooms shown: one card per room with its picture and an on/off switch */
+.shown-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:6px}
+.rm-card{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden;min-width:0;transition:box-shadow .2s,border-color .2s}
+.rm-card:hover{box-shadow:0 4px 14px rgba(20,30,50,.10)}
+.rm-card.on{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.rm-pic{aspect-ratio:16/10;max-width:100%;background:var(--bg) center/cover no-repeat;position:relative;transition:filter .25s,opacity .25s}
+.rm-card.off .rm-pic{filter:grayscale(1);opacity:.45}
+.rm-badge{position:absolute;top:8px;left:8px;font-size:11px;font-weight:600;letter-spacing:.03em;padding:2px 8px;border-radius:999px;background:var(--panel);color:var(--muted);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.rm-card.on .rm-badge{color:var(--accent)}
+.rm-body{display:flex;flex-direction:column;gap:6px;padding:10px 12px 12px}
+.rm-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rm-top b{font-size:15px}
+.rm-hint{font-size:12.5px;color:var(--muted);line-height:1.4}
+.rm-sw{position:relative;flex:none;width:44px;height:26px;border-radius:999px;border:0;padding:0;background:var(--line);cursor:pointer;transition:background .2s}
+.rm-sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.rm-sw[aria-checked="true"]{background:var(--accent)}
+.rm-sw[aria-checked="true"]::after{transform:translateX(18px)}
+.rm-sw:disabled{cursor:not-allowed;opacity:.55}
+.rm-sw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rm-lock{font-size:12px;color:var(--muted);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.rm-sw,.rm-sw::after,.rm-pic,.rm-card{transition:none}}
 .set-grid{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}.set-grid label,.set-chk{display:flex;gap:6px;align-items:center;font-size:14px}
 .set-grid select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
 .mt-agenda{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:vertical}
@@ -881,7 +902,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     </div>
     <div class="panel" id="shownSet">
       <h2>Rooms shown</h2>
-      <p class="note">Untick a room to hide it. A hidden room is not drawn and the agents stop using it; tick it again to bring it back. The open office and the meeting room always stay.</p>
+      <p class="note">Switch a room off to hide it: it is not drawn and the agents stop using it. Switch it on again to bring it back.</p>
       <div class="shown-list" id="shownList"></div>
       <div class="row-wrap"><span class="note" id="shownNote" role="status" aria-live="polite"></span></div>
     </div>
@@ -1069,11 +1090,17 @@ function showSet(id, focus){
   if (focus) $("st-" + id)?.focus(); }
 function renderShownRooms(){
   const box = $("shownList"); if (!box) return; box.replaceChildren(); const may = canWrite && ownerView();
-  HIDEABLE.forEach(([k, name, hint]) => { const lab = el("label","set-chk"), cb = el("input"); cb.type = "checkbox"; cb.checked = !roomOff(k); cb.disabled = !may;
-    cb.onchange = async () => { const cur = (Array.isArray(metaOffice.hidden_rooms) ? metaOffice.hidden_rooms : []).filter(x => x !== k), next = cb.checked ? cur : [...cur, k];
-      try { await db.doc("meta/office").update({hidden_rooms:next}); metaOffice = {...metaOffice, hidden_rooms:next}; drawScene(); $("shownNote").textContent = `${name} ${cb.checked ? "shown again" : "hidden"}.`; announce(`${name} ${cb.checked ? "shown" : "hidden"}`); }
-      catch (err) { cb.checked = !cb.checked; $("shownNote").textContent = writeError(err); } };
-    lab.append(cb, el("span", null, name), el("span","note", " · " + hint)); box.append(lab); });
+  const card = (k, name, hint, on, locked) => { const c = el("div", "rm-card " + (on ? "on" : "off")), pic = el("div","rm-pic"); pic.style.backgroundImage = `url(${A}rooms/${ROOM_BG[k]}.webp)`;
+    pic.append(el("span","rm-badge", locked ? "Always shown" : on ? "Shown" : "Hidden")); const body = el("div","rm-body"), top = el("div","rm-top"); top.append(el("b", null, name));
+    if (locked) top.append(el("span","rm-lock","Always on"));
+    else { const sw = el("button","rm-sw"); sw.type = "button"; sw.setAttribute("role","switch"); sw.setAttribute("aria-checked", String(on)); sw.setAttribute("aria-label", `Show the ${name}`); sw.disabled = !may;
+      sw.onclick = async () => { const show = !on, cur = (Array.isArray(metaOffice.hidden_rooms) ? metaOffice.hidden_rooms : []).filter(x => x !== k), next = show ? cur : [...cur, k]; sw.disabled = true;
+        try { await db.doc("meta/office").update({hidden_rooms:next}); metaOffice = {...metaOffice, hidden_rooms:next}; drawScene(); renderShownRooms(); $("shownNote").textContent = `${name} ${show ? "shown again" : "hidden"}.`; announce(`${name} ${show ? "shown" : "hidden"}`); document.querySelector(`.rm-sw[aria-label="Show the ${name}"]`)?.focus(); }
+        catch (err) { sw.disabled = false; $("shownNote").textContent = writeError(err); } };
+      top.append(sw); }
+    body.append(top, el("span","rm-hint", locked ? hint : "When hidden: " + hint.charAt(0).toLowerCase() + hint.slice(1))); c.append(pic, body); return c; };
+  HIDEABLE.forEach(([k, name, hint]) => box.append(card(k, name, hint, !roomOff(k), false)));
+  [["main","Open office","Where agents work at their desks."],["meet","Meeting room","Where meetings happen."]].forEach(([k, name, hint]) => box.append(card(k, name, hint, true, true)));
   if (!may) $("shownNote").textContent = "Only the owner changes which rooms show.";
 }
 function buildSetTabs(){
