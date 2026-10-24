@@ -247,6 +247,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ru-done{display:grid;gap:8px}.ru-drow{border-left:3px solid var(--accent);padding:4px 10px;display:grid;gap:4px}
 .tell{margin:8px 0;border:1px dashed var(--line);border-radius:8px;padding:8px 10px}.tell-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tell-row input{flex:1 1 260px;min-width:0}
 .tell-out{display:grid;gap:6px;margin-top:6px}.tell-out:empty{display:none}.tell-step{display:flex;gap:8px;align-items:flex-start}.tell-step input{margin-top:3px}
+.lang-rows{display:grid;gap:8px;margin:8px 0}.lang-row label{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;padding:8px 10px}.lang-row label span{display:grid;min-width:0}.lang-row small{color:var(--muted)}.lang-ex{font-size:12px;color:var(--muted);display:grid;gap:2px}
 .ph-tag{justify-self:start;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px}
 /* Arabic replies: English and task ids on their own lines */
 .bidi{text-align:right}
@@ -857,6 +858,12 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <p class="note">For each room: the most people it holds, and how full it gets before an exact copy opens for the next person. When fewer people need the room, the extra copy closes again.</p>
       <div class="rs-wrap"><table class="rs" id="roomRules"></table></div>
       <div class="row-wrap"><button class="btn" type="button" id="rsSave" hidden>Save</button><button class="btn-lite" type="button" id="rsReset">Back to defaults</button><span class="note" id="rsNote" aria-live="polite">Changes save themselves.</span></div>
+    </div>
+    <div class="panel" id="langSet">
+      <h2>Language</h2>
+      <p class="note">Agent names are always English. Pick a language for each kind of writing. A conversation can still switch when you ask in it ("reply in English"), for that conversation only.</p>
+      <div class="lang-rows" id="langRows"></div>
+      <div class="row-wrap"><span class="note" id="langNote" role="status" aria-live="polite"></span></div>
     </div>
     <div class="panel" id="mtSet">
       <h2>Meetings and rooms</h2>
@@ -3945,7 +3952,7 @@ function renderChatInfo(n){
    decisions turn into proposed tasks the owner adds to the board ---------- */
 let samplerP = null;
 const sampler = () => samplerP ??= (async () => { try { return await claude.use("sample"); } catch { return null; } })();
-let typing = null, mainLang = "en";                                   // {key, ids} while agents are answering
+let typing = null, mainLang = "";                                   // {key, ids} while agents are answering
 const viewKey = () => chatSess || "main";
 function rolesBlock(ids){ return ids.map(id => { const a = agentById(id); return `- ${id} (${nameOf(id)}): ${id === "coordinator" ? "Coordinator, runs meetings, owns plan and schedule, brings decisions to the owner" : roleOf(a) || "agent"}. Now: ${doingOf(a) || "nothing noted"}. State: ${a?.state || "idle"}.`; }).join("\n"); }
 async function quickReplies(ctx){
@@ -3958,7 +3965,7 @@ async function quickReplies(ctx){
     .map(m => `${m.from === "owner" ? "OWNER" : m.from}: ${m.text}`).join("\n");
   const task = ctx.task && tasks.find(t => t.id === ctx.task);
   const board = tasks.filter(t => !isClosed(t)).slice(0, 80).map(t => `${t.id} | ${verOf(t) || "-"} | ${t.state || "todo"} | ${t.session} | ${t.feature || "-"} | ${t.title_en || ""}`).join("\n");
-  const lang = (sess && sess.lang) || (!ctx.session && mainLang) || "en";
+  const lang = (sess && sess.lang) || (!ctx.session && mainLang) || officeLang();
   const prompt = `You answer for AI agents on the team building ${metaOffice.product_en || "this product"}. The owner just wrote in ${sess ? (isMeeting(sess) ? "a meeting" : "a task session") : "the team discussion"}${sess ? ` titled "${sess.title_en || ""}"` : ""}.
 Agents who may answer (id: role):
 ${rolesBlock(who)}
@@ -3972,7 +3979,7 @@ OWNER (latest${ctx.decision ? ", marked as a decision" : ""}): ${ctx.text}
 Rules:
 - Each agent answers only from its own role. For a greeting or a question to everyone, every agent answers briefly. Otherwise only the agents with something useful to add. The coordinator answers first.
 - 1 to 3 short, friendly sentences each. Start with the answer itself: no greeting (no "Hi", "هلا", "أهلاً") and never introduce yourself or say your name or role ("I'm the Backend", "أنا الـBackend"); each reply already shows who wrote it. Example: asked "what are you doing here?", Backend answers "I said I'd fix the wrong-code response to 401 with an error code and send it to you. Nothing else is logged as in progress."
-- Language: the conversation language is now "${lang}" (an ISO code; "en" is the default). Answer in that language. Understand the owner in any language, but writing in Arabic is NOT a request to switch. Switch only when the owner explicitly asks (e.g. "reply in Arabic", "رد بالعربي", "كلموني عربي", "back to English"); then answer in the new language and keep it for the rest of this conversation. In Arabic, use simple Gulf-friendly Arabic and keep technical names (Render, API, task ids) in English.
+- Language: the conversation language is now "${lang}" (an ISO code; the office default is "${officeLang()}"). ${lang === "ar" ? LANG_RULE[langFor("owner") === "ar" ? "ar" : "mix"] : lang === "en" ? LANG_RULE.en : ""} Agent names always stay in English. Proposed task titles and summaries follow the owner's task language: ${LANG_RULE[langFor("tasks")]} Answer in that language. Understand the owner in any language, but writing in Arabic is NOT a request to switch. Switch only when the owner explicitly asks (e.g. "reply in Arabic", "رد بالعربي", "كلموني عربي", "back to English"); then answer in the new language and keep it for the rest of this conversation. In Arabic, use simple Gulf-friendly Arabic and keep technical names (Render, API, task ids) in English.
 - Use only the facts above. Never claim work is done or started unless the data says so. Never invent numbers, links or dates.
 - Never decide money, paid plans, deleting data, production, security or scope yourselves: say the coordinator brings it to the owner.
 ${ctx.session ? `- If the owner asks to close, end or finish this ${sess && isMeeting(sess) ? "meeting" : "session"} (e.g. "close it", "we're done", "خلاص قفلوه", "ارجعوا لشغلكم"), set "close" to true and "resolution_en" to one English line saying what was agreed; only the coordinator replies, with a short closing line saying everyone goes back to their tasks. Otherwise "close" is false.\n` : ""}- If the owner's latest message makes or confirms a decision that needs work, the coordinator restates the decision in one line, and you propose the tasks that carry it out (each owned by the agent whose role fits, from the list above). Otherwise "tasks" is empty.
@@ -4157,6 +4164,27 @@ $("ritSave").onclick = async () => { $("ritNote").textContent = "Saving…";
       if (a.on !== b.on || a.time !== b.time || a.day !== b.day) { for (const x of booked) await db.doc("sessions/" + x.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), resolution_en:"Rebooked after a settings change."}); }
       else if (a.min !== b.min) { for (const x of booked) await db.doc("sessions/" + x.id).update({duration_min:b.min}); } }
     $("ritNote").textContent = "Saved. The next ones are booked."; setTimeout(ensureRituals, 300); } catch (err) { $("ritNote").textContent = writeError(err); } };
+/* the owner's call (2026-10-24): a Language group in Settings, one choice for each kind of writing: how agents talk with each
+   other, how they answer the owner, and how tasks are written. meta/office.lang = {agents, owner, tasks}, each "en" (English),
+   "ar" (Arabic; only agent names stay English) or "mix" (Arabic with English terms kept in English, each on its own line: the
+   arabic-rtl-replies-and-links skill). Agent names are always English. */
+const LANG_SCOPES = [["owner","Your chats with agents","Their replies to you, in chats and meetings"],["agents","Agents with each other","Their discussions, questions and decisions"],["tasks","Tasks","Task titles, summaries and descriptions"]];
+const LANG_OPTS = [["en","English"],["ar","Arabic"],["mix","Arabic with English terms"]];
+const langFor = k => { const v = metaOffice?.lang; const x = v && typeof v === "object" ? v[k] : v === "ar" ? "mix" : null; return ["en","ar","mix"].includes(x) ? x : "en"; };
+const officeLang = () => langFor("owner") === "en" ? "en" : "ar";
+const LANG_RULE = {ar:"Write simple Gulf Arabic, right to left; translate everything except agent names, which always stay in English.",
+  mix:"Write simple Gulf Arabic, right to left. Never translate English words: agent names, product and service names, buttons, commands, file names, task ids and new technical terms stay in English, each on its own line, with the Arabic before it and after it on their own lines (the arabic-rtl-replies-and-links skill).",
+  en:"Write in English."};
+function renderLangSettings(){
+  const mine = canWrite && ownerView(), box = $("langRows"); box.replaceChildren();
+  LANG_SCOPES.forEach(([k, name, hint]) => { const row = el("div","lang-row"), lab = el("label"), sel = el("select"); sel.disabled = !mine; sel.setAttribute("aria-label", name);
+    LANG_OPTS.forEach(([v, l]) => sel.append(new Option(l, v, false, v === langFor(k))));
+    sel.onchange = async () => { const cur = Object.fromEntries(LANG_SCOPES.map(([x]) => [x, langFor(x)])); cur[k] = sel.value;
+      try { await db.doc("meta/office").update({lang:cur}); $("langNote").textContent = `Saved: ${name}, ${LANG_OPTS.find(o => o[0] === sel.value)[1]}.`; } catch (err) { $("langNote").textContent = writeError(err); } };
+    const tx = el("span"); tx.append(el("b", null, name), el("small", null, hint)); lab.append(tx, sel); row.append(lab); box.append(row); });
+  const ex = el("div","lang-ex"); ex.append(el("small", null, "Arabic with English terms looks like this:")); const p = el("div", null, "لما تضغط Call a meeting تطلع قائمة الوكلاء."); ex.append(p); box.append(ex);
+  if (!mine) $("langNote").textContent = "Only the owner changes the language.";
+}
 function renderMeetSettings(){
   renderRitSettings();
   const p1 = $("mtSet"), p2 = $("whSet"); if (!p1) return;
@@ -4274,7 +4302,7 @@ let renderQueued = false, planDirty = true;
 function renderAll(plan = true){ if (plan) planDirty = true; if (renderQueued) return; renderQueued = true; const go = () => { renderQueued = false; renderAllNow(); }; if (document.hidden) setTimeout(go, 0); else requestAnimationFrame(go); }
 /* only the tab on screen is redrawn; the others are marked and drawn when opened (council round 4, E9). Badges, Needs you and dialogs stay live. */
 const TAB_DRAW = {office:() => { drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); }, chat:() => { drawScene(); renderMsgs(); renderDecisions(); },
-  board:() => renderBoard(), rules:() => renderRules(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); renderDataCheck(); renderPace(); }};
+  board:() => renderBoard(), rules:() => renderRules(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderLangSettings(); renderMeetSettings(); renderDataCheck(); renderPace(); }};
 function drawTab(t){ staleTabs.delete(t); TAB_DRAW[t]?.(); }
 function calBadge(){ const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : ""; }
 function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } watchBaseline();
