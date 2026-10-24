@@ -290,6 +290,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .org ul ul::before{content:"";position:absolute;top:0;left:50%;height:22px;border-left:2px solid var(--line)}
 .org>ul>li::before,.org>ul>li::after{display:none}
 .org ul.wrap{flex-wrap:wrap;gap:10px 6px;max-width:1100px;margin:22px auto 0;padding:14px 8px 0;border-top:2px solid var(--line);border-radius:10px 10px 0 0}.org ul.wrap > li{padding-top:0}.org ul.wrap > li::before,.org ul.wrap > li::after{display:none}.org ul.wrap::before{top:-24px}
+.org ul.depts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;max-width:1400px;margin:26px auto 0;padding:0 8px;align-items:start}.org ul.depts::before{display:none}.org ul.depts > li{padding:12px 10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);min-width:0}.org ul.depts > li::before,.org ul.depts > li::after{display:none}.org ul.depts > li > ul{flex-wrap:wrap;gap:10px 6px;padding-top:14px;margin-top:10px;border-top:2px solid var(--line)}.org ul.depts > li > ul::before{top:-12px;height:10px}.org ul.depts > li > ul > li{padding-top:0}.org ul.depts > li > ul > li::before,.org ul.depts > li > ul > li::after{display:none}.org ul.depts .org-node{min-width:92px}.org .org-hq{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:center;margin:18px 0 -10px}
 .org-node{all:unset;cursor:pointer;display:grid;justify-items:center;gap:2px;min-width:104px;max-width:140px;padding:8px 8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);text-align:center;font-size:12px}
 .org-node:hover,.org-node:focus-visible{border-color:var(--accent);outline:none}
 .org-node b{font-size:12.5px;line-height:1.25;overflow-wrap:anywhere}.org-node .pos{color:var(--muted,#667)}
@@ -2904,6 +2905,10 @@ function renderTeam(){
     if (id === "owner" && ids.has(ASSISTANT)) { const pr = el("div","org-pair"); const side = node(ASSISTANT); side.classList.add("side"); pr.append(node("owner"), side); li.append(pr); } else li.append(node(id));
     const ch = (kids.get(id) || []).sort((x, y) => { const [a1, a2] = order(x), [b1, b2] = order(y); return a1 - b1 || a2 - b2; });
     if (ch.length > 8) ch.sort((x, y) => !!(kids.get(x) || []).length - !!(kids.get(y) || []).length);   // the people first, then the departments with their own trees
+    if (ch.filter(c => (kids.get(c) || []).length).length >= 2) {   // departments side by side as cards, the people who report to you above them (council round 24)
+      const ppl = ch.filter(c => !(kids.get(c) || []).length), dps = ch.filter(c => (kids.get(c) || []).length);
+      if (ppl.length) { const ul = el("ul", ppl.length > 8 ? "wrap" : null); ppl.forEach(c => ul.append(branch(c))); li.append(ul); }
+      const ud = el("ul","depts"); dps.forEach(c => ud.append(branch(c))); li.append(el("div","org-hq", `Departments (${dps.length})`), ud); return li; }
     if (ch.length) { const ul = el("ul", ch.length > 8 ? "wrap" : null); ch.forEach(c => ul.append(branch(c))); li.append(ul); }   // a long row of people wraps (council round 16)
     return li; };
   const root = el("ul"); root.append(branch("owner")); box.replaceChildren(root);
