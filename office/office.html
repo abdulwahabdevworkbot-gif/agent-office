@@ -329,6 +329,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .sum-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);align-self:center;margin-left:6px}
 .blk-why{display:block;font-size:12px;line-height:1.35;color:var(--bad);margin-top:3px}.blk-why.need{color:var(--warn);font-weight:600}
 .since[hidden]{display:none}
+.dlg.walk{display:flex;flex-direction:column;gap:12px}.walk-head{display:flex;justify-content:space-between;align-items:center}.walk-card{display:grid;grid-template-columns:110px minmax(0,1fr);gap:16px;border-left:4px solid var(--c);padding-left:12px}.walk-pic{width:110px;height:150px;object-fit:contain;object-position:bottom}.walk-tx{display:grid;gap:6px;align-content:start}.walk-tx h3{margin:0}.walk-said{display:grid;gap:3px}.walk-nav{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px}.walk-done{font-size:16px;font-weight:600;margin:0}.walk-day{margin:0;padding-left:18px;display:grid;gap:4px}
+@media (max-width:600px){.walk-card{grid-template-columns:70px minmax(0,1fr)}.walk-pic{width:70px;height:96px}}
 .minutes{display:grid;gap:8px}.mn-row{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}.mn-row.up{border-style:dashed}.mn-row .linkish{justify-self:start;font-weight:600}.mn-out{font-weight:600;color:var(--ok)}.mn-dec{margin:2px 0 0 18px;padding:0}
 .hcard{position:fixed;z-index:1000;display:grid;gap:5px;width:max-content;max-width:280px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;pointer-events:none}.hcard[hidden]{display:none}
 .hc-top{display:flex;gap:8px;align-items:center}.hc-top .note{font-size:12px}.hc-hint{font-size:11.5px;color:var(--muted)}.hcard .chip{justify-self:start}.ib-need{grid-column:2;font-size:12.5px;font-weight:600;color:var(--warn);overflow-wrap:anywhere}
@@ -589,7 +591,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
-      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
+      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
     <div class="scene">
@@ -750,6 +752,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 <dialog id="sessDlg"><div class="dlg" id="sessBody"></div></dialog>
 <dialog id="meetDlg"><div class="dlg" id="meetBody"></div></dialog>
 <dialog id="agentDlg" aria-label="Agent"><div class="dlg" id="agentBody"></div></dialog>
+<dialog id="walkDlg" aria-label="Walk the floor"><div class="dlg walk" id="walkBody"></div></dialog>
 
 <script>
 (() => {
@@ -1546,6 +1549,39 @@ function moveDeadline(btn, t, p){
   no.onclick = () => row.replaceChildren(...keep);
   row.replaceChildren(el("span","note","New deadline"), inp, ok, no); inp.focus();
 }
+/* Walk the floor (council round 5, UX): one Needs-you item per step with its answers, then an "All clear" page with today's plan (S1) */
+let inboxItems = [], floor = null;
+function openWalk(){ floor = {list:inboxItems.filter(it => !(it.key && inboxSent.has(it.key))), i:0, start:inboxSent.size}; drawWalk(); if (!$("walkDlg").open) $("walkDlg").showModal(); }
+function drawWalk(){
+  const body = $("walkBody"); if (!floor) return; body.replaceChildren();
+  const n = floor.list.length, it = floor.list[floor.i];
+  const head = el("div","walk-head"); head.append(el("b", null, it ? `${floor.i + 1} of ${n}` : "All clear")); const x = el("button","btn-lite","Close"); x.type = "button"; x.onclick = () => $("walkDlg").close(); head.append(x); body.append(head);
+  if (!it) { const sent = inboxSent.size - floor.start, now = Date.now(), end = new Date(); end.setHours(23, 59, 59, 999);
+    const meets = sessions.filter(s => (s.state === "scheduled" || s.state === "open") && (s.members || []).includes("owner") && (meetSpan(s)?.s || 0) <= +end && (meetSpan(s)?.e || 0) >= now).sort((a, b) => meetSpan(a).s - meetSpan(b).s);
+    const late = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy), due = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.due && sched.byTask[t.id].due <= +end && sched.byTask[t.id].due >= now);
+    const last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
+    body.append(el("p","walk-done", sent ? `You answered ${sent} thing${sent === 1 ? "" : "s"}. The team has what it needs from you.` : "Nothing is waiting for you."), el("div","lbl","Your day"));
+    const ul = el("ul","walk-day");
+    meets.forEach(s => ul.append(el("li", null, `${fmtHM(meetSpan(s).s)} · ${s.title_en || "Meeting"} (${(s.members || []).length} people, ${s.room === "huddle" ? "huddle table" : "meeting room"})`)));
+    if (!meets.length) ul.append(el("li", null, "No meetings for you today."));
+    due.forEach(t => ul.append(el("li", null, `Due today: ${t.id} ${t.title_en || ""} (${nameOf(t.session)})`)));
+    ul.append(el("li", late.length ? "t-warn" : null, late.length ? `${late.length} task${late.length === 1 ? "" : "s"} running late: ${late.map(t => t.id).join(", ")}` : "Nothing is running late."));
+    if (last) ul.append(el("li", null, `Open work is planned to finish by ${fmtWhen(last)}.`));
+    body.append(ul); return; }
+  const card = el("div","walk-card"); card.style.setProperty("--c", it.c);
+  const pic = el("img","walk-pic"); pic.alt = ""; pic.src = charUrl(it.who, "front-left");
+  const tx = el("div","walk-tx"); tx.append(el("div","ib-k", it.k), el("h3", null, it.t), el("div", null, it.s)); if (it.need) tx.append(el("div","ib-need", it.need));
+  const said = msgs.filter(m => m.from === it.who && (m.text_en || m.text)).slice(-3);
+  if (said.length) { const l = el("div","walk-said"); said.forEach(m => l.append(el("div","note", `${ago(m.at)}: ${(m.text_en || m.text).slice(0, 160)}`))); tx.append(el("div","lbl","Last said"), l); }
+  card.append(pic, tx); body.append(card);
+  const sent = it.key && inboxSent.get(it.key), acts = el("div","ib-a");
+  if (sent) acts.append(el("span","ib-sent", sent + " ✓"));
+  else it.acts.forEach(([lab, fn, main]) => { if (fn === "inline") return; const b = el("button", main ? "btn" : "btn-lite", lab); b.type = "button"; b.onclick = async e => { await fn(e); setTimeout(() => { if ($("walkDlg").open && !document.activeElement?.matches("input, textarea")) drawWalk(); }, 400); }; acts.append(b); });
+  body.append(acts);
+  if (!sent && it.inline) { const r = it.inline(); body.append(r); }
+  const nav = el("div","walk-nav"), back = el("button","btn-lite","Back"), next = el("button","btn", floor.i + 1 < n ? "Next" : "Finish"); back.type = next.type = "button"; back.disabled = !floor.i;
+  back.onclick = () => { floor.i--; drawWalk(); }; next.onclick = () => { floor.i++; drawWalk(); }; nav.append(back, next); body.append(nav);
+}
 function renderInbox(){
   renderSince();
   const box = $("inboxList"); if (!box) return;
@@ -1588,6 +1624,9 @@ function renderInbox(){
   items.sort((x, y) => isSent(x) - isSent(y));
   { const base = $("title").textContent || "Product Office"; document.title = (todo ? `(${todo}) ` : "") + base; }
   $("inboxSum").textContent = items.length ? (todo ? `${todo} thing${todo === 1 ? "" : "s"} for you` : "All answered") + ` · ${w} agents working` : "";
+  inboxItems = items;
+  if ($("walkDlg").open && !($("walkBody").contains(document.activeElement) && document.activeElement.matches("textarea, input"))) drawWalk();
+  const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`;
   if (!items.length) {   // "morning done" (council round 4, I2): what comes next, so the owner can leave with peace of mind
     const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
     box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
@@ -2531,6 +2570,7 @@ function openDueMeetings(){
   });
 }   // the snapshot that follows moves people into the room
 setInterval(() => { openDueMeetings(); ensureRituals(); }, 30000); setTimeout(() => { openDueMeetings(); ensureRituals(); }, 5000);
+$("walkBtn").onclick = openWalk;
 $("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
 function writeError(err){
   if (err && err.code === "quota_exceeded") return "The office data is full. Ask the Office Manager to archive old messages.";
