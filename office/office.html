@@ -501,6 +501,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .set-grid select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
 .mt-agenda{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:vertical}
 .mt-when select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+.mt-time{flex-basis:100%;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}.mt-time .bar{flex:1;max-width:320px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}.mt-time .bar i{display:block;height:100%;background:var(--accent);transition:width .4s}.mt-time.over{color:var(--bad);font-weight:600}.mt-time.over .bar i{background:var(--bad)}.mt-time.soon{color:var(--warn);font-weight:600}.agenda .ag-n{font-size:12px;color:var(--muted)}
 .agenda{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:13px}.agenda label{display:flex;gap:5px;align-items:center}.agenda label:has(input:checked) span{text-decoration:line-through;color:var(--muted)}
 .wrap-up{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}.wrap-up input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;min-width:0;width:min(260px,100%)}
 .office-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
@@ -3472,6 +3473,15 @@ function renderCompose(){
   $("text").placeholder = !open ? "This conversation is done. Everyone is back at work." : inS ? "Write to everyone in this " + (isMeeting(s) ? "meeting…" : "session…") : chatPair ? "Join in: write to " + chatPair.split("|").map(nameOf).join(" & ") + "…" : "Write your reply or decision…";
   $("composeNote").textContent = inS ? (open ? "Goes to the people here. Each one answers from their own role." : "Read only.") : chatPair ? "You join their talk, and you stand with them in the office." : "Your message goes to the Coordinator, who passes it on.";
 }
+/* meeting clock in Chat (council round 18): a countdown before it starts; a time-left bar while it runs, red with "Over by N min" past its length */
+let meetClockTm = 0;
+function meetClock(){
+  clearInterval(meetClockTm); const tick = () => { const els = document.querySelectorAll(".mt-time[data-sess]"); if (!els.length) { clearInterval(meetClockTm); return; }
+    els.forEach(mt => { const s = sessions.find(x => x.id === mt.dataset.sess); if (!s) return; const now = Date.now(), len = (s.duration_min || 30) * 6e4, mins = ms => { const m = Math.max(1, Math.round(ms / 6e4)); return m >= 90 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+      if (s.state === "scheduled") { const st = Date.parse(s.at); mt.className = "mt-time" + (st - now < 15 * 6e4 ? " soon" : ""); mt.replaceChildren(st > now ? `Starts in ${mins(st - now)}` : `Was due ${mins(now - st)} ago · Start now or Move`); return; }
+      const st = Date.parse(s.opened_at || s.at) || now, used = now - st, bar = el("span","bar"), fill = el("i"); fill.style.width = Math.min(100, used / len * 100) + "%"; bar.append(fill);
+      mt.className = "mt-time" + (used > len ? " over" : ""); mt.replaceChildren(bar, used > len ? `Over by ${mins(used - len)}` : `${mins(len - used)} left of ${mins(len)}`); }); };
+  tick(); meetClockTm = setInterval(tick, 3e4); }
 function renderChatInfo(n){
   const box = $("chatInfo"); box.replaceChildren();
   const all = () => { const c = el("button","linkish","Show all discussions"); c.type = "button"; c.onclick = () => filterChat(""); return c; };
@@ -3479,6 +3489,7 @@ function renderChatInfo(n){
     const h = el("span","view-head"); h.append(el("span","meet-tag", convKind(s)), el("b", null, s?.title_en || "Question"));
     const f = el("span","faces"); (s?.members || []).forEach(m => f.append(avatar(m, 20))); h.append(f);
     if (s?.state === "scheduled") h.append(el("span","tp-tag", "Scheduled " + fmtWhen(Date.parse(s.at)) + ` · ${s.duration_min || 30} min`));
+    if (s && isMeeting(s) && !isDone(s)) h.append(el("span","tp-tag", s.room === "huddle" ? "Huddle table" : "Meeting room"));
     if (isDone(s)) h.append(el("span","tp-tag closed", "Done"));
     box.append(h, el("span","note", `${n} message${n === 1 ? "" : "s"}`));
     if (s?.task) box.append(taskLink(s.task));
@@ -3486,7 +3497,8 @@ function renderChatInfo(n){
     if (s && s.state === "open") box.append(peopleButton(s));
     if (s && s.state === "open" && canWrite) box.append(isMeeting(s) ? wrapButton(s) : doneButton(s));
     if (s && s.state === "scheduled" && canWrite) box.append(scheduledButtons(s));
-    if (Array.isArray(s?.agenda) && s.agenda.length) { const ag = el("div","agenda"); ag.append(el("span","lbl","Agenda")); const doneA = new Set(s.agenda_done || []);
+    if (s && isMeeting(s) && !isDone(s) && (s.state === "open" || s.state === "scheduled")) { const mt = el("div","mt-time"); mt.dataset.sess = s.id; box.append(mt); meetClock(); }
+    if (Array.isArray(s?.agenda) && s.agenda.length) { const ag = el("div","agenda"); ag.append(el("span","lbl","Agenda"), el("span","ag-n", `${(s.agenda_done || []).filter(i => i < s.agenda.length).length} of ${s.agenda.length} done`)); const doneA = new Set(s.agenda_done || []);
       s.agenda.forEach((a, i) => { const lab = el("label"); const cb = el("input"); cb.type = "checkbox"; cb.checked = doneA.has(i); cb.disabled = !canWrite || isDone(s);
         cb.onchange = () => { const v = new Set(s.agenda_done || []); cb.checked ? v.add(i) : v.delete(i); db.doc("sessions/" + s.id).update({agenda_done:[...v]}).catch(() => {}); };
         lab.append(cb, el("span", null, a)); ag.append(lab); }); box.append(ag); }
