@@ -386,7 +386,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 #panel-settings{grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));align-items:start}#panel-settings > .panel:first-child,#dataSet{grid-column:1 / -1}#mtSave,#whSave,#ritSave{display:none}
 .calls{--c:var(--warn);background:var(--panel)}.calls .cq{grid-column:2;display:grid;gap:4px;padding:6px 0;border-top:1px solid var(--line)}.calls .cq:first-of-type{border-top:0}.calls .cq b{font-size:13.5px}.calls .cq .row-wrap{gap:6px}.calls .cq .chip-btn[aria-pressed="true"]{font-weight:700}.calls .cq small{color:var(--muted)}
 .mb-tiles{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:6px 0 2px}.mb-tile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-width:0}.mb-tile b{font-size:22px;line-height:1.1;color:var(--ink)}.mb-tile span{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.mb-tile.warn b{color:var(--late)}.mb-tile.good b{color:var(--ok)}.mb-tile:hover{border-color:var(--accent)}.mb-tile:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
-.away .night-strip{grid-column:1 / -1;margin:4px 0 0;background:var(--bg)}.away ul[hidden]{display:none}.away .ns-track{overflow:hidden}@media (max-width:520px){.away .ns-tick:nth-of-type(even){visibility:hidden}}.away > ul{grid-column:2}
+.away .night-strip{grid-column:1 / -1;margin:4px 0 0;background:var(--bg);padding:4px 8px;gap:2px}.away .ns-cap:empty{display:none}#callsBox:empty{display:none}#callsBox{margin-top:10px}.mb-tile:disabled{cursor:default}.mb-tile:disabled:hover{border-color:var(--line)}@media (max-width:520px){.mb-tile{padding:6px 8px}.mb-tile b{font-size:19px}.mb-tile span{font-size:11.5px}.chrome .ttl{letter-spacing:.12em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}}.away ul[hidden]{display:none}.away .ns-track{overflow:hidden}@media (max-width:520px){.away .ns-tick:nth-of-type(even){visibility:hidden}}.away > ul{grid-column:2}
 @media (min-width:521px){.inbox-list{align-items:stretch}.inbox-list > .ib{align-content:start}}.away ul{grid-column:2;margin:2px 0 4px;padding-inline-start:18px;font-size:13.5px;display:grid;gap:2px}.away .t-warn{color:var(--late)}
 .ib-x{grid-column:1 / -1;margin-top:6px}
 .ib-reply{display:grid;gap:6px}.ib-reply textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:none;min-height:36px}
@@ -690,6 +690,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <div id="awayBox"></div>
       <div class="night-strip" id="nightStrip" hidden></div>
       <div class="inbox-list" id="inboxList"></div>
+      <div id="callsBox"></div>
     </div>
     <div class="follow-strip" id="followStrip" hidden></div>
     <div class="scene">
@@ -810,15 +811,15 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <div class="panel" id="mtSet">
       <h2>Meetings and rooms</h2>
       <p class="note">A meeting books its room. Small meetings take a huddle table; bigger ones the meeting room (10, 20 or 30 seats by head count). The meeting room is never booked twice at the same time.</p>
-      <div class="set-grid"><label>Huddle table for up to <select id="mtHuddle"></select> people</label><label>Default length <select id="mtLen"></select></label></div>
-      <div class="row-wrap"><button class="btn" type="button" id="mtSave">Save</button><span class="note" id="mtNote"></span></div>
+      <div class="set-grid"><label>Huddle table for up to <select id="mtHuddle"></select> people</label><label>Default length <select id="mtLen"></select></label><label>When Call a meeting opens, tick <select id="mtTick"><option value="suggested">the suggested people</option><option value="everyone">everyone (when they fit)</option></select></label></div>
+      <div class="row-wrap"><button class="btn" type="button" id="mtSave">Save</button><span class="note" id="mtNote" role="status" aria-live="polite"></span></div>
     </div>
     <div class="panel" id="whSet">
       <h2>Working hours</h2>
       <p class="note">Calendars plan each task inside these hours. Agents run around the clock unless you set hours here.</p>
       <label class="set-chk"><input type="checkbox" id="whAll"> Around the clock</label>
       <div class="set-grid" id="whBox"><label>From <select id="whStart"></select></label><label>To <select id="whEnd"></select></label><span class="mt-chips" id="whDays" role="group" aria-label="Working days"></span></div>
-      <div class="row-wrap"><button class="btn" type="button" id="whSave">Save</button><span class="note" id="whNote"></span></div>
+      <div class="row-wrap"><button class="btn" type="button" id="whSave">Save</button><span class="note" id="whNote" role="status" aria-live="polite"></span></div>
     </div>
     <div class="panel" id="paceSet">
       <h2>Estimates that learn</h2>
@@ -837,7 +838,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <p class="note">They book themselves. The agenda comes from the plan: late tasks, blocked agents and decisions waiting for you. The people are the ones on that agenda, plus the Coordinator. Their minutes reach every task on the agenda.</p>
       <div class="set-grid"><label class="set-chk"><input type="checkbox" id="ritSu"> Daily stand-up</label><label>at <select id="ritSuT"></select></label><label>for <select id="ritSuL"></select></label></div>
       <div class="set-grid"><label class="set-chk"><input type="checkbox" id="ritRv"> Weekly review</label><label>on <select id="ritRvD"></select></label><label>at <select id="ritRvT"></select></label><label>for <select id="ritRvL"></select></label></div>
-      <div class="row-wrap"><button class="btn" type="button" id="ritSave">Save</button><span class="note" id="ritNote"></span></div>
+      <div class="row-wrap"><button class="btn" type="button" id="ritSave">Save</button><span class="note" id="ritNote" role="status" aria-live="polite"></span></div>
     </div>
   </section>
 
@@ -1954,10 +1955,11 @@ function renderInbox(){
     if (inboxShowOb) { const l = el("div","snz-list"); ob.forEach(m => { const r = el("div","snz-row"); r.append(avatar(m.to || "coordinator", 20), el("span", null, `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 120)}`), el("span","note", `sent ${ago(m.at)}`)); l.append(r); }); box.prepend(l); } }
   const np = $("needPill"); np.hidden = !todo; np.textContent = `${todo} need${todo === 1 ? "s" : ""} you`; np.onclick = () => { showTab("office"); $("inboxList").scrollIntoView({block:"start", behavior:reduce ? "auto" : "smooth"}); };
   /* while you were away (council round 14, UX): after 6+ hours, one card tells the night: done, went wrong, waiting; it replaces the "since" chips */
-  $("awayBox").after($("nightStrip")); $("awayBox").replaceChildren(); const brief = !!(seenAt && Date.now() - seenAt >= 6 * 36e5);
-  /* one morning brief (council round 20): the away card takes in the greeting and the night strip; Next 3 hours waits under the cards */
-  $("greet").hidden = brief; if (brief) $("inboxList").after($("next3")); else $("awayBox").before($("next3"));
-  if (brief) { const T = v => Date.parse(v || "") || 0, dn = tasks.filter(t => isClosed(t) && T(t.done_at) > seenAt), lt = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy), bl = agents.filter(a => a.state === "blocked" && T(a.waiting_since) > seenAt), hw = items.filter(it => held(it) && !isSent(it)), old = hw.reduce((m, it) => Math.min(m, T(it.at) || Infinity), Infinity);
+  const brief = !!(seenAt && Date.now() - seenAt >= 6 * 36e5), aSig = [seenAt, todo, tasks.filter(t => isClosed(t)).length, tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).length, agents.filter(a => a.state === "blocked").length].join("|"), keepBrief = brief && aSig === awaySig && $("awayBox").contains(document.activeElement);
+  /* one morning brief (council round 20): the away card takes in the greeting and the night strip; it is not rebuilt under the owner's focus unless its numbers change */
+  $("greet").hidden = brief; awaySig = aSig;
+  if (!keepBrief) { $("awayBox").after($("nightStrip")); $("awayBox").replaceChildren(); }
+  if (brief && !keepBrief) { const T = v => Date.parse(v || "") || 0, dn = tasks.filter(t => isClosed(t) && T(t.done_at) > seenAt), lt = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy), bl = agents.filter(a => a.state === "blocked" && T(a.waiting_since) > seenAt), hw = items.filter(it => held(it) && !isSent(it)), old = hw.reduce((m, it) => Math.min(m, T(it.at) || Infinity), Infinity);
     const c = el("div","ib wide away"), k = el("div","ib-k"); k.append(el("span", null, "While you were away"), el("span","note", `since ${fmtWhen(seenAt)}`)); const ul = el("ul");
     ul.append(el("li", null, dn.length ? `Done: ${dn.length} task${dn.length === 1 ? "" : "s"} (${dn.slice(0, 4).map(t => t.id).join(", ")}${dn.length > 4 ? ` +${dn.length - 4}` : ""})` : "Nothing was finished."));
     const bad = [lt.length ? `${lt.length} running late (${lt.slice(0, 3).map(t => t.id).join(", ")})` : "", bl.length ? `${bl.length} got blocked` : ""].filter(Boolean); ul.append(el("li", bad.length ? "t-warn" : null, bad.length ? "Went wrong: " + bad.join(", ") : "Nothing went wrong."));
@@ -1965,26 +1967,26 @@ function renderInbox(){
     const a = el("div","ib-a"), go1 = el("button","btn","Start my round"), ok = el("button","btn-lite","Got it"), more = el("button","linkish","Details"); go1.type = ok.type = more.type = "button"; go1.hidden = !todo; go1.onclick = openWalk; ok.onclick = () => { seenAt = Date.now(); saveSeen(); renderInbox(); }; a.append(go1, ok, more);
     ul.hidden = !awayOpen; more.setAttribute("aria-expanded", String(awayOpen)); more.onclick = () => { awayOpen = !awayOpen; ul.hidden = !awayOpen; more.setAttribute("aria-expanded", String(awayOpen)); };
     const pushed = tasks.filter(t => !isClosed(t) && !sched.byTask[t.id]?.lateBy && sched.byTask[t.id]?.why === "dep" && tasks.some(x => x.id === sched.byTask[t.id].after && sched.byTask[x.id]?.lateBy)).length;
-    const tiles = el("div","mb-tiles"), tile = (n, label, cls, fn) => { const b = el("button","mb-tile" + (cls ? " " + cls : "")); b.type = "button"; b.append(el("b", null, String(n)), el("span", null, label)); b.onclick = fn; tiles.append(b); };
+    const tiles = el("div","mb-tiles"), tile = (n, label, cls, fn) => { const b = el("button","mb-tile" + (cls ? " " + cls : "")); b.type = "button"; b.append(el("b", null, String(n)), el("span", null, label)); if (n) b.onclick = fn; else b.disabled = true; tiles.append(b); };
     tile(todo, todo === 1 ? "thing for you" : "things for you", todo ? "" : "good", () => { const f = $("inboxList").querySelector(".ib:not(.away) button"); $("inboxList").scrollIntoView({block:"start", behavior:reduce ? "auto" : "smooth"}); f?.focus({preventScroll:true}); });
     tile(dn.length, "done overnight", dn.length ? "good" : "", () => { awayOpen = true; ul.hidden = false; more.setAttribute("aria-expanded", "true"); });
     tile(lt.length, `late${pushed ? ` · ${pushed} pushed back` : ""}`, lt.length ? "warn" : "good", () => showTab("calendar"));
     const h = new Date().getHours(), ph = dayPhase(), hi = ph === "night" ? (h < 6 ? "Working late" : "Good evening") : ph === "dawn" || h < 12 ? "Good morning" : ph === "dusk" ? "Good evening" : "Good afternoon";
     c.append(avatar("coordinator", 34), k, el("div","ib-t", `${hi}. Here's the night.`), tiles, ul, $("nightStrip"), a); $("awayBox").replaceChildren(c); }
   /* "Your calls" (council round 20, Owner Advocate): what the council settled by majority overnight, back to the owner with one tap each; owner only, folds when all are answered */
+  $("callsBox").replaceChildren();
   if (ownerView() && canWrite && !callsHidden) { const ans = metaOffice?.calls || {}, Q = [
-      {k:"meet_default", q:"Call a meeting: who is ticked when it opens?", now:"suggested", opts:[["suggested","The suggested people"],["everyone","Everyone"]], save:true},
-      {k:"conv_lane", q:"Task board: the Conversations lane, open or folded?", opts:[["open","Open"],["folded","Folded"]]},
+      {k:"meet_default", q:"Call a meeting: who is ticked when it opens? (You can change it later in Settings.)", now:metaOffice?.meet_default || "suggested", opts:[["suggested","The suggested people"],["everyone","Everyone, when they fit a room"]], save:true},
       {k:"autopilot", q:"Autopilot rules: agents act on set rules without asking you?", opts:[["plan","Yes, plan it"],["later","Not now"],["more","Tell me more"]]},
       {k:"tell", q:"\"Tell the office\": one line where you write what you want and it turns into steps you confirm?", opts:[["plan","Yes, plan it"],["later","Not now"],["more","Tell me more"]]}], open = Q.filter(x => !ans[x.k]);
     if (open.length) { const c = el("div","ib wide calls"), k = el("div","ib-k"), later = el("button","linkish","Later"); later.type = "button"; later.onclick = () => { callsHidden = true; renderInbox(); };
-      k.append(el("span", null, `Your calls (${open.length})`), later); c.append(avatar("coordinator", 34), k, el("div","ib-t", "The council chose these by majority while you were away. Pick what you want."));
+      k.append(el("span", null, `Your calls (${open.length})`), later); c.append(avatar("coordinator", 34), k, el("div","ib-t", "The first was settled by majority while you were away; the others were left for you. Pick what you want."));
       open.forEach(x => { const d = el("div","cq"), row = el("div","row-wrap"); d.append(el("b", null, x.q));
         x.opts.forEach(([v, l]) => { const b = el("button","chip-btn", l + (x.now === v ? " (running now)" : "")); b.type = "button"; b.setAttribute("aria-pressed", String(x.now === v));
           b.onclick = async () => { row.querySelectorAll("button").forEach(z => z.disabled = true); try { await db.doc("meta/office").update({calls:{...(metaOffice?.calls || {}), [x.k]:v}, ...(x.save ? {[x.k]:v} : {})});
             await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:"coordinator", task:null, kind:"decision", decided_by:"owner", text:`${x.q} My call: ${l}.`, author_id:me, relayed:false}); } catch (err) { d.append(el("small", null, writeError(err))); row.querySelectorAll("button").forEach(z => z.disabled = false); } };
           row.append(b); }); d.append(row); c.append(d); });
-      $("awayBox").append(c); } }
+      $("callsBox").append(c); } }
   if (!items.length) {   // "morning done" (council round 4, I2): what comes next, so the owner can leave with peace of mind
     const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
     box.append(emptyState("coordinator", "All caught up.", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" ").replace(/^All caught up\. /, ""))); return; }
@@ -3115,7 +3117,7 @@ function callMeeting(opts){
       $("meetDlg").close(); showTab("chat"); viewSession(ref.id); $("h-chat").scrollIntoView();
     } catch (err) { note.textContent = writeError(err); start.disabled = false; }
   };
-  setWhen("now"); resuggest(); if (!opts.with?.length && metaOffice?.meet_default === "everyone") allB.click();   // the owner's call (round 20)
+  setWhen("now"); resuggest(); if (!opts.with?.length && metaOffice?.meet_default === "everyone" && list.length < 30) allB.click();   // the owner's call (round 20), only when everyone fits the biggest room
   if (opts.at) { setWhen("later"); at.value = toLocal(opts.at); upd(); }
   if (opts.room) rmc.querySelectorAll(".chip-btn")[opts.room === "huddle" ? 2 : 1].click();
   closeDialogs(); $("meetDlg").showModal(); ta.focus();
@@ -3762,12 +3764,12 @@ $("ritSave").onclick = async () => { $("ritNote").textContent = "Saving…";
     for (const k of Object.keys(RITUALS)) { const a = was[k], b = v[k], booked = sessions.filter(x => x.ritual === k && x.state === "scheduled" && !x.moved);   // a meeting moved by hand stays where it was put
       if (a.on !== b.on || a.time !== b.time || a.day !== b.day) { for (const x of booked) await db.doc("sessions/" + x.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), resolution_en:"Rebooked after a settings change."}); }
       else if (a.min !== b.min) { for (const x of booked) await db.doc("sessions/" + x.id).update({duration_min:b.min}); } }
-    document.activeElement.blur(); $("ritNote").textContent = "Saved. The next ones are booked."; setTimeout(ensureRituals, 300); } catch (err) { $("ritNote").textContent = writeError(err); } };
+    $("ritNote").textContent = "Saved. The next ones are booked."; setTimeout(ensureRituals, 300); } catch (err) { $("ritNote").textContent = writeError(err); } };
 function renderMeetSettings(){
   renderRitSettings();
   const p1 = $("mtSet"), p2 = $("whSet"); if (!p1) return;
   if (!p1.contains(document.activeElement)) { const c = meetCfg(), h = $("mtHuddle"), l = $("mtLen"); h.replaceChildren(); l.replaceChildren();
-    for (let i = 2; i <= 8; i++) h.append(new Option(String(i), String(i), false, i === c.huddle_max)); [15,30,45,60].forEach(m => l.append(new Option(m + " min", String(m), false, m === c.default_min))); }
+    for (let i = 2; i <= 8; i++) h.append(new Option(String(i), String(i), false, i === c.huddle_max)); [15,30,45,60].forEach(m => l.append(new Option(m + " min", String(m), false, m === c.default_min))); $("mtTick").value = metaOffice?.meet_default === "everyone" ? "everyone" : "suggested"; }
   if (!p2.contains(document.activeElement)) { const w = metaOffice?.workday || {}, all = !w || w.start == null, wd = workday();
     $("whAll").checked = all; $("whBox").hidden = all;
     const s = $("whStart"), e = $("whEnd"); s.replaceChildren(); e.replaceChildren();
@@ -3778,13 +3780,13 @@ function renderMeetSettings(){
 }
 $("whAll").onchange = e => { $("whBox").hidden = e.target.checked; };
 /* Settings save themselves (council round 20): a change saves after half a second; the note says Saved */
-["mtSet", "whSet", "ritSet"].forEach(id => { const p = $(id); if (!p) return; let tm = 0; const kick = () => { clearTimeout(tm); tm = setTimeout(() => p.querySelector(".row-wrap .btn")?.click(), 500); }; p.addEventListener("change", kick); p.addEventListener("click", ev => { if (ev.target.closest(".chip-btn")) kick(); }); });
+["mtSet", "whSet", "ritSet"].forEach(id => { const p = $(id); if (!p) return; let tm = 0; const kick = () => { if (!canWrite || !ownerView()) { const n = p.querySelector(".row-wrap .note"); if (n) n.textContent = canWrite ? "Only the owner changes these." : ""; return; } clearTimeout(tm); tm = setTimeout(() => p.querySelector(".row-wrap .btn")?.click(), id === "ritSet" ? 1500 : 500); }; p.addEventListener("change", kick); p.addEventListener("click", ev => { if (ev.target.closest(".chip-btn")) kick(); }); });
 $("mtSave").onclick = async () => { $("mtNote").textContent = "Saving…";
-  try { await db.doc("meta/office").update({meetings:{huddle_max:+$("mtHuddle").value, default_min:+$("mtLen").value}}); document.activeElement.blur(); $("mtNote").textContent = "Saved."; } catch (err) { $("mtNote").textContent = writeError(err); } };
+  try { await db.doc("meta/office").update({meetings:{huddle_max:+$("mtHuddle").value, default_min:+$("mtLen").value}, meet_default:$("mtTick").value}); $("mtNote").textContent = "Saved."; } catch (err) { $("mtNote").textContent = writeError(err); } };
 $("whSave").onclick = async () => { $("whNote").textContent = "Saving…";
   const v = $("whAll").checked ? {} : {start:+$("whStart").value, end:+$("whEnd").value, days:[...$("whDays").children].filter(b => b.getAttribute("aria-pressed") === "true").map(b => +b.dataset.d)};
   if (!$("whAll").checked && (!v.days.length || v.end <= v.start)) { $("whNote").textContent = "Pick at least one day, and an end after the start."; return; }
-  try { await db.doc("meta/office").update({workday:v}); document.activeElement.blur(); $("whNote").textContent = "Saved. Calendars use the new hours."; } catch (err) { $("whNote").textContent = writeError(err); } };
+  try { await db.doc("meta/office").update({workday:v}); $("whNote").textContent = "Saved. Calendars use the new hours."; } catch (err) { $("whNote").textContent = writeError(err); } };
 /* find anything (council round 8, Product Lead): Ctrl+K searches tasks, people, conversations and messages, and opens the usual links */
 function openFind(){
   const body = $("findBody"), inp = el("input"), list = el("div","find-list"); inp.type = "search"; inp.placeholder = "Find a task, person, meeting or message"; inp.setAttribute("aria-label", "Find anything"); inp.autocomplete = "off"; list.setAttribute("role", "listbox"); list.id = "findList"; inp.setAttribute("aria-controls", "findList"); inp.setAttribute("role", "combobox"); inp.setAttribute("aria-expanded", "true");
@@ -3834,7 +3836,7 @@ function seatAll(list){
 const tableName = i => { const r = Math.floor((i - 1) / N_TABLES); return r ? `Huddle room ${r + 1} · Table ${(i - 1) % N_TABLES + 1}` : `Huddle table ${i}`; };
 const seatName = st => !st ? "" : st.key === "meet" ? "Meeting room" : tableName(+st.key.slice(1));
 /* rooms day lanes (council round 18, all four): one row per room and table across the hours, a now line, clashes marked; a click on a free gap books that room at that time */
-let calDay = null, awayOpen = false, callsHidden = false;
+let calDay = null, awayOpen = false, callsHidden = false, awaySig = "";
 const nextFree = (items, t0) => { let t = Math.ceil(t0 / 9e5) * 9e5; for (const x of [...items].sort((a, b) => a.sp.s - b.sp.s)) if (x.sp.s < t + 9e5 && x.sp.e > t) t = Math.ceil(x.sp.e / 9e5) * 9e5; return t; };
 function bookKeys(lane, label, book){ lane.tabIndex = 0; lane.setAttribute("role", "button"); lane.setAttribute("aria-label", label); lane.onkeydown = ev => { if ((ev.key === "Enter" || ev.key === " ") && ev.target === lane) { ev.preventDefault(); book(); } }; }
 function roomsDay(){
