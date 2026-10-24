@@ -47,9 +47,11 @@ h2{font-weight:700;font-size:19px;margin:0}
 .hint,.note{color:var(--muted);font-size:13px}
 .mono{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
 /* tabs */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs [role="tab"]{flex:0 0 auto}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:400;background:var(--bg)}
+.tabs::-webkit-scrollbar{display:none}.tabs [role="tab"]{flex:0 0 auto}
 .tabs button{font:inherit;font-weight:600;font-size:15px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;cursor:pointer;margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs .need-pill{margin:0 0 0 auto;align-self:center;flex:0 0 auto;border:0;border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--warn);color:#fff}
 .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .tabs .count{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-left:6px}
 [role="tabpanel"][hidden]{display:none}
@@ -357,6 +359,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ib-sent{align-self:center;font-size:12.5px;color:var(--ok);font-weight:600}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .walk-h{font-size:15px;margin:0}
+.mt-cost{font-size:12.5px;font-weight:500}
 .ib-pend{align-self:center;font-size:12.5px;color:var(--muted)}.ib-err{align-self:center;font-size:12.5px;color:var(--bad);font-weight:600}
 .inbox-empty{color:var(--muted);font-size:13.5px}
 .inbox-more{justify-self:start}
@@ -596,6 +599,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <button role="tab" id="tab-team" aria-controls="panel-team" aria-selected="false" tabindex="-1">Team</button>
     <button role="tab" id="tab-calendar" aria-controls="panel-calendar" aria-selected="false" tabindex="-1">Calendar<span class="count" id="calCount"></span></button>
     <button role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1">Settings</button>
+    <button type="button" class="need-pill" id="needPill" hidden></button>
   </div>
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
@@ -1498,6 +1502,15 @@ function quickAnswers(needs){
   if ((m = /^approve\b\s*(.*)$/i.exec(n))) return [["Approve", m[1] ? `Approved: ${m[1]}.` : "Approved."], ["Not now", m[1] ? `Not approved for now: ${m[1]}.` : "Not approved for now."]];
   if ((m = /^decide:\s*(.+?),?\s+or\s+(.+?)\.?$/i.exec(n))) return [m[1], m[2]].map(x => { x = x.trim(); return [x.charAt(0).toUpperCase() + x.slice(1), `Decision: ${x}.`]; });
   return []; }
+async function snooze(keys, until){
+  if (!db) return; const now = Date.now(), m = {}; Object.entries(metaOffice?.snooze || {}).forEach(([k, v]) => { if (Date.parse(v) > now && !keys.includes(k)) m[k] = v; });
+  if (until) keys.forEach(k => { m[k] = new Date(until).toISOString(); });
+  try { await db.doc("meta/office").update({snooze:m}); if (until) announce(`Snoozed until ${fmtWhen(until)}.`); } catch (err) { $("inboxSum").textContent = writeError(err); } }
+function laterPick(row, key){
+  const keep = [...row.childNodes], tm = new Date(); tm.setDate(tm.getDate() + 1); tm.setHours(9, 0, 0, 0);
+  const opts = [["1 hour", Date.now() + 36e5], ["3 hours", Date.now() + 3 * 36e5], ["Tomorrow 09:00", +tm]].map(([l, t]) => { const b = el("button","btn-lite", l); b.type = "button"; b.onclick = () => snooze([key], t); return b; });
+  const back = el("button","linkish","Back"); back.type = "button"; back.onclick = () => row.replaceChildren(...keep);
+  row.replaceChildren(el("span","note","Snooze until"), ...opts, back); opts[0].focus(); }
 /* a one-tap answer waits 5 seconds with Undo before it goes, and says who gets it */
 const pendingSend = new Map();
 function quickSend(key, to, task, text){
@@ -1615,7 +1628,7 @@ function renderInbox(){
   const box = $("inboxList"); if (!box) return;
   if (box.contains(document.activeElement) && document.activeElement.matches("textarea, input")) return;   // never wipe what the owner is typing
   box.replaceChildren();
-  const items = [], openOf = id => tasks.find(t => t.session === id && t.state === "blocked") || tasks.find(t => t.session === id && t.state !== "done");
+  let items = []; const openOf = id => tasks.find(t => t.session === id && t.state === "blocked") || tasks.find(t => t.session === id && t.state !== "done");
   agents.filter(a => a.state === "waiting" && a.id !== ASSISTANT).forEach(a => { const t = openOf(a.id);
     items.push({k:"Waiting for you", c:"var(--warn)", who:a.id, t:nameOf(a.id), s:a.doing_en || (t ? `${t.id} · ${ttl(t)}` : "Has a question for you."), at:a.updated_at,
       key:"w:" + a.id, inline:() => inlineReply("w:" + a.id, {to:a.id, task:t?.id || null}, `Reply to ${nameOf(a.id)}…`),
@@ -1648,13 +1661,17 @@ function renderInbox(){
     items.push({k:"Will be late", c:"var(--late)", who:t.session || "coordinator", t:`${t.id} · ${ttl(t)}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), rel:p.due > Date.now() ? "due in " + fmtDur(Math.round((p.due - Date.now()) / 6e4)) : "past due",
       key:"l:" + t.id, inline:() => inlineReply("l:" + t.id, {to:t.session || "coordinator", task:t.id}, `Ask ${nameOf(t.session)} about ${t.id}…`),
       acts:[["Talk", "inline", true], ["Meeting", () => callMeeting({task:t.id})], ["Move the deadline", e => moveDeadline(e.currentTarget, t, p)], ["Task", () => openTask(t.id)]]}); });
+  /* snooze (council round 8, Product Lead): "Later" hides a card until its time; nothing is answered for the owner */
+  const snz = metaOffice?.snooze || {}, nowMs = Date.now(), slept = items.filter(it => it.key && Date.parse(snz[it.key] || "") > nowMs); items = items.filter(it => !slept.includes(it));
   const w = agents.filter(a => a.state === "working").length, isSent = it => it.key && inboxSent.has(it.key), todo = items.filter(it => !isSent(it)).length;
   items.sort((x, y) => isSent(x) - isSent(y));
   { const base = $("title").textContent || "Product Office"; document.title = (todo ? `(${todo}) ` : "") + base; }
   $("inboxSum").textContent = items.length ? (todo ? `${todo} thing${todo === 1 ? "" : "s"} for you` : "All answered") + ` · ${w} agents working` : "";
+  if (slept.length) { const wk = el("button","linkish", `${slept.length} snoozed: show`); wk.type = "button"; wk.title = slept.map(it => `${it.t}: until ${fmtWhen(Date.parse(snz[it.key]))}`).join("\n"); wk.onclick = () => snooze(slept.map(it => it.key), null); $("inboxSum").append(" · ", wk); }
   inboxItems = items;
   if ($("walkDlg").open && !($("walkBody").contains(document.activeElement) && document.activeElement.matches("textarea, input"))) drawWalk();
   const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`;
+  const np = $("needPill"); np.hidden = !todo; np.textContent = `${todo} need${todo === 1 ? "s" : ""} you`; np.onclick = () => { showTab("office"); $("inboxList").scrollIntoView({block:"start", behavior:reduce ? "auto" : "smooth"}); };
   if (!items.length) {   // "morning done" (council round 4, I2): what comes next, so the owner can leave with peace of mind
     const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
     box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
@@ -1664,6 +1681,7 @@ function renderInbox(){
     const a = el("div","ib-a"), open = it.key && inboxOpen.has(it.key), sent = it.key && sentEl(it.key);
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
       b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
+    if (!sent && it.key) { const lt = el("button","btn-lite","Later"); lt.type = "button"; lt.title = "Snooze this card"; lt.onclick = () => laterPick(a, it.key); a.append(lt); }
     if (sent) a.replaceChildren(sent);
     c.append(avatar(it.who, 34), k, el("div","ib-t", it.t), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
     if (open && it.inline) { const x = el("div","ib-x"); x.append(it.inline()); c.append(x); }
@@ -1697,6 +1715,13 @@ const meetSpan = s => { const dur = (Number(s.duration_min) || 30) * 6e4;
   if (s.state === "open") { if (!isMeeting(s)) return null; const st = Date.parse(s.opened_at || s.at || ""); if (!st) return null; return {s:st, e:Math.max(st + dur, Date.now() + 5 * 6e4)}; }
   const st = Date.parse((s.state === "scheduled" ? s.at : s.opened_at || s.at) || ""); if (!st) return null; const end = Date.parse(s.closed_at || "") || st + dur; return {s:st, e:Math.max(end, st + 5 * 6e4)}; };
 let sched = {byTask:{}, byAgent:{}};
+/* what a meeting costs (council round 8, Owner Advocate): plan once with the meeting and once without, and list the tasks it pushes */
+function meetCost(members, at, min){
+  const keepS = sessions, keepP = sched; let out = [];
+  try { sessions = [...keepS, {id:"_cost", kind:"meeting", state:"scheduled", at:new Date(at).toISOString(), duration_min:min, members}]; buildSchedule();
+    out = tasks.filter(t => !isClosed(t)).map(t => { const a = keepP.byTask[t.id], b = sched.byTask[t.id]; return a && b ? {t, d:b.e - a.e, late:!a.lateBy && !!b.lateBy} : null; }).filter(x => x && x.d >= 6e4).sort((x, y) => y.late - x.late || y.d - x.d); }
+  finally { sessions = keepS; sched = keepP; }
+  return out; }
 function buildSchedule(){
   const wd = workday(), now = Date.now(), byTask = {}, byAgent = {}, busy = {};
   sessions.forEach(s => { if (s.state === "closed" && !s.at) return; const sp = meetSpan(s); if (!sp) return;
@@ -2577,13 +2602,17 @@ function callMeeting(opts){
   let sugT = 0; ta.oninput = () => { clearTimeout(sugT); sugT = setTimeout(() => { pickTask(); resuggest(); }, 350); };
   enterSends(ta, () => start.click());
   /* footer: count, room, warnings, start */
+  const cost = el("div","mt-cost"); let costT = 0;
   const foot = el("div","mt-foot"), info = el("div","mt-info"), thumb = el("span","mt-thumb"), note = el("span","note"), warn = el("div","mt-warn");
   const cancel = el("button","btn-lite","Cancel"), start = el("button","btn","Start meeting"); cancel.type = start.type = "button";
-  info.append(thumb, el("span"), note); const btns = el("span","row-wrap"); btns.append(cancel, start); foot.append(info, btns);
+  info.append(thumb, el("span"), note); foot.prepend(cost); cost.style.flexBasis = "100%"; const btns = el("span","row-wrap"); btns.append(cancel, start); foot.append(info, btns);
   function upd(){ const n = picked.size + 1, r = roomNow(); cnt.textContent = `${picked.size} invited + you`;
     thumb.style.backgroundImage = `url(${A}rooms/${r.bg}.webp)`; info.children[1].textContent = `${n} people in all · ${r.name}`;
     start.textContent = when === "later" ? "Schedule meeting" : "Start meeting";
     warn.replaceChildren();
+    clearTimeout(costT); costT = setTimeout(() => { const t0 = when === "later" ? Date.parse(at.value) : Date.now(); if (!t0) return; const c = meetCost(["owner", ...picked], t0, dur); cost.replaceChildren();
+      if (!c.length) { cost.append(el("span","mt-ok","Pushes no task back.")); return; }
+      cost.className = "mt-cost" + (c.some(x => x.late) ? " t-warn" : ""); cost.append(el("span", null, "Pushes " + c.slice(0, 3).map(x => `${x.t.id} by ${fmtDur(Math.round(x.d / 6e4))}${x.late ? " (now late)" : ""}`).join(", ") + (c.length > 3 ? ` and ${c.length - 3} more` : "") + ".")); }, 250);
     if (when === "later") { const s = Date.parse(at.value), e = s + dur * 6e4;
       if (s) { const busy = [...picked].map(id => [id, busyAt(id, s, e)]).filter(([, b]) => b);
         if (busy.length) warn.append(el("span", null, `Busy then: ${busy.slice(0, 4).map(([id, b]) => `${nameOf(id)} (${b.sess.title_en || "a meeting"})`).join(", ")}${busy.length > 4 ? ` and ${busy.length - 4} more` : ""}. `), Object.assign(el("button","linkish","Find a free time"), {type:"button", onclick:findFree}));
@@ -2617,7 +2646,8 @@ function callMeeting(opts){
 const freshAgenda = s => { if (!s.ritual) return {}; const f = ritualPlan(s.ritual); return {agenda:f.agenda, tasks:f.tasks, agenda_done:[]}; };
 /* a scheduled meeting opens by itself at its time, and walks its people into the room */
 /* automatic writes (opening and booking meetings, locking the plan) come from the owner's page only; meta/office.owner_id names the owner, and without it any writer may */
-const autoWriter = () => !!db && canWrite && (!metaOffice?.owner_id || metaOffice.owner_id === me);
+let live = {stale:false, unsubs:[], hiddenAt:0, t:0};
+const autoWriter = () => !!db && canWrite && !live.stale && !document.hidden && (!metaOffice?.owner_id || metaOffice.owner_id === me);
 const missedBy = s => { const t = Date.parse(s.at || ""); return t && t + ((s.duration_min || 30) + 15) * 6e4 < Date.now(); };   // the whole meeting, plus 15 min, is in the past
 function openDueMeetings(){
   if (!autoWriter()) return;
@@ -3260,17 +3290,23 @@ renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000); setInterval(() =>
   if (!db) { $("conn").textContent = "Couldn't open the office data in this view. Open the page while signed in."; $("send").disabled = true; return; }
   try { me = user ? await user.id() : null; } catch { me = null; }
   try { const w = user ? await user.can("data.write") : null; if (w === false) { canWrite = false; $("send").disabled = true; $("composeNote").textContent = "You can read this page but not post."; } } catch {}
-  const onErr = () => { $("conn").textContent = "Live updates stopped. Reload the page."; };
-  db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); $("conn").textContent = "Connected. Updates appear live."; renderAll(); }, onErr);
-  db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; renderAll(); const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {});
-  db.collection("tasks").onSnapshot(s => { tasks = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
+  /* live-link watchdog (council round 8, Engineer): a listener error, or waking after 5+ minutes asleep, subscribes again; automatic writes wait until data is fresh */
+  const onErr = () => { live.stale = true; $("conn").textContent = "Reconnecting…"; clearTimeout(live.t); live.t = setTimeout(subscribeAll, 5000); };
+  const subscribeAll = () => { const keep = u => { live.unsubs.push(u); return u; };
+  live.unsubs.forEach(u => { try { u(); } catch {} }); live.unsubs = [];
+  keep(db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); live.stale = false; $("conn").textContent = "Connected. Updates appear live."; renderAll(); }, onErr));
+  keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; renderAll(); const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {}));
+  keep(db.collection("tasks").onSnapshot(s => { tasks = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr));
   /* the newest 500 messages (an ascending query with a limit would keep the oldest); falls back if the db can't sort descending */
-  const subMsgs = desc => { try { (desc ? db.collection("messages").orderBy("at", "desc") : db.collection("messages").orderBy("at")).limit(500).onSnapshot(s => {
-      msgs = s.docs.map(d => ({id:d.id, ...d.data()})).sort((a, b) => String(a.at || "").localeCompare(String(b.at || ""))); renderAll(false); }, err => desc ? subMsgs(false) : onErr(err)); }
+  const subMsgs = desc => { try { keep((desc ? db.collection("messages").orderBy("at", "desc") : db.collection("messages").orderBy("at")).limit(500).onSnapshot(s => {
+      msgs = s.docs.map(d => ({id:d.id, ...d.data()})).sort((a, b) => String(a.at || "").localeCompare(String(b.at || ""))); renderAll(false); }, err => desc ? subMsgs(false) : onErr(err))); }
     catch (err) { if (desc) subMsgs(false); else onErr(err); } };
   subMsgs(true);
-  db.collection("sessions").onSnapshot(s => { sessions = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr);
-  db.collection("reviews").onSnapshot(s => { reviews = s.docs.map(d => ({id:d.id, ...d.data()})); renderReviews(); }, () => {});
+  keep(db.collection("sessions").onSnapshot(s => { sessions = s.docs.map(d => ({id:d.id, ...d.data()})); renderAll(); }, onErr));
+  keep(db.collection("reviews").onSnapshot(s => { reviews = s.docs.map(d => ({id:d.id, ...d.data()})); renderReviews(); }, () => {})); };
+  subscribeAll();
+  document.addEventListener("visibilitychange", () => { if (document.hidden) { live.hiddenAt = Date.now(); return; }
+    if (live.hiddenAt && Date.now() - live.hiddenAt > 5 * 6e4 && live.unsubs.every(u => typeof u === "function")) { live.stale = true; $("conn").textContent = "Reconnecting…"; subscribeAll(); } live.hiddenAt = 0; });
 })();
 })();
 </script>
