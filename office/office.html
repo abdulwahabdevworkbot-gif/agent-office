@@ -238,10 +238,10 @@ h2{font-weight:700;font-size:19px;margin:0}
 .rm-pill.blocked{border-left:3px solid var(--bad)}.rm-pill .mono{white-space:nowrap;flex:none}
 .ph-tag{justify-self:start;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px}
 /* Arabic replies: English and task ids on their own lines */
-.msg .body.bidi{text-align:right}
-.msg .body .ln{overflow-wrap:anywhere}
-.msg .body .ln-en{direction:ltr;unicode-bidi:isolate;text-align:right;font-weight:500}
-.msg .body .ln-gap{height:.6em}
+.bidi{text-align:right}
+.bidi .ln{overflow-wrap:anywhere;white-space:normal}
+.bidi .ln-en{direction:ltr;unicode-bidi:isolate;text-align:right;font-weight:500}
+.bidi .ln-gap{height:.6em}
 /* back to where you were */
 .nav-back{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9000;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 32px);box-sizing:border-box;border:0;border-radius:999px;padding:9px 16px;background:var(--accent,#3b5bdb);color:#fff;font:inherit;font-weight:600;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .nav-back[hidden]{display:none}
@@ -905,7 +905,20 @@ const PALETTE = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d
 
 let agents = [], tasks = [], msgs = [], sessions = [], reviews = [], filter = "", feat = "", selectedAgent = null, me = null, canWrite = true, db = null, user = null;
 const $ = id => document.getElementById(id);
-const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+/* the owner's rule, everywhere (chat, board, task text, reviews): Arabic text reads right to left, and every
+   English run sits on its own line between the Arabic lines. Block elements get the split; short inline bits only the direction. */
+const AR_LETTER = /[\u0621-\u064A\u0671-\u06D3\u06FA-\u06FF]/;
+const LATIN_RUN = /[A-Za-z0-9#@][A-Za-z0-9#@ \t.,:;\/_&+'"!?%*=()\[\]-]*[A-Za-z0-9)\]%]|[A-Za-z]/g;
+const BIDI_TAGS = new Set(["DIV", "P", "LI", "TD", "DD", "BLOCKQUOTE"]);
+function setText(e, text){
+  const s = String(text);
+  if (!AR_LETTER.test(s)) { e.textContent = s; return e; }
+  e.textContent = "";
+  if (BIDI_TAGS.has(e.tagName) && /[A-Za-z]/.test(s)) { e.dir = "rtl"; e.classList.add("bidi"); e.append(bidiBody(s)); }
+  else { e.dir = "rtl"; e.textContent = s; }
+  return e;
+}
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) setText(e, text); return e; };
 const agentById = id => agents.find(a => a.id === id);
 const plainName = id => id === "owner" ? "You" : id === "all" ? "Everyone" : (agentById(id)?.name_en || agentById(id)?.name_ar || id);
 const nameOf = id => { const n = plainName(id), c = typeof deptCode === "function" && id !== "owner" && id !== "all" ? deptCode(id) : ""; return c ? `${c} · ${n}` : n; };
@@ -2944,7 +2957,7 @@ function renderReviews(){
       if (r.at) h.append(el("span","note", new Date(r.at).toLocaleString("en-GB", {calendar:"gregory", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})));
       if (r.session && sessions.some(s => s.id === r.session)) h.append(sessLink(r.session, "Open the chat"));
       rd.append(h);
-      if (r.notes_en) { const p = el("div"); p.dir = "auto"; p.textContent = r.notes_en; rd.append(p); }
+      if (r.notes_en) rd.append(el("div", null, r.notes_en));
       const ch = Array.isArray(r.changes_en) ? r.changes_en : [];
       if (ch.length) { rd.append(el("span","note","Changes asked:")); const ul = el("ul"); ch.forEach(c => { const li = el("li"); li.dir = "auto"; li.textContent = c; ul.append(li); }); rd.append(ul); }
       const subs = (Array.isArray(r.subtasks) ? r.subtasks : []).map(id => tasks.find(t => t.id === id) || {id, missing:true});
@@ -3394,8 +3407,6 @@ function renderMsgs(){
 }
 /* the owner's rule: in an Arabic reply every English run (a word, a name, a task id) sits on its own line,
    with the Arabic before it and after it on their own lines, so right-to-left text never jumbles */
-const AR_LETTER = /[\u0621-\u064A\u0671-\u06D3\u06FA-\u06FF]/;
-const LATIN_RUN = /[A-Za-z0-9#@][A-Za-z0-9#@ \t.,:;\/_&+'"!?%*=()\[\]-]*[A-Za-z0-9)\]%]|[A-Za-z]/g;
 function bidiSegments(line){
   const segs = []; let last = 0, mm;
   LATIN_RUN.lastIndex = 0;
@@ -3451,7 +3462,7 @@ function msgRow(m){
     }
     who.append(el("span","note", fmt(m.at)));
     const bd = el("div","body"); bd.dir = "auto";
-    if (!owner && AR_LETTER.test(m.text || "")) { bd.dir = "rtl"; bd.classList.add("bidi"); bd.append(bidiBody(m.text || "")); } else bd.append(linkify(m.text || "")); main.append(who, bd);
+    if (AR_LETTER.test(m.text || "")) { bd.dir = "rtl"; bd.classList.add("bidi"); bd.append(bidiBody(m.text || "")); } else bd.append(linkify(m.text || "")); main.append(who, bd);
     if (m.decided_by) main.append(el("div","note", "Decided by: " + nameOf(m.decided_by)));
     if (m.kind === "proposal" && Array.isArray(m.proposed_tasks)) main.append(proposalBox(m));
     row.append(avatar(owner ? "owner" : m.from, 36), main);
