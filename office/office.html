@@ -198,6 +198,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .btn-lite{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:5px;padding:3px 12px;cursor:pointer;justify-self:start}
 /* roadmap */
 .rm{display:grid;gap:12px;min-width:0}
+.rm-fc{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}.rm-fc .fc-chip{font-weight:700;padding:2px 9px;border-radius:999px;color:var(--on-c);background:var(--ok)}.rm-fc .fc-chip.risk{background:var(--warn)}.rm-fc .fc-chip.late{background:var(--late)}.rm-fc .fc-chip.plan{background:var(--accent)}.rm-fc .chip{cursor:pointer}.rm-fc input[type=date]{font:inherit;padding:1px 4px}.rm-chain{flex-basis:100%;font-size:12.5px;color:var(--muted)}
 .rm-now{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;background:var(--doing-bg);border-radius:8px;padding:10px 14px}.rm-now .lbl{margin:0}.rm-now b{font-size:16px}
 .rm-filters{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .rm-ver{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0;overflow:hidden}
@@ -2956,6 +2957,18 @@ function renderRoadmap(){
   const all = tasks.filter(t => verOf(t) === cur), st = phaseStatus(all);
   const now = el("div","rm-now"); now.append(el("span","lbl","Where we are now"));
   const nb = el("b", null, `${cur} · ${np === "done" ? "Live, all phases done" : phaseName(np)}`); now.append(nb, el("span","note", `${st.done} of ${st.n} tasks done (${st.pct}%)`));
+  /* will it make it? (council round 26): the plan's finish for this version, against an optional target the owner sets; what is holding it; the tasks that set the date */
+  if (cur !== "*" && st.done < st.n) { const open = all.filter(t => !isClosed(t)), end = open.reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0), vm = (Array.isArray(metaOffice.versions) ? metaOffice.versions : []).find(v => v && v.id === cur), tgt = Date.parse(vm?.target_at || "") || 0;
+    const lt = open.filter(t => sched.byTask[t.id]?.lateBy).length, bl = open.filter(t => t.state === "blocked" || ["blocked", "waiting"].includes(agentById(t.session)?.state)).length, rv = open.filter(t => t.state === "review").length;
+    const fc = el("div","rm-fc"), chip = tgt ? (end > tgt ? el("span","fc-chip late", `Late by ${fmtDur(Math.max(1, Math.round((end - tgt) / 6e4)))}`) : lt || bl ? el("span","fc-chip risk", "At risk") : el("span","fc-chip", "On track")) : el("span","fc-chip plan", "Plan");
+    fc.append(chip, el("span", null, end ? `Done by ${fmtWhen(end)}${tgt ? ` · target ${fmtWhen(tgt)}` : ""}` : "No finish date yet"));
+    [[lt, "late"], [bl, "blocked"], [rv, "in review"]].forEach(([n, l]) => { if (!n) return; const b = el("button","chip", `${n} ${l}`); b.type = "button"; b.onclick = () => showTab("board"); fc.append(b); });
+    if (canWrite && ownerView()) { const lab = el("label","note"), inp = el("input"); inp.type = "date"; inp.value = tgt ? new Date(tgt - new Date(tgt).getTimezoneOffset() * 6e4).toISOString().slice(0, 10) : ""; inp.setAttribute("aria-label", `Target date for ${cur}`);
+      inp.onchange = async () => { const list = (Array.isArray(metaOffice.versions) ? metaOffice.versions : []).filter(v => v && v.id !== cur), at = inp.value ? new Date(inp.value + "T18:00:00").toISOString() : null; try { await db.doc("meta/office").update({versions:[...list, {...(vm || {id:cur}), target_at:at}]}); } catch (err) { announce(writeError(err)); } };
+      lab.append("Target ", inp); fc.append(lab); }
+    now.append(fc);
+    const last = open.filter(t => sched.byTask[t.id]?.e === end)[0]; if (last && open.length > 1) { const chain = [last.id]; let x = sched.byTask[last.id]?.after; for (let i = 0; x && i < 5 && !chain.includes(x); i++) { const xt = tasks.find(y => y.id === x); if (!xt || isClosed(xt)) break; chain.unshift(x); x = sched.byTask[x]?.after; }
+      const cl = el("div","rm-chain"); cl.append("The date is set by "); chain.forEach((id, i) => { if (i) cl.append(" → "); cl.append(taskLink(id)); }); now.append(cl); } }
   box.append(now);
   /* filters */
   const fl = el("div","fctl rm-filters");
