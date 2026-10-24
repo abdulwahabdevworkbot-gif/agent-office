@@ -62,7 +62,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 [role="tabpanel"][hidden]{display:none}
 .stack{display:grid;gap:18px}
 /* scene */
-.scene{background:#0f1420;border-radius:10px;border:1px solid #232b3b;overflow:visible}
+.scene{background:radial-gradient(ellipse 90% 60% at 50% 0%,#1c2638,transparent 70%),repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 48px),repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 48px),#0e131d;border-radius:12px;border:1px solid #232b3b;overflow:visible}
 .chrome{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0b0f18;border-bottom:1px solid #232b3b;border-radius:10px 10px 0 0;color:#8b95a8;font-family:var(--font-mono);font-size:11px}
 .chrome .dots{display:flex;gap:6px}.chrome .dots i{width:11px;height:11px;border-radius:50%;display:block}
 .chrome .ttl{flex:1;text-align:center;letter-spacing:.3em;text-transform:uppercase}
@@ -389,7 +389,17 @@ h2{font-weight:700;font-size:19px;margin:0}
 .rp-chips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.rp-chips .chip-btn{font-size:12px;padding:2px 9px}
 .room::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 75%,rgba(255,190,110,.18),transparent 60%),rgba(18,28,78,.42);mix-blend-mode:multiply;opacity:0;transition:opacity 2s;border-radius:inherit}
 .rooms.night .room::after{opacity:1}
-@media (prefers-reduced-motion:reduce){.room::after{transition:none}}
+/* light through the day (council round 16): a warm low sun in the morning, amber in the evening, blue at night; an overlay only, the art is unchanged and people stay on top */
+.rooms.dawn .room::after{opacity:1;mix-blend-mode:overlay;background:radial-gradient(ellipse 80% 70% at 25% 30%,rgba(255,196,110,.55),rgba(255,180,100,.22) 55%,rgba(255,170,90,.10))}
+.rooms.dusk .room::after{opacity:1;mix-blend-mode:multiply;background:radial-gradient(ellipse 80% 70% at 70% 35%,rgba(255,214,170,.45),rgba(235,165,125,.55) 75%)}
+.room{box-shadow:0 10px 24px rgba(0,0,0,.38),0 0 0 1px rgba(255,226,180,.10)}.room::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;box-shadow:inset 0 0 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,236,200,.18)}
+.ag::before{content:"";position:absolute;left:18%;right:18%;bottom:-2px;height:9%;min-height:3px;max-height:9px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.42),transparent);z-index:-1;pointer-events:none}
+.ag.walking::before{opacity:.6}
+/* calmer bubbles (council round 16): one typing bubble per room at a time; the others get a soft screen glow at their spot */
+.ag.working:not(.turn) .fx.typing{opacity:0;transition:opacity .5s}.ag.working.turn .fx.typing{opacity:1;transition:opacity .5s}
+.ag.working:not(.turn):not(.meeting)::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:12%;min-height:4px;max-height:13px;border-radius:50%;background:radial-gradient(closest-side,rgba(110,180,255,.42),transparent);z-index:-1;pointer-events:none}
+.ag.meeting:not(.speaking) .talk{opacity:.12}
+@media (prefers-reduced-motion:reduce){.room::after,.ag .fx.typing{transition:none}}
 .night-strip{display:grid;gap:4px;margin:0 0 10px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:12.5px}.ns-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ns-track{overflow-x:auto}
 .ns-line{position:relative;height:34px;min-width:340px;margin:0 8px}.ns-line::before{content:"";position:absolute;left:0;right:0;top:11px;border-top:1px solid var(--line)}
 .ns-dot{position:absolute;top:3px;width:16px;height:16px;margin-left:-8px;border-radius:50%;border:2px solid var(--panel);background:var(--c);padding:0;cursor:pointer;font:600 9px/12px system-ui,sans-serif;color:#fff;transition:transform .2s}.ns-dot:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -1259,11 +1269,12 @@ const SLOTS = {
 };
 const N_TABLES = HUDDLE.tables.length, tableSlots = ti => [0,1,2,3].map(k => ti * 4 + k).concat([N_TABLES * 4 + ti * 2, N_TABLES * 4 + ti * 2 + 1]);
 const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 18; };
+const dayPhase = () => { const h = new Date().getHours(); return isNight() ? "night" : h < 9 ? "dawn" : h >= 16 ? "dusk" : "day"; };
 function setRoomBg(){
   const bg = (k, n) => { const b = typeOf(k) === "meet" ? meetBg(meetCount) : ROOM_BG[typeOf(k)]; return b ? `url(${A}rooms/${Array.isArray(b) ? b[(n - 1) % b.length] : b}.webp)` : ""; };
   Object.entries(ROOMS).forEach(([k, r]) => { const n = k === baseOf(k) ? 1 : +k.split("-").pop() || 1; r.style.backgroundImage = bg(k, n); });
-  $("roomsHQ").classList.toggle("night", isNight());   // night in the office (council round 12, UX): a blue tint over the rooms, people on top
-  const d = new Date(); $("clock").textContent = (isNight() ? "NIGHT " : "DAY ") + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+  const ph = dayPhase(); document.querySelectorAll(".rooms").forEach(x => ["night", "dawn", "dusk"].forEach(c => x.classList.toggle(c, ph === c)));   // night (round 12) and the light through the day (round 16)
+  const d = new Date(); $("clock").textContent = ({night:"NIGHT ", dawn:"MORNING ", dusk:"EVENING ", day:"DAY "})[ph] + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
 }
 let built = false;
 function buildRooms(){ built = true; }   // the furniture is part of each room picture
@@ -1423,7 +1434,7 @@ async function goTo(r, room, spot){
 function dress(r, o){
   r.b.className = "ag " + o.state + (r.b.classList.contains("walking") ? " walking" : "") + (selectedAgent === r.id ? " sel" : "") + (o.meet ? " meeting" : "") + (o.idle ? " dormant" : "") + (o.need ? " need-" + o.need : "") + (o.late ? " late" : "") + (pointed.has(r.id) ? " point" : "");
   r.idle.textContent = o.idle ? "Idle since " + idleDate(o.idle) : "";
-  if (o.idle) r.fx.hidden = true; else if (o.fx) { r.fx.src = `${A}fx/${o.fx}.webp`; r.fx.hidden = false; } else r.fx.hidden = true;
+  if (o.idle) r.fx.hidden = true; else if (o.fx) { r.fx.src = `${A}fx/${o.fx}.webp`; r.fx.hidden = false; } else r.fx.hidden = true; r.fx.classList.toggle("typing", o.fx === "typing");
   r.h = (o.h || CH_H) * heightOf(r.id); if (!r.pose) r.b.style.height = r.h + "%";
   r.tag.textContent = o.label;
   r.b.setAttribute("aria-label", o.label + (o.stateText ? ": " + o.stateText : "") + (o.meet ? " (in the meeting room)" : ""));
@@ -1541,6 +1552,8 @@ function takeTurns(){
   turn++;
   figs.forEach(r => r.b.classList.remove("speaking"));
   lastGroups.forEach(g => { const here = g.ids.map(id => figs.get(id)).filter(r => r && (r.room === "meet" || typeOf(r.room) === "huddle") && !r.busy); if (here.length) here[turn % here.length].b.classList.add("speaking"); });
+  const byRoom = new Map(); figs.forEach(r => { r.b.classList.remove("turn"); if (r.b.classList.contains("working") && !r.b.classList.contains("meeting") && r.fx.classList.contains("typing")) byRoom.set(r.room, [...(byRoom.get(r.room) || []), r]); });
+  byRoom.forEach(l => l[reduce ? 0 : turn % l.length].b.classList.add("turn"));   // one typing bubble per room, taking turns
 }
 function play(){
   if (reduce) return;
