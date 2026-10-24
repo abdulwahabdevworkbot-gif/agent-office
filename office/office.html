@@ -114,7 +114,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 @media (max-width:820px){.zoomhint{display:none}}
 /* phones (council round 3, C6): the header keeps one short row of counts; the tabs scroll sideways */
 @media (max-width:600px){.board-scroll{scroll-snap-type:x proximity}.lanes .hd{scroll-snap-align:start}#summary{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}}
-@media (max-width:600px){header .sub{display:none}#summary{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#summary>*{flex:0 0 auto}#summary::-webkit-scrollbar{display:none}.inbox-head .row-wrap{margin-left:0}}
+@media (max-width:600px){header .sub:not(#greet){display:none}#summary{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#summary>*{flex:0 0 auto}#summary::-webkit-scrollbar{display:none}.inbox-head .row-wrap{margin-left:0}}
 .room .label{position:absolute;top:2.5%;left:3%;z-index:6000;overflow:hidden;text-overflow:ellipsis;max-width:94%;background:rgba(10,14,22,.82);color:#e8edf5;border:1px solid #2c3546;border-radius:12px;padding:1px 11px;font-size:clamp(10px,2.6cqi,15px);font-weight:700;white-space:normal;line-height:1.35}   /* wraps, so every table's conversation stays readable */
 .room .label small{color:#9aa6b8;font-weight:500;margin-left:6px}.room .label{white-space:nowrap}
 .room .label .lbl-next{all:unset;cursor:pointer;color:#ffd479;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}.room .label .lbl-next:focus-visible{outline:2px solid #ffd479}
@@ -372,11 +372,12 @@ h2{font-weight:700;font-size:19px;margin:0}
 .snz-list{grid-column:1/-1;display:grid;gap:4px;padding:8px 10px;border:1px dashed var(--line);border-radius:8px}.snz-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
 #byeBody input{flex:1;min-width:0}
 .done-toast{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:9500;max-width:min(420px,calc(100vw - 32px));padding:10px 14px;border-radius:10px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-inline-start:4px solid #e0b400;box-shadow:0 10px 30px rgba(0,0,0,.2);font-size:13.5px;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .3s,transform .3s}
-.done-toast.on{opacity:1;transform:none}
-.ag.cheer img.body{filter:drop-shadow(0 0 4px #ffd43b) drop-shadow(0 0 12px rgba(255,212,59,.9));animation:cheer 1s ease-out 2}
+.done-toast.on{opacity:1;transform:none;pointer-events:auto}.done-toast button{margin-inline-start:8px}
+.ag.cheer:not(.dormant):not(.sel):not(:focus-visible) img.body{filter:drop-shadow(0 0 4px #ffd43b) drop-shadow(0 0 12px rgba(255,212,59,.9));animation:cheer 1s ease-out 2}
 @keyframes cheer{50%{transform:translateY(-4%)}}
 @media (prefers-reduced-motion:reduce){.ag.cheer img.body{animation:none}.done-toast{transition:none}}
-.ib.folded{display:none}
+.ib.folded{display:none}.ib.folding{opacity:.45;transition:opacity 2s}@media (prefers-reduced-motion:reduce){.ib.folding{transition:none}}
+.rp-chips .chip-later{margin-inline-start:auto}
 .lw{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--panel)}.lw summary{cursor:pointer;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.lw .walk-day{margin:8px 0 0}
 .rp-chips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.rp-chips .chip-btn{font-size:12px;padding:2px 9px}
 .room::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 75%,rgba(255,190,110,.18),transparent 60%),rgba(18,28,78,.42);mix-blend-mode:multiply;opacity:0;transition:opacity 2s;border-radius:inherit}
@@ -712,7 +713,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
         <h2 id="talkTitle">Meeting room</h2>
         <div class="room" id="talkRoom" aria-label="The room of this conversation"><span class="label">Meeting room<small></small></span></div>
         <p class="hint" id="talkHint"></p>
-        <div class="dec-log"><div class="row-wrap" style="justify-content:space-between"><h2>Decisions</h2><span class="mt-chips" role="group" aria-label="Whose decisions"><button type="button" class="chip-btn" id="decMine" aria-pressed="true">Yours</button><button type="button" class="chip-btn" id="decOthers" aria-pressed="false">Without you</button></span></div><div id="decList"></div></div>
+        <div class="dec-log"><div class="row-wrap" style="justify-content:space-between"><h2>Decisions</h2><span class="mt-chips" role="group" aria-label="Whose decisions"><button type="button" class="chip-btn" id="decMine" aria-pressed="true">Yours</button><button type="button" class="chip-btn" id="decOthers" aria-pressed="false">By others</button></span></div><div id="decList"></div></div>
       </aside>
     </div>
   </section>
@@ -1552,7 +1553,7 @@ function renderAssistant(){
 const ago = iso => { const t = Date.parse(iso || ""); if (!t) return ""; const m = Math.max(0, Math.round((Date.now() - t) / 6e4)); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
 function replyTo(id){ chatSess = chatPair = chatTask = ""; showTab("chat"); pickers.forEach(p => p.refresh()); renderMsgs(); renderSessions(); renderCompose();
   const s = $("to"); if ([...s.options].some(o => o.value === id)) { s.value = id; s.dispatchEvent(new Event("change")); } $("text").focus(); }
-const foldAt = new Map(), cardPoint = {keep:null}, inboxOpenCard = new Set(); let inboxShowWy = false, inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
+const foldAt = new Map(), cardPoint = {keep:null}, inboxOpenCard = new Set(); let inboxShowWy = false, inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map(), sentVer = new Map(); let foldTm = 0; const wyDone = new Map();
 /* one-tap answers (council round 4, I1): "Approve X" gets Approve / Not now; "Decide: A, or B" gets A and B. Each tap sends the owner's decision to that agent. */
 function quickAnswers(needs){
   const n = String(needs || "").trim(); let m;
@@ -1573,17 +1574,20 @@ function laterPick(row, key){
   const back = el("button","linkish","Back"); back.type = "button"; back.onclick = () => { row.replaceChildren(...keep); keep.find(n => n.textContent === "Later")?.focus(); };
   row.replaceChildren(el("span","note","Snooze until"), ...opts, back); opts[0].focus(); }
 function withoutYou(){
-  const since = seenAt || Date.now() - DAY, out = [], T = v => Date.parse(v || "") || 0, add = (at, text, href, undo, undoLabel) => { if (at > since && at <= Date.now() + 6e4) out.push({at, text, href, undo, undoLabel}); };
+  const since = seenAt || Date.now() - DAY, out = [], T = v => Date.parse(v || "") || 0, add = (at, text, href, undo, undoLabel, id) => { if (at > since && at <= Date.now() + 6e4) out.push({at, text, href, undo, undoLabel, id}); }, fin = [];
   sessions.forEach(x => { const sh = "#session/" + encodeURIComponent(x.id);
     if (x.missed) add(T(x.closed_at), `Missed: ${x.title_en || "a meeting"} (nobody had the page open)`, sh);
     else if (x.state !== "scheduled" && x.scheduled_at && x.opened_at && x.opened_at === x.at && T(x.opened_at)) add(T(x.opened_at), `Opened on schedule: ${x.title_en || "a meeting"}`, sh);
-    if (x.state === "scheduled" && (x.ritual || x.series) && x.opened_by === "owner") add(T(x.scheduled_at), `Booked by itself: ${x.title_en || "a meeting"}, ${fmtWhen(T(x.at))}`, sh, () => db.doc("sessions/" + x.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), closed_by:"owner", resolution_en:"Cancelled by the owner."}), "Cancel it");
+    if (x.state === "scheduled" && (x.ritual || x.series) && x.opened_by === "owner") add(T(x.scheduled_at), `Booked by itself: ${x.title_en || "a meeting"}, ${fmtWhen(T(x.at))}`, sh, canWrite && ownerView() ? () => db.doc("sessions/" + x.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), closed_by:"owner", resolution_en:"Cancelled by the owner.", relayed:false}) : null, "Cancel it", "c" + x.id);
     if (x.state === "closed" && !x.missed && !x.cancelled && x.closed_by && x.closed_by !== "owner") add(T(x.closed_at), `${nameOf(x.closed_by)} closed: ${x.title_en || x.task || "a conversation"}${x.resolution_en ? " · " + x.resolution_en : ""}`, sh); });
   tasks.forEach(t => { const th = "#task/" + encodeURIComponent(t.id);
-    if (isClosed(t)) add(T(t.done_at), `${nameOf(t.session)} finished ${t.id} ${ttl(t)}`, th);
+    if (isClosed(t) && T(t.done_at || t.updated_at) > since && T(t.done_at || t.updated_at) <= Date.now() + 6e4) fin.push(t);
     if (t.due_moved_by && t.due_moved_by !== "owner") add(T(t.updated_at), `${nameOf(t.due_moved_by)} moved the deadline of ${t.id} to ${fmtWhen(T(t.due_at))}`, th); });
   if (baseline?.by === "auto") add(T(baseline.at), "The day's plan was locked by itself");
-  return out.sort((a, b) => b.at - a.at); }
+  out.sort((a, b) => b.at - a.at);   // closures and moves first; finished tasks fold into one row
+  if (fin.length === 1) out.push({at:T(fin[0].done_at || fin[0].updated_at), text:`${nameOf(fin[0].session)} finished ${fin[0].id} ${ttl(fin[0])}`, href:"#task/" + encodeURIComponent(fin[0].id)});
+  else if (fin.length) out.push({at:Math.max(...fin.map(t => T(t.done_at || t.updated_at))), text:`${fin.length} tasks finished: ${fin.slice(0, 10).map(t => t.id).join(", ")}${fin.length > 10 ? ` and ${fin.length - 10} more` : ""}`});
+  return out; }
 const outbox = () => { const firstR = [...msgs, ...sessions].filter(x => x.relayed === true).reduce((m, x) => Math.min(m, Date.parse(x.relayed_at || x.at || x.opened_at || "") || Infinity), Infinity); if (firstR === Infinity) return [];
   const cut = Date.now() - 10 * 6e4; return msgs.filter(m => { const t = Date.parse(m.at || ""); return m.from === "owner" && m.relayed === false && t < cut && t >= firstR; }); };   // only since agents began marking pick-ups
 /* next 3 hours (council round 10, Product Lead): the owner's next meeting, the next deadline, and work coming up for review */
@@ -1600,7 +1604,8 @@ function renderNext3(){
 function doneMoment(list){
   let t = $("doneToast"); if (!t) { t = el("div","done-toast"); t.id = "doneToast"; t.setAttribute("role", "status"); document.body.append(t); }
   t.textContent = list.length === 1 ? `${list[0].id} ${ttl(list[0])} · done by ${nameOf(list[0].session)}` : `${list.length} tasks done: ${list.map(x => x.id).join(", ")}`; t.classList.add("on");
-  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 5000);
+  const ob = el("button","linkish","Open"); ob.type = "button"; ob.onclick = () => { t.classList.remove("on"); openTask(list[0].id); }; t.append(ob);
+  const hide = () => { clearTimeout(t._h); t._h = setTimeout(() => { if (!t.matches(":hover, :focus-within")) t.classList.remove("on"); else hide(); }, 5000); }; hide();
   list.forEach(x => { const f = figs.get(x.session); if (!f) return; f.b.classList.add("cheer"); setTimeout(() => f.b.classList.remove("cheer"), 3000); }); }
 /* follow a task (council round 10, from round 8): a star in the task dialog; followed tasks sit in a strip above the office (up to 8) */
 const following = () => (Array.isArray(metaOffice?.follow) ? metaOffice.follow : []).filter(id => tasks.some(t => t.id === id));
@@ -1671,7 +1676,7 @@ function inlineReply(key, target, ph){
     catch (err) { note.textContent = writeError(err); send.disabled = dec.disabled = false; } };
   send.onclick = () => go1(false); dec.onclick = () => go1(true); enterSends(ta, () => go1(false));
   /* reply templates (council round 12, Product Lead): a chip fills the box; "I'll answer when I'm back" sends with 5 s Undo and snoozes the card 3 h */
-  const tp = el("div","rp-chips"); [["Yes, go ahead"], ["No, wait"], ["Explain in one line"], ["I'll answer when I'm back", true]].forEach(([t, later]) => { const c = el("button","chip-btn", t); c.type = "button";
+  const tp = el("div","rp-chips"); tp.setAttribute("role", "group"); tp.setAttribute("aria-label", "Quick text"); [["Yes, go ahead"], ["No, wait"], ["Explain in one line"], ["Answer later (snooze 3 h)", true]].forEach(([t, later]) => { const c = el("button", later ? "btn-lite chip-later" : "chip-btn", t); c.type = "button";
     c.onclick = () => { if (!later) { ta.value = t + "."; ta.oninput(); ta.focus(); return; } const it = inboxItems.find(x => x.key === key); quickSend(key, target.to, target.task, "I'll answer when I'm back.", "owner"); if (it && ownerView()) setTimeout(() => { if (inboxSent.has(key)) snooze([snzKey(it)], Date.now() + 3 * 36e5); }, 5600); }; tp.append(c); });
   const r = el("div","row-wrap"); r.append(send, dec, note); w.append(ta, tp, r);
   if (inboxOpen.get(key)?.focus) { inboxOpen.set(key, {draft:ta.value}); setTimeout(() => ta.focus(), 0); }   // focus only when the owner opens it, never on a redraw
@@ -1773,8 +1778,9 @@ function renderInbox(){
     items.push({k:"Blocked", c:"var(--bad)", who:a.id, t:nameOf(a.id), s:[t ? `${t.id} · ${ttl(t)}` : "", bi.why ? "Why: " + bi.why.replace(/\.$/, "") : ""].filter(Boolean).join(". "), need:bi.needs ? "Needs from you: " + bi.needs : "", at:a.waiting_since || a.updated_at, rel:waitedFor(a.waiting_since || a.updated_at),
       key:"b:" + a.id, inline:() => inlineReply("b:" + a.id, {to:a.id, task:t?.id || null}, `How should ${nameOf(a.id)} get unstuck?`),
       acts:[...quickAnswers(bi.needs).map(([lab, text], i) => [lab, () => quickSend("b:" + a.id, a.id, t?.id, text), i === 0]), ["Help", "inline", !quickAnswers(bi.needs).length], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Huddle", () => callMeeting({task:t?.id})]]}); });
+  const sameSet = (k, a, b) => k === "estimate_min" ? Number(a || 0) === Number(b || 0) : k === "due_at" ? (Date.parse(a || "") || 0) === (Date.parse(b || "") || 0) : k === "depends_on" ? JSON.stringify([...(a || [])].sort()) === JSON.stringify([...(b || [])].sort()) : JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
   /* "you set this" (council round 12, Owner Advocate): a value the owner set that an agent later changed; Keep mine (5 s Undo) or Accept */
-  tasks.filter(t => !isClosed(t) && t.owner_set).forEach(t => { const diff = Object.entries(t.owner_set).filter(([k, v]) => JSON.stringify(t[k] ?? null) !== JSON.stringify(v ?? null)); if (!diff.length) return;
+  tasks.filter(t => !isClosed(t) && t.owner_set).forEach(t => { const diff = Object.entries(t.owner_set).filter(([k, v]) => !sameSet(k, t[k], v)); if (!diff.length) return;
     const show = (k, v) => k === "estimate_min" ? fmtDur(+v || 0) : k === "due_at" ? (v ? fmtWhen(Date.parse(v)) : "no deadline") : (v || []).join(", ") || "nothing first", key = "o:" + t.id + ":" + diff.map(([k]) => k).join(",");
     items.push({k:"Changed what you set", c:"var(--accent)", who:t.session || "coordinator", t:`${t.id} · ${ttl(t)}`, s:diff.map(([k, v]) => `${k === "estimate_min" ? "Estimate" : k === "due_at" ? "Deadline" : "Needs first"}: you set ${show(k, v)}, now ${show(k, t[k])}`).join(". "), at:t.updated_at, key,
       acts:[["Keep mine", () => delaySend(key, "Putting your values back", async () => { await db.doc("tasks/" + t.id).update({...Object.fromEntries(diff), updated_at:new Date().toISOString(), plan_changed_by:"owner"}); if (t.session) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:t.session, task:t.id, kind:"update", text:`I set these for ${t.id} and I'm keeping them: ${diff.map(([k, v]) => show(k, v)).join("; ")}.`, author_id:me, relayed:false}); return "Kept yours"; }), true],
@@ -1807,11 +1813,12 @@ function renderInbox(){
     items.push({k:"Time is up", c:"var(--ok)", who:"coordinator", t:x.title_en || "Meeting", s:`Planned for ${x.duration_min} min. Wrap it up, or keep going.`, at:x.opened_at,
       acts:[["Wrap up", () => closeSession(x.id, "owner"), true], ["Open", () => go("#session/" + encodeURIComponent(x.id))]]}); });
   tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).forEach(t => { const p = sched.byTask[t.id];
-    items.push({k:"Will be late", c:"var(--late)", who:t.session || "coordinator", t:`${t.id} · ${ttl(t)}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), rel:p.due > Date.now() ? "due in " + fmtDur(Math.round((p.due - Date.now()) / 6e4)) : "past due",
+    items.push({k:p.due < Date.now() ? "Late" : "Will be late", c:"var(--late)", who:t.session || "coordinator", t:`${t.id} · ${ttl(t)}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), rel:p.due > Date.now() ? "due in " + fmtDur(Math.round((p.due - Date.now()) / 6e4)) : "past due by " + fmtDur(Math.max(1, Math.round((Date.now() - p.due) / 6e4))),
       key:"l:" + t.id, inline:() => inlineReply("l:" + t.id, {to:t.session || "coordinator", task:t.id}, `Ask ${nameOf(t.session)} about ${t.id}…`),
       acts:[["Talk", "inline", true], ["Meeting", () => callMeeting({task:t.id})], ["Move the deadline", e => moveDeadline(e.currentTarget, t, p)], ["Task", () => openTask(t.id)]]}); });
   /* snooze (council round 8, Product Lead): "Later" hides a card until its time; nothing is answered for the owner */
   const snz = metaOffice?.snooze || {}, nowMs = Date.now(), slept = items.filter(it => it.key && Date.parse(snz[snzKey(it)] || "") > nowMs); items = items.filter(it => !slept.includes(it));
+  items.forEach(it => { if (!it.key || !inboxSent.has(it.key)) return; const v = String(it.at || ""); if (!sentVer.has(it.key)) sentVer.set(it.key, v); else if (sentVer.get(it.key) !== v) { inboxSent.delete(it.key); foldAt.delete(it.key); sentVer.delete(it.key); } });   /* an answer covers that version of the card; a new question is a new card */
   const w = agents.filter(a => a.state === "working").length, isSent = it => it.key && inboxSent.has(it.key), todo = items.filter(it => !isSent(it)).length;
   const held = it => it.k === "Waiting for you" || it.k === "Blocked";   // whoever has waited longest on the owner comes first
   items.sort((x, y) => isSent(x) - isSent(y) || held(y) - held(x) || (held(x) ? (Date.parse(x.at || "") || 0) - (Date.parse(y.at || "") || 0) : 0));
@@ -1824,12 +1831,12 @@ function renderInbox(){
   const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`;
   $("officeCount").textContent = todo || ""; renderFollow(); renderNext3();
   { const h = new Date().getHours(), hi = h < 5 ? "Working late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening", lt = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).length, end = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0), nx = sessions.filter(x => x.state === "scheduled" && (x.members || []).includes("owner")).sort((a, b) => String(a.at).localeCompare(String(b.at)))[0];
-    $("greet").textContent = `${hi}. ` + (todo ? `${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you; ${lt ? `${lt} task${lt === 1 ? " is" : "s are"} running late` : "the rest is on track"}.` : `All clear${nx ? `. Next: ${nx.title_en || "a meeting"} at ${fmtWhen(Date.parse(nx.at))}` : ""}.`) + (end ? ` Open work finishes by ${fmtWhen(end)}.` : ""); }   // the greeting line (council round 12, UX)
+    $("greet").textContent = `${hi}. ` + (todo ? `${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you; ${lt ? `${lt} task${lt === 1 ? " is" : "s are"} running late${(pb => pb ? `, ${pb} pushed back by it` : "")(tasks.filter(t => !isClosed(t) && !sched.byTask[t.id]?.lateBy && sched.byTask[t.id]?.why === "dep" && tasks.some(x => x.id === sched.byTask[t.id].after && sched.byTask[x.id]?.lateBy)).length)}` : "the rest is on track"}.` : `All clear${nx ? `. Next: ${nx.title_en || "a meeting"} at ${fmtWhen(Date.parse(nx.at))}` : ""}.`) + (end ? ` Open work finishes by ${fmtWhen(end)}.` : ""); }   // the greeting line (council round 12, UX)
   $("byeBtn").classList.toggle("btn", new Date().getHours() >= 17); $("byeBtn").classList.toggle("btn-lite", new Date().getHours() < 17);   // the end-of-day check stands out after 17:00
   /* outbox (council round 10, Engineer): what the owner wrote that no agent has picked up after 10 minutes; shown only once agents mark pick-ups (relayed:true) */
   /* "without you" (council round 12, Owner Advocate): what changed since the last visit without the owner's tap; the page's own bookings can be cancelled */
   const wy = withoutYou(); if (wy.length) { const o = el("button","linkish ob-link", `${wy.length} change${wy.length === 1 ? "" : "s"} without you`); o.type = "button"; o.setAttribute("aria-expanded", String(inboxShowWy)); o.onclick = () => { inboxShowWy = !inboxShowWy; renderInbox(); }; $("inboxSum").append(" · ", o);
-    if (inboxShowWy) { const l = el("div","snz-list"); wy.slice(0, 30).forEach(w => { const r = el("div","snz-row"); r.append(el("span","note", ago(new Date(w.at).toISOString())), el("span", null, w.text)); if (w.href) { const g = el("button","linkish","Open"); g.type = "button"; g.onclick = () => go(w.href); r.append(g); } if (w.undo) { const u = el("button","linkish", w.undoLabel); u.type = "button"; u.onclick = async () => { u.disabled = true; try { await w.undo(); u.textContent = "Done"; } catch (err) { u.textContent = writeError(err); } }; r.append(u); } l.append(r); }); box.prepend(l); } }
+    if (inboxShowWy) { const l = el("div","snz-list"); wy.slice(0, 30).forEach(w => { const r = el("div","snz-row"); r.append(el("span","note", ago(new Date(w.at).toISOString())), el("span", null, w.text)); if (w.href) { const g = el("button","linkish","Open"); g.type = "button"; g.onclick = () => go(w.href); r.append(g); } if (w.undo || wyDone.has(w.id)) { const st = wyDone.get(w.id), u = el("button","linkish", st === "wait" ? "Cancelling in 5 s · Undo" : st || w.undoLabel); u.type = "button"; u.disabled = !!st && st !== "wait"; u.onclick = () => { if (wyDone.get(w.id) === "wait") { clearTimeout(u._t); wyDone.delete(w.id); renderInbox(); return; } wyDone.set(w.id, "wait"); const t0 = setTimeout(async () => { try { await w.undo(); wyDone.set(w.id, "Cancelled"); } catch (err) { wyDone.set(w.id, writeError(err)); } renderInbox(); }, 5000); wyDone.set(w.id + "!", t0); renderInbox(); }; if (st === "wait") u.onclick = () => { clearTimeout(wyDone.get(w.id + "!")); wyDone.delete(w.id); renderInbox(); }; r.append(u); } l.append(r); }); box.prepend(l); } }
   const ob = outbox(); if (ob.length) { const o = el("button","linkish ob-link", `${ob.length} not picked up yet`); o.type = "button"; o.title = ob.map(m => `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 80)}`).join("\n"); o.onclick = () => { inboxShowOb = !inboxShowOb; renderInbox(); }; $("inboxSum").append(" · ", o);
     if (inboxShowOb) { const l = el("div","snz-list"); ob.forEach(m => { const r = el("div","snz-row"); r.append(avatar(m.to || "coordinator", 20), el("span", null, `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 120)}`), el("span","note", `sent ${ago(m.at)}`)); l.append(r); }); box.prepend(l); } }
   const np = $("needPill"); np.hidden = !todo; np.textContent = `${todo} need${todo === 1 ? "s" : ""} you`; np.onclick = () => { showTab("office"); $("inboxList").scrollIntoView({block:"start", behavior:reduce ? "auto" : "smooth"}); };
@@ -1838,14 +1845,15 @@ function renderInbox(){
     box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
     const c = el("div","ib" + (inboxOpenCard.has(it.key) || (it.key && inboxOpen.has(it.key)) ? " open" : "")); c.style.setProperty("--c", it.c);
-    c.addEventListener("click", e => { if (e.target.closest("button, input, textarea, a, .av") || !matchMedia("(max-width:520px)").matches) return; inboxOpenCard.has(it.key) ? inboxOpenCard.delete(it.key) : inboxOpenCard.add(it.key); c.classList.toggle("open"); });
+    c.addEventListener("click", e => { if (e.target.closest("button, input, textarea, a, .av") || !matchMedia("(max-width:520px)").matches) return; inboxOpenCard.has(it.key) ? inboxOpenCard.delete(it.key) : inboxOpenCard.add(it.key); c.classList.toggle("open"); c.setAttribute("aria-expanded", String(c.classList.contains("open"))); });
+    if (matchMedia("(max-width:520px)").matches) { c.tabIndex = 0; c.setAttribute("role", "button"); c.setAttribute("aria-expanded", String(c.classList.contains("open"))); c.setAttribute("aria-label", `${it.k}: ${it.t}`); c.addEventListener("keydown", e => { if (e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); c.click(); if (c.classList.contains("open")) c.querySelector(".ib-a button")?.focus(); } }); }   // phones: the folded card opens by keyboard too
     if (figs.has(it.who)) { c.onmouseenter = () => { cardPoint.keep ??= [...pointed]; pointAt([it.who]); $("roomsHQ").classList.add("dim"); }; c.onmouseleave = () => { pointAt(cardPoint.keep || []); cardPoint.keep = null; $("roomsHQ").classList.remove("dim"); }; c.addEventListener("focusin", c.onmouseenter); c.addEventListener("focusout", e => { if (!c.contains(e.relatedTarget)) c.onmouseleave(); }); }   // pointing at a card lights its person in the office
     const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", it.rel || ago(it.at)));
     const a = el("div","ib-a"), open = it.key && inboxOpen.has(it.key), sent = it.key && sentEl(it.key);
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
       b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
     if (!sent && it.key && ownerView()) { const lt = el("button","btn-lite","Later"); lt.type = "button"; lt.title = "Snooze this card"; lt.onclick = () => laterPick(a, snzKey(it)); a.append(lt); }
-    if (sent) { a.replaceChildren(sent); if (it.key && inboxSent.has(it.key) && !inboxSent.get(it.key).startsWith("Not sent")) { foldAt.has(it.key) || foldAt.set(it.key, Date.now() + 2500); if (Date.now() >= foldAt.get(it.key)) { c.classList.add("folded"); } else setTimeout(() => renderInbox(), foldAt.get(it.key) - Date.now() + 50); } }   // an answered card folds away after a moment (council round 12)
+    if (sent) { a.replaceChildren(sent); if (it.key && inboxSent.has(it.key) && !inboxSent.get(it.key).startsWith("Not sent")) { foldAt.has(it.key) || foldAt.set(it.key, Date.now() + 2500); if (Date.now() >= foldAt.get(it.key)) { c.classList.add("folded"); } else { c.classList.add("folding"); foldTm ||= setTimeout(() => { foldTm = 0; const f = document.activeElement?.closest?.("#inboxList .ib"); renderInbox(); if (f && !f.isConnected) document.querySelector("#inboxList .ib:not(.folded) .ib-a button")?.focus(); }, Math.max(0, Math.min(...[...foldAt.values()].filter(x => x > Date.now())) - Date.now()) + 50); } } }   // an answered card folds away after a moment (council round 12)
     const av = avatar(it.who, 34); if (figs.has(it.who)) { av.classList.add("go"); av.title = `Show ${nameOf(it.who)} in the office`; av.tabIndex = 0; av.setAttribute("role", "button"); av.setAttribute("aria-label", av.title); av.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); av.onclick(); } }; av.onclick = () => { const f = figs.get(it.who); f?.b.scrollIntoView({block:"center", behavior:reduce ? "auto" : "smooth"}); f?.b.focus({preventScroll:true}); }; }
     c.append(av, k, el("div","ib-t", it.t), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
     if (open && it.inline) { const x = el("div","ib-x"); x.append(it.inline()); c.append(x); }
@@ -1954,7 +1962,7 @@ function waitsOf(id){
   const bo = agentById(id)?.blocked_on; if (bo) { const x = tasks.find(t => t.id === bo), who = x ? x.session : agentById(bo) ? bo : ""; if (who && who !== id) on.set(who, [...(on.get(who) || []), x ? `blocked on ${x.id}` : "blocked on them"]); }
   return {on:[...on], me:[...me]}; }
 function bottlenecks(){ const n = new Map(), end = Date.now() + DAY;
-  tasks.filter(t => !isClosed(t) && (sched.byTask[t.id]?.s || 0) <= end).forEach(t => depsOf(t).forEach(d => { const x = tasks.find(y => y.id === d); if (x && !isClosed(x) && x.session && x.session !== t.session) n.set(x.session, (n.get(x.session) || new Set()).add(t.id)); }));
+  tasks.filter(t => !isClosed(t) && (sched.byTask[t.id]?.s || 0) <= end).forEach(t => depsOf(t).forEach(d => { const x = tasks.find(y => y.id === d), px = x && sched.byTask[x.id]; if (x && !isClosed(x) && x.session && x.session !== t.session && (px?.lateBy || x.state === "blocked" || agentById(x.session)?.state === "blocked" || (x.state === "todo" && !x.started_at && (px?.s || Infinity) < Date.now() - 30 * 6e4))) n.set(x.session, (n.get(x.session) || new Set()).add(t.id)); }));
   return [...n].map(([who, s]) => [who, s.size]).sort((a, b) => b[1] - a[1]).slice(0, 5); }
 /* what sets the date (council round 10, Owner Advocate): walk back from a task through the dependency or queue that set its start */
 function chainOf(id){ const out = [], seen = new Set(); let cur = id;
@@ -1967,7 +1975,7 @@ function timeBox(t){   // the task dialog's Time row
   const r = el("div","t-time"); r.append(el("span", null, `Takes ${fmtDur(estOf(t))}${t.estimate_min ? "" : " (default)"}`));
   if (p) r.append(el("span", null, p.done ? `Finished ${fmtWhen(p.e)}` : `Planned ${fmtWhen(p.s)} to ${fmtWhen(p.e)}`));
   if (p?.due) r.append(el("span","note", `Due ${fmtWhen(p.due)}`));
-  if (t.owner_set) { const tags = Object.keys(t.owner_set).filter(k => JSON.stringify(t[k] ?? null) === JSON.stringify(t.owner_set[k] ?? null)).map(k => k === "estimate_min" ? "estimate" : k === "due_at" ? "deadline" : "order"); if (tags.length) r.append(el("span","tp-tag", "Set by you: " + tags.join(", "))); }
+  if (t.owner_set) { const tags = Object.keys(t.owner_set).filter(k => sameSet(k, t[k], t.owner_set[k])).map(k => k === "estimate_min" ? "estimate" : k === "due_at" ? "deadline" : "order"); if (tags.length) r.append(el("span","tp-tag", "Set by you: " + tags.join(", "))); }
   d.append(r); const wt = whyTime(t); if (wt) d.append(el("div","note t-why", "Why this time: " + wt)); const cz = chainEl(t.id); if (cz) d.append(cz);
   const deps = depsOf(t); if (deps.length) { const q = el("div","t-time"); q.append(el("span","note","Needs first:")); deps.forEach(x => { const pp = sched.byTask[x]; q.append(taskLink(x), el("span","note", pp ? (pp.done ? "done" : "ends " + fmtWhen(pp.e)) : "")); }); d.append(q); }
   const after = tasks.filter(x => depsOf(x).includes(t.id)); if (after.length) { const q = el("div","t-time"); q.append(el("span","note","Then:")); after.forEach(x => q.append(taskLink(x.id))); d.append(q); }
@@ -2029,7 +2037,7 @@ function drift(){
     rows.push([t, `${fmtWhen(b.e)} → ${fmtWhen(p.e)} (+${fmtDur(Math.round(d / 6e4))}). ` + (estOf(t) !== b.est ? `Re-estimated: ${fmtDur(b.est)} → ${fmtDur(estOf(t))}` : whyText(p) || "Took longer than planned"), d]); });
   const now = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
   return {rows, slipped:rows.filter(r => r[2]).length, added:rows.filter(r => !r[2]).length, at:baseline.at, was:baseline.done_by || 0, now}; }
-const askEst = {state:"", tm:0, n:0}, nudge = {state:"", tm:0};
+const askEst = {state:"", tm:0, n:0}, nudge = {state:"", tm:0, ids:""};
 function planHealth(){
   const open = tasks.filter(t => !isClosed(t)), P = t => sched.byTask[t.id] || {};
   const kinds = [
@@ -2047,12 +2055,14 @@ function planHealth(){
     c.textContent = `${K.en}: ${l.length}`; c.setAttribute("aria-pressed", String(calHealth === K.k)); c.onclick = () => { calHealth = calHealth === K.k ? "" : K.k; renderCalendar(); }; box.append(c);
     if (calHealth === K.k) rows = l.map(t => [t, K.why(t)]); });
   if (!box.querySelector("button")) box.append(el("span","chip","All clear"));
-  const bn = bottlenecks(); if (bn.length && bn[0][1] > 1) { const c = el("button","chip go", `Bottleneck: ${nameOf(bn[0][0])} holds ${bn[0][1]} tasks`); c.type = "button"; c.title = "Agents whose open work others wait on (next 24 h): " + bn.map(([w, k]) => `${nameOf(w)} ${k}`).join(", "); c.setAttribute("aria-pressed", String(calHealth === "bneck")); c.onclick = () => { calHealth = calHealth === "bneck" ? "" : "bneck"; renderCalendar(); }; box.append(c);
+  const bn = bottlenecks(); if (bn.length && bn[0][1] > 1) { const c = el("button","chip go", `${bn[0][1]} tasks wait on ${nameOf(bn[0][0])}`); c.type = "button"; c.title = "Late, blocked or unstarted work that others wait on (next 24 h): " + bn.map(([w, k]) => `${nameOf(w)} ${k}`).join(", "); c.setAttribute("aria-pressed", String(calHealth === "bneck")); c.onclick = () => { calHealth = calHealth === "bneck" ? "" : "bneck"; renderCalendar(); }; box.append(c);
     if (calHealth === "bneck") rows = bn.flatMap(([w]) => tasks.filter(x => x.session === w && !isClosed(x) && tasks.some(t => !isClosed(t) && t.session !== w && depsOf(t).includes(x.id))).map(x => [x, `Others wait on it: ${tasks.filter(t => !isClosed(t) && t.session !== w && depsOf(t).includes(x.id)).map(t => t.id).join(", ")}`])); }
   /* dropped baton (council round 12, Engineer): everything it needs is done, 30+ min ago, nobody started it, and its agent has nothing in progress */
   const idleAg = id => !tasks.some(x => x.session === id && (x.state === "doing" || x.state === "review")), now0 = Date.now();
   const baton = open.filter(t => t.state === "todo" && !t.started_at && t.session && depsOf(t).length && depsOf(t).every(d => { const x = tasks.find(y => y.id === d); return x && isClosed(x); }) && idleAg(t.session)
-    && depsOf(t).reduce((m, d) => Math.max(m, Date.parse(tasks.find(y => y.id === d)?.done_at || "") || 0), 0) < now0 - 30 * 6e4);
+    && depsOf(t).reduce((m, d) => Math.max(m, Date.parse(tasks.find(y => y.id === d)?.done_at || "") || 0), 0) < now0 - 30 * 6e4
+    && !msgs.some(m => m.from === "owner" && m.task === t.id && m.to === t.session && Date.parse(m.at || "") > now0 - 2 * 36e5));   // nudged in the last 2 h: give them time
+  { const ids = baton.map(t => t.id).sort().join(); if (ids !== nudge.ids && nudge.state !== "wait") nudge.state = ""; nudge.ids = ids; }
   if (baton.length) { const c = el("button","chip go h-warn", `Ready but not started: ${baton.length}`); c.type = "button"; c.setAttribute("aria-pressed", String(calHealth === "baton")); c.onclick = () => { calHealth = calHealth === "baton" ? "" : "baton"; renderCalendar(); }; box.append(c);
     if (calHealth === "baton") rows = baton.map(t => { const d = depsOf(t).map(x => tasks.find(y => y.id === x)), last = d.reduce((m, x) => Math.max(m, Date.parse(x?.done_at || "") || 0), 0); return [t, `Can start now: ${d.map(x => x.id).join(", ")} done${last ? " " + ago(new Date(last).toISOString()) : ""}${d.find(x => x?.handoff_en)?.handoff_en ? ". Hand-off: " + d.find(x => x?.handoff_en).handoff_en : ""}`]; });
     if (canWrite && ownerView()) { const nb = el("button","linkish", nudge.state === "wait" ? "Nudging in 5 s · Undo" : nudge.state || `Nudge ${new Set(baton.map(t => t.session)).size}`); nb.type = "button"; nb.disabled = !!nudge.state && nudge.state !== "wait";
@@ -2111,14 +2121,14 @@ function weekGrid(evs){
 let lwOpen = new Date().getDay() === 1;
 function lastWeek(){
   const from = Date.now() - 7 * DAY, T = v => Date.parse(v || "") || 0, d = el("details","lw"), sm = el("summary");
-  const done = tasks.filter(t => isClosed(t) && T(t.done_at) > from), decs = msgs.filter(m => m.from === "owner" && m.kind === "decision" && T(m.at) > from).length;
+  const done = tasks.filter(t => isClosed(t) && T(t.done_at || t.updated_at) > from), decs = msgs.filter(m => m.from === "owner" && m.kind === "decision" && T(m.at) > from).length;
   const mins = sessions.filter(x => isMeeting(x) && x.state === "closed" && !x.cancelled && !x.missed && T(x.closed_at) > from).reduce((m, x) => m + Math.max(0, (T(x.closed_at) - T(x.opened_at || x.at)) / 6e4 || +x.duration_min || 0), 0);
   const back = new Map(); reviews.filter(r => r.outcome === "changes" && T(r.at) > from).forEach(r => back.set(r.task, (back.get(r.task) || 0) + 1));
-  const dr = drift(), held = agents.filter(a => (a.state === "waiting" || a.state === "blocked") && T(a.waiting_since || a.updated_at)).reduce((m, a) => m + Math.max(0, Date.now() - Math.max(from, T(a.waiting_since || a.updated_at))) / 36e5, 0);
+  const dr = drift(), held = agents.filter(a => (a.state === "waiting" || a.state === "blocked") && T(a.waiting_since)).reduce((m, a) => m + Math.max(0, Date.now() - Math.max(from, T(a.waiting_since))) / 36e5, 0);
   sm.append(el("b", null, "Last 7 days"), el("span","note", `${done.length} task${done.length === 1 ? "" : "s"} done · ${decs} decision${decs === 1 ? "" : "s"} · ${fmtDur(Math.round(mins))} in meetings`)); d.append(sm);
   const ul = el("ul","walk-day");
   ul.append(el("li", null, done.length ? `Done: ${done.slice(0, 8).map(t => t.id).join(", ")}${done.length > 8 ? ` and ${done.length - 8} more` : ""}` : "Nothing finished this week."));
-  if (dr) ul.append(el("li", dr.slipped ? "t-warn" : null, `Against today's locked plan: ${dr.slipped} slipped, ${dr.added} added`));
+  if (dr) ul.append(el("li", dr.slipped ? "t-warn" : null, `Since this morning's plan: ${dr.slipped} slipped, ${dr.added} added`));
   if (held >= .1) ul.append(el("li", null, `Agents waiting on you right now have waited ${Math.round(held * 10) / 10} h in all`));
   if (back.size) ul.append(el("li", null, "Sent back most in Reviews: " + [...back].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, n]) => `${id} (${n}×)`).join(", ")));
   d.append(ul); d.open = lwOpen; d.ontoggle = () => { lwOpen = d.open; }; return d; }
@@ -3088,15 +3098,15 @@ $("sendDecision").onclick = () => { if (!$("text").value.trim()) { $("text").foc
 let decMode = "mine"; const decPend = new Map();
 function renderDecisions(){
   const box = $("decList"); if (!box) return; box.replaceChildren(); $("decMine").setAttribute("aria-pressed", String(decMode === "mine")); $("decOthers").setAttribute("aria-pressed", String(decMode !== "mine"));
-  if (decMode !== "mine") { const L = [...msgs.filter(m => m.kind === "decision" && m.from !== "owner").map(m => ({at:m.at, who:m.from, text:m.text_en || m.text || "", task:m.task, to:m.from, key:"m" + m.id, open:() => m.session ? viewSession(m.session) : null})),
+  if (decMode !== "mine") { const L = [...msgs.filter(m => m.kind === "decision" && m.from !== "owner" && m.decided_by !== "owner" && !(m.session && (sessions.find(x => x.id === m.session)?.members || []).includes("owner"))).map(m => ({at:m.at, who:m.from, text:m.text_en || m.text || "", task:m.task, to:m.from, key:"m" + m.id, open:() => m.session ? viewSession(m.session) : null})),
       ...sessions.filter(x => x.state === "closed" && !x.cancelled && !x.missed && x.closed_by !== "owner" && (x.resolution_en || x.outcome_en) && !(x.members || []).includes("owner")).map(x => ({at:x.closed_at, who:x.closed_by || "coordinator", text:`${x.title_en || "Conversation"}: ${x.resolution_en || x.outcome_en}`, task:x.task, to:x.closed_by && agentById(x.closed_by) ? x.closed_by : "coordinator", key:"s" + x.id, open:() => viewSession(x.id)}))]
       .sort((a, b) => String(b.at || "").localeCompare(String(a.at || ""))).slice(0, 10);
-    if (!L.length) { box.append(el("div","note","Nothing was decided without you.")); return; }
+    if (!L.length) { box.append(el("div","note","Nothing decided by others yet.")); return; }
     L.forEach(d => { const r = el("div","dec"), top = el("div","dec-top"); top.append(el("span","note", fmt(d.at)), el("span","note", nameOf(d.who))); if (d.task) top.append(taskLink(d.task));
       const acts = el("div","row-wrap"), op = el("button","linkish","Open"); op.type = "button"; op.onclick = d.open; acts.append(op);
-      if (canWrite) { const re = el("button","linkish", decPend.has(d.key) ? "Reopening in 5 s · Undo" : decPend.get(d.key + "!") || "Reopen"); re.type = "button";
+      if (canWrite) { const re = el("button","linkish", decPend.has(d.key) ? "Reopening in 5 s · Undo" : decPend.get(d.key + "!") || "Ask to hold"); re.type = "button"; re.title = "Sends one message asking them to hold this until you talk";
         re.onclick = () => { if (decPend.has(d.key)) { clearTimeout(decPend.get(d.key)); decPend.delete(d.key); renderDecisions(); return; }
-          decPend.set(d.key, setTimeout(async () => { decPend.delete(d.key); try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:d.to, task:d.task || null, kind:"owner", text:`I'm reopening this: "${d.text.slice(0, 200)}". Please hold it until we talk.`, author_id:me, relayed:false}); decPend.set(d.key + "!", "Reopened"); } catch (err) { announce(writeError(err)); } renderDecisions(); }, 5000)); renderDecisions(); }; acts.append(re); }
+          decPend.set(d.key, setTimeout(async () => { decPend.delete(d.key); try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:d.to, task:d.task || null, kind:"owner", text:`I'm reopening this: "${d.text.slice(0, 200)}". Please hold it until we talk.`, author_id:me, relayed:false}); decPend.set(d.key + "!", "Asked to hold"); } catch (err) { announce(writeError(err)); } renderDecisions(); }, 5000)); renderDecisions(); }; acts.append(re); }
       r.append(top, el("div","dec-t", d.text), acts); box.append(r); }); return; }
   const list = msgs.filter(m => m.from === "owner" && m.kind === "decision").sort((a, b) => String(b.at || "").localeCompare(String(a.at || ""))).slice(0, 8);
   if (!list.length) { box.append(el("div","note","None yet. Press \u201cSend as decision\u201d and it is kept here.")); return; }
