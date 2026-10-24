@@ -66,6 +66,10 @@ h2{font-weight:700;font-size:19px;margin:0}
 .chrome{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0b0f18;border-bottom:1px solid #232b3b;border-radius:10px 10px 0 0;color:#8b95a8;font-family:var(--font-mono);font-size:11px}
 .chrome .dots{display:flex;gap:6px}.chrome .dots i{width:11px;height:11px;border-radius:50%;display:block}
 .chrome .ttl{flex:1;text-align:center;letter-spacing:.3em;text-transform:uppercase}
+.rc-btn{all:unset;cursor:pointer;border:1px solid #2c3546;border-radius:4px;padding:1px 8px;color:#c9d2e0;letter-spacing:.08em}.rc-btn:hover,.rc-btn:focus-visible{border-color:#f0c75e;color:#f0c75e}
+.ag .rc{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;color:#1b2030;border:2px solid #222634;border-radius:9px;padding:2px 7px;font:600 clamp(8px,2.1cqi,12px)/1.35 system-ui,sans-serif;z-index:6000;pointer-events:none;animation:pop .3s ease-out}
+.ag.rc-on .fx,.ag.rc-on .talk{visibility:hidden}
+@media (prefers-reduced-motion:reduce){.ag .rc{animation:none}}
 .chrome .clock{border:1px solid #2c3546;border-radius:4px;padding:1px 8px;color:#f0c75e;letter-spacing:.12em}
 .rooms{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;padding:10px}
 .rooms .rbreak{flex-basis:100%;height:0;margin:-5px 0}
@@ -675,7 +679,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     </div>
     <div class="follow-strip" id="followStrip" hidden></div>
     <div class="scene">
-      <div class="chrome"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="ttl" id="chromeTitle">Product Office</span><span class="clock" id="clock"></span></div>
+      <div class="chrome"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="ttl" id="chromeTitle">Product Office</span><button class="rc-btn" id="rollBtn" type="button" title="Each person says what they are on, room by room">Roll call</button><span class="clock" id="clock"></span></div>
       <div class="dept-tabs" id="deptTabs" role="tablist" aria-label="Departments" hidden></div>
       <div class="dept-stats" id="deptStats"></div>
       <div class="stats-pop" id="statsPop" hidden></div>
@@ -1558,6 +1562,18 @@ function takeTurns(){
   const byRoom = new Map(); figs.forEach(r => { r.b.classList.remove("turn"); if (r.b.classList.contains("working") && !r.b.classList.contains("meeting") && r.fx.classList.contains("typing")) byRoom.set(r.room, [...(byRoom.get(r.room) || []), r]); });
   byRoom.forEach(l => l[reduce ? 0 : turn % l.length].b.classList.add("turn"));   // one typing bubble per room, taking turns
 }
+/* roll call (council round 16, Owner Advocate): each person's bubble says what they are on, one at a time in every room; after 6+ hours away it runs once by itself */
+let rcTm = [];
+function rollLine(id){ const a = agentById(id); if (!a) return ""; const t = tasks.find(x => x.session === id && x.state === "doing") || tasks.find(x => x.session === id && !isClosed(x)), p = t && sched.byTask[t.id];
+  const dn = tasks.find(x => x.session === id && isClosed(x) && (Date.parse(x.done_at || "") || 0) > (seenAt || Date.now() - DAY));
+  if (a.state === "waiting") return "Waiting for you"; if (a.state === "blocked") return "Blocked" + (t ? ` on ${t.id}` : "");
+  if (t && a.state === "working") { const left = p?.e ? Math.max(0, Math.round((p.e - Date.now()) / 6e4)) : 0; return `${t.id} · ${left ? fmtDur(left) + " left" : "almost done"}`; }
+  return dn ? `Done ${dn.id}` : ""; }
+function rollCall(){ rcTm.forEach(clearTimeout); rcTm = []; document.querySelectorAll(".ag .rc").forEach(x => x.remove()); document.querySelectorAll(".ag.rc-on").forEach(x => x.classList.remove("rc-on"));
+  const byRoom = new Map(); figs.forEach(r => { if (r.id === "owner" || !r.room) return; const line = rollLine(r.id); if (line) byRoom.set(r.room, [...(byRoom.get(r.room) || []), [r, line]]); });
+  const show = (r, line, ms) => { const s = el("span","rc", line); r.b.append(s); r.b.classList.add("rc-on"); rcTm.push(setTimeout(() => { s.remove(); r.b.classList.remove("rc-on"); }, ms)); };
+  if (reduce) { byRoom.forEach(l => l.forEach(([r, line]) => show(r, line, 6000))); return; }
+  byRoom.forEach(l => l.slice(0, 12).forEach(([r, line], i) => rcTm.push(setTimeout(() => show(r, line, 1500), i * 1600)))); }
 function play(){
   if (reduce) return;
   const lounge = [...figs.values()].filter(r => typeOf(r.room) === "game" && r.plan?.room === r.room && !r.busy && !r.b.classList.contains("walking"));
@@ -3050,7 +3066,7 @@ function openDueMeetings(){
   });
 }   // the snapshot that follows moves people into the room
 setInterval(() => { openDueMeetings(); ensureRituals(); }, 30000); setTimeout(() => { openDueMeetings(); ensureRituals(); }, 5000);
-$("walkBtn").onclick = openWalk; $("byeBtn").onclick = openBye;
+$("walkBtn").onclick = openWalk; $("byeBtn").onclick = openBye; $("rollBtn").onclick = rollCall;
 $("moreBtn").onclick = () => { const r = $("moreBtn").parentElement, on = r.classList.toggle("more-open"); $("moreBtn").setAttribute("aria-expanded", String(on)); $("moreBtn").textContent = on ? "Less" : "More"; };
 $("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
 function writeError(err){
@@ -3768,7 +3784,7 @@ renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000);
   /* live-link watchdog (council round 8, Engineer): a listener error, or waking after 5+ minutes asleep, subscribes again; automatic writes wait until data is fresh */
   const onErr = () => { live.stale = true; if (!live.unsubs.every(u => typeof u === "function")) { $("conn").textContent = "Live updates stopped. Reload the page."; return; }   // can't cancel the old listeners, so don't stack new ones
     $("conn").textContent = "Reconnecting…"; clearTimeout(live.t); live.t = setTimeout(subscribeAll, 5000); };
-  const fresh = k => { live.got.add(k); if (["agents", "tasks", "sessions"].every(x => live.got.has(x)) && live.stale !== false) { live.stale = false; $("conn").textContent = "Connected. Updates appear live."; renderAll(false); } };   // fresh again only once all three have arrived
+  const fresh = k => { live.got.add(k); if (["agents", "tasks", "sessions"].every(x => live.got.has(x)) && live.stale !== false) { live.stale = false; $("conn").textContent = "Connected. Updates appear live."; renderAll(false); if (seenAt && Date.now() - seenAt >= 6 * 36e5 && !live.rolled) { live.rolled = true; setTimeout(rollCall, 1500); } } };   // fresh again only once all three have arrived
   const subscribeAll = () => { const keep = u => { live.unsubs.push(u); return u; };
   live.unsubs.forEach(u => { try { u(); } catch {} }); live.unsubs = []; live.got = new Set();
   keep(db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("agents"); renderAll(); }, onErr));
