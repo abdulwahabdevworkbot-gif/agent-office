@@ -3995,7 +3995,9 @@ async function quickReplies(ctx){
     .map(m => `${m.from === "owner" ? "OWNER" : m.from}: ${m.text}`).join("\n");
   const task = ctx.task && tasks.find(t => t.id === ctx.task);
   const board = tasks.filter(t => !isClosed(t)).slice(0, 80).map(t => `${t.id} | ${verOf(t) || "-"} | ${t.state || "todo"} | ${t.session} | ${t.feature || "-"} | ${t.title_en || ""}`).join("\n");
-  const lang = (sess && sess.lang) || (!ctx.session && mainLang) || officeLang();
+  /* a talk keeps a language the owner asked for only if they asked after the last Apply: Settings change new replies, never old messages */
+  const sessLang = sess && sess.lang && (!metaOffice?.lang_at || (sess.lang_at || "") > metaOffice.lang_at) ? sess.lang : "";
+  const lang = sessLang || (!ctx.session && mainLang) || officeLang();
   const prompt = `You answer for AI agents on the team building ${metaOffice.product_en || "this product"}. The owner just wrote in ${sess ? (isMeeting(sess) ? "a meeting" : "a task session") : "the team discussion"}${sess ? ` titled "${sess.title_en || ""}"` : ""}.
 Agents who may answer (id: role):
 ${rolesBlock(who)}
@@ -4019,7 +4021,7 @@ Return only JSON: {"close":false,"resolution_en":"","language":"<the conversatio
   try {
     const out = await sample.json(prompt, {modelTier:"quick", cache:false});
     const nl = typeof out?.language === "string" && /^[a-z]{2}$/.test(out.language) ? out.language : lang;
-    if (nl !== lang) { if (ctx.session) { try { await db.doc("sessions/" + ctx.session).update({lang: nl}); } catch {} } else mainLang = nl; }
+    if (nl !== lang) { if (ctx.session) { try { await db.doc("sessions/" + ctx.session).update({lang: nl, lang_at: new Date().toISOString()}); } catch {} } else mainLang = nl; }
     const replies = (Array.isArray(out?.replies) ? out.replies : []).filter(r => r && who.includes(r.from) && r.text);
     let t = Date.now();
     const base = {to: ctx.session ? "session" : "owner", session: ctx.session || null, task: ctx.task || null, decided_by: null, quick: true, ...(ctx.pair ? {pair: ctx.pair} : {})};
@@ -4214,7 +4216,7 @@ function renderLangSettings(){
     const tx = el("span"); tx.append(el("b", null, name), el("small", null, hint)); lab.append(tx, sel); row.append(lab); box.append(row); });
   /* Apply saves all three at once and redraws the whole page, so every chat, card and task shows the new setting right away */
   ap.onclick = async () => { ap.disabled = true; const v = Object.fromEntries([...box.querySelectorAll("select")].map(x => [x.dataset.scope, x.value]));
-    try { await db.doc("meta/office").update({lang:v}); metaOffice = {...(metaOffice || {}), lang:v}; mainLang = ""; renderAll(true); renderLangSettings(); $("langNote").textContent = "Applied everywhere: " + LANG_SCOPES.map(([x, n]) => `${n}: ${LANG_OPTS.find(o => o[0] === v[x])[1]}`).join(" · "); announce("Language applied"); }
+    try { const lang_at = new Date().toISOString(); await db.doc("meta/office").update({lang:v, lang_at}); metaOffice = {...(metaOffice || {}), lang:v, lang_at}; mainLang = ""; renderAll(true); renderLangSettings(); $("langNote").textContent = "Applied to new replies and tasks (old messages stay as they are): " + LANG_SCOPES.map(([x, n]) => `${n}: ${LANG_OPTS.find(o => o[0] === v[x])[1]}`).join(" · "); announce("Language applied"); }
     catch (err) { $("langNote").textContent = writeError(err); ap.disabled = false; } };
   const apRow = el("div","row-wrap"); apRow.append(ap); box.append(apRow);
   const ex = el("div","lang-ex"); ex.append(el("small", null, "Arabic with English terms looks like this:")); const p = el("div", null, "لما تضغط Call a meeting تطلع قائمة الوكلاء."); ex.append(p); box.append(ex);
