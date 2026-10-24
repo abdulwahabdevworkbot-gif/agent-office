@@ -799,6 +799,7 @@ function goBack(){
   });
   backBar();
 }
+const staleTabs = new Set();   // tabs whose data changed while they were hidden
 function showTab(name, focus, byTab){
   if (curTab && name !== curTab && !restoring && !byTab) { navBack.push(snapshot()); if (navBack.length > 12) navBack.shift(); }
   curTab = name;
@@ -806,6 +807,7 @@ function showTab(name, focus, byTab){
   if (focus) $("tab-"+name).focus();
   try { history.replaceState(null, "", "#" + name); } catch {}
   backBar();
+  if (staleTabs.has(name)) drawTab(name);
 }
 TABS.forEach((t, i) => {
   $("tab-"+t).onclick = () => showTab(t, false, true);
@@ -3060,7 +3062,16 @@ function roomsWeek(){
 // Live snapshots arrive in bursts: draw once per frame, and replan the calendars only when tasks, sessions, agents or settings changed.
 let renderQueued = false, planDirty = true;
 function renderAll(plan = true){ if (plan) planDirty = true; if (renderQueued) return; renderQueued = true; const go = () => { renderQueued = false; renderAllNow(); }; if (document.hidden) setTimeout(go, 0); else requestAnimationFrame(go); }
-function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } renderSettings(); renderMeetSettings(); renderCalendar(); if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route(); renderSummary(); renderBoard(); renderSelects(); renderMsgs(); renderDecisions(); renderSessions(); renderCompose(); drawScene(); renderDepts(); renderStats(); renderAssistant(); renderInbox(); renderRoster(); if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); renderRoadmap(); renderTeam(); renderReviews(); }
+/* only the tab on screen is redrawn; the others are marked and drawn when opened (council round 4, E9). Badges, Needs you and dialogs stay live. */
+const TAB_DRAW = {office:() => { drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); }, chat:() => { drawScene(); renderMsgs(); renderDecisions(); },
+  board:() => renderBoard(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); }};
+function drawTab(t){ staleTabs.delete(t); TAB_DRAW[t]?.(); }
+function calBadge(){ const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : ""; }
+function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); }
+  Object.keys(TAB_DRAW).forEach(t => staleTabs.add(t)); drawTab(curTab || "office");
+  if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route();
+  renderSummary(); calBadge(); renderSelects(); renderSessions(); renderCompose(); renderInbox(); renderReviews();
+  if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); }
 
 /* ---------- data ---------- */
 renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000); setInterval(() => renderAll(), 60000); setInterval(renderStats, 30000);
