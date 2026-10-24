@@ -366,7 +366,13 @@ h2{font-weight:700;font-size:19px;margin:0}
 .walk-h{font-size:15px;margin:0}
 .mt-cost{font-size:12.5px;font-weight:500}
 .snz-list{grid-column:1/-1;display:grid;gap:4px;padding:8px 10px;border:1px dashed var(--line);border-radius:8px}.snz-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
-#byeBody input{flex:1;min-width:0}.t-edit{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:8px}
+#byeBody input{flex:1;min-width:0}
+.follow-strip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.fl-chip{all:unset;box-sizing:border-box;display:flex;gap:6px;align-items:center;max-width:100%;padding:5px 10px;border:1px solid var(--line);border-inline-start:3px solid var(--accent);border-radius:8px;background:var(--panel);cursor:pointer;font-size:13px}
+.fl-chip span:not(.note){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}.fl-chip.late{border-inline-start-color:var(--late)}.fl-chip.blk{border-inline-start-color:var(--bad)}.fl-chip.done{border-inline-start-color:var(--ok);opacity:.75}.fl-chip:focus-visible{outline:2px solid var(--accent)}
+.fl-star{margin-inline-start:8px;font-size:13px}
+.rooms.dim .ag:not(.point){opacity:.35;transition:opacity .2s}.ib .av.go,.ib img.go{cursor:pointer}
+.t-chain{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:13px}.t-chain .arr{color:var(--muted)}.t-chain .late{color:var(--late);font-weight:700}.health .t-chain{flex-basis:100%}
+.dc-list{display:grid;gap:4px;margin:8px 0}.dc-row{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-inline-start:3px solid var(--warn);border-radius:6px}.t-edit{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:8px}
 .door-list{display:grid;gap:6px;margin:8px 0 12px}.door-row{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;cursor:pointer}
 .door-row.free{border-left-color:var(--ok);cursor:default}.door-row .tm{font-variant-numeric:tabular-nums;font-weight:600;min-width:96px}.door-row .btn-lite{margin-left:auto}.door-row:focus-visible{outline:2px solid var(--accent)}
 .ib-pend{align-self:center;font-size:12.5px;color:var(--muted)}.ib-err{align-self:center;font-size:12.5px;color:var(--bad);font-weight:600}
@@ -621,6 +627,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
+    <div class="follow-strip" id="followStrip" hidden></div>
     <div class="scene">
       <div class="chrome"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="ttl" id="chromeTitle">Product Office</span><span class="clock" id="clock"></span></div>
       <div class="dept-tabs" id="deptTabs" role="tablist" aria-label="Departments" hidden></div>
@@ -748,6 +755,12 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <label class="set-chk"><input type="checkbox" id="whAll"> Around the clock</label>
       <div class="set-grid" id="whBox"><label>From <select id="whStart"></select></label><label>To <select id="whEnd"></select></label><span class="mt-chips" id="whDays" role="group" aria-label="Working days"></span></div>
       <div class="row-wrap"><button class="btn" type="button" id="whSave">Save</button><span class="note" id="whNote"></span></div>
+    </div>
+    <div class="panel" id="dataSet">
+      <h2>Data check</h2>
+      <p class="note" id="dataNote"></p>
+      <div class="dc-list" id="dataList"></div>
+      <div class="row-wrap"><button class="btn-lite" type="button" id="dataCopy" hidden>Copy for the Coordinator</button><span class="note">The fields agents write are listed in SPEC.md under "Agent contract".</span></div>
     </div>
     <div class="panel" id="ritSet">
       <h2>Standing meetings</h2>
@@ -1513,7 +1526,7 @@ function renderAssistant(){
 const ago = iso => { const t = Date.parse(iso || ""); if (!t) return ""; const m = Math.max(0, Math.round((Date.now() - t) / 6e4)); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
 function replyTo(id){ chatSess = chatPair = chatTask = ""; showTab("chat"); pickers.forEach(p => p.refresh()); renderMsgs(); renderSessions(); renderCompose();
   const s = $("to"); if ([...s.options].some(o => o.value === id)) { s.value = id; s.dispatchEvent(new Event("change")); } $("text").focus(); }
-let inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
+const cardPoint = {keep:null}; let inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
 /* one-tap answers (council round 4, I1): "Approve X" gets Approve / Not now; "Decide: A, or B" gets A and B. Each tap sends the owner's decision to that agent. */
 function quickAnswers(needs){
   const n = String(needs || "").trim(); let m;
@@ -1535,6 +1548,16 @@ function laterPick(row, key){
   row.replaceChildren(el("span","note","Snooze until"), ...opts, back); opts[0].focus(); }
 const outbox = () => { if (!msgs.some(m => m.relayed === true) && !sessions.some(x => x.relayed === true)) return [];
   const cut = Date.now() - 10 * 6e4; return msgs.filter(m => m.from === "owner" && m.relayed === false && (Date.parse(m.at || "") || Infinity) < cut); };
+/* follow a task (council round 10, from round 8): a star in the task dialog; followed tasks sit in a strip above the office (up to 8) */
+const following = () => (Array.isArray(metaOffice?.follow) ? metaOffice.follow : []).filter(id => tasks.some(t => t.id === id));
+async function toggleFollow(id){ if (!db) return; const f = following(), on = f.includes(id), next = on ? f.filter(x => x !== id) : [...f, id].slice(-8);
+  try { await db.doc("meta/office").update({follow:next}); announce(on ? `Stopped following ${id}.` : `Following ${id}.`); } catch (err) { announce(writeError(err)); } }
+function renderFollow(){
+  const box = $("followStrip"); if (!box) return; const f = following(); box.hidden = !f.length; if (!f.length) return;
+  box.replaceChildren(el("span","lbl","Following"));
+  f.forEach(id => { const t = tasks.find(x => x.id === id), p = sched.byTask[id] || {}, b = el("button","fl-chip" + (p.lateBy ? " late" : t.state === "blocked" ? " blk" : isClosed(t) ? " done" : "")); b.type = "button";
+    b.append(avatar(t.session || "coordinator", 20), el("b", null, t.id), el("span", null, ttl(t)), el("span","note", isClosed(t) ? "Done" : t.state === "blocked" ? "Blocked" : p.lateBy ? lateText(p) : p.e ? "ends " + fmtWhen(p.e) : stateName(t)));
+    b.onclick = () => openTask(id); box.append(b); }); }
 /* "Before you go" (council round 10, Product Lead): the end-of-day check: what's still open, snooze the rest to 09:00, what's due overnight, tomorrow's first meeting, a note to the Coordinator */
 function openBye(){
   const body = $("byeBody"), x = el("button","btn-lite","Close"); x.type = "button"; x.onclick = () => $("byeDlg").close();
@@ -1730,7 +1753,7 @@ function renderInbox(){
   inboxItems = items;
   if ($("walkDlg").open && !($("walkBody").contains(document.activeElement) && document.activeElement.matches("textarea, input"))) drawWalk();
   const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`;
-  $("officeCount").textContent = todo || "";
+  $("officeCount").textContent = todo || ""; renderFollow();
   $("byeBtn").classList.toggle("btn", new Date().getHours() >= 17); $("byeBtn").classList.toggle("btn-lite", new Date().getHours() < 17);   // the end-of-day check stands out after 17:00
   /* outbox (council round 10, Engineer): what the owner wrote that no agent has picked up after 10 minutes; shown only once agents mark pick-ups (relayed:true) */
   const ob = outbox(); if (ob.length) { const o = el("button","linkish ob-link", `${ob.length} not picked up yet`); o.type = "button"; o.title = ob.map(m => `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 80)}`).join("\n"); o.onclick = () => { inboxShowOb = !inboxShowOb; renderInbox(); }; $("inboxSum").append(" · ", o);
@@ -1741,13 +1764,15 @@ function renderInbox(){
     box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
     const c = el("div","ib"); c.style.setProperty("--c", it.c);
+    if (figs.has(it.who)) { c.onmouseenter = () => { cardPoint.keep ??= [...pointed]; pointAt([it.who]); $("roomsHQ").classList.add("dim"); }; c.onmouseleave = () => { pointAt(cardPoint.keep || []); cardPoint.keep = null; $("roomsHQ").classList.remove("dim"); }; }   // pointing at a card lights its person in the office
     const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", it.rel || ago(it.at)));
     const a = el("div","ib-a"), open = it.key && inboxOpen.has(it.key), sent = it.key && sentEl(it.key);
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
       b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
     if (!sent && it.key && ownerView()) { const lt = el("button","btn-lite","Later"); lt.type = "button"; lt.title = "Snooze this card"; lt.onclick = () => laterPick(a, snzKey(it)); a.append(lt); }
     if (sent) a.replaceChildren(sent);
-    c.append(avatar(it.who, 34), k, el("div","ib-t", it.t), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
+    const av = avatar(it.who, 34); if (figs.has(it.who)) { av.classList.add("go"); av.title = `Show ${nameOf(it.who)} in the office`; av.tabIndex = 0; av.setAttribute("role", "button"); av.setAttribute("aria-label", av.title); av.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); av.onclick(); } }; av.onclick = () => { const f = figs.get(it.who); f?.b.scrollIntoView({block:"center", behavior:reduce ? "auto" : "smooth"}); f?.b.focus({preventScroll:true}); }; }
+    c.append(av, k, el("div","ib-t", it.t), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
     if (open && it.inline) { const x = el("div","ib-x"); x.append(it.inline()); c.append(x); }
     box.append(c); });
   if (items.length > 6) { const m = el("button","linkish inbox-more", inboxAll ? "Show fewer" : `Show all ${items.length}`); m.type = "button"; m.onclick = () => { inboxAll = !inboxAll; renderInbox(); }; box.append(m); }
@@ -1811,7 +1836,7 @@ function buildSchedule(){
       /* an agent's own "time left" report wins over the estimate while it is fresh (council round 8, Engineer) */
       const pa = Date.parse(t.progress_at || ""), rep = started && Number.isFinite(+t.remaining_min) && t.remaining_min !== null && t.remaining_min !== "" && pa > Math.max(now - 6 * 36e5, started - 6e4);
       let e = rep ? addWork(Math.max(s, Math.min(pa, now)), +t.remaining_min, wd, b) : addWork(s, estOf(t), wd, b); if (started && e < now + 5 * 6e4) e = now + 5 * 6e4;   // still open: it ends no sooner than now
-      const after = deps.reduce((m, d) => (byTask[d]?.e || 0) > (byTask[m]?.e || 0) ? d : m, deps[0]), why = rep ? "report" : started ? "started" : depEnd > base ? "dep" : (free[who] || 0) > now ? "queue" : "now";
+      const after = deps.reduce((m, d) => (byTask[d]?.e || 0) > (byTask[m]?.e || 0) ? d : m, deps[0]), why = rep ? "report" : depEnd > (started || base) ? "dep" : started ? "started" : (free[who] || 0) > now ? "queue" : "now";
       const late = deps.filter(d => { const x = tasks.find(y => y.id === d), due = Date.parse(x?.due_at || (x?.due ? x.due + "T23:59:00" : "")); return byTask[d] && !byTask[d].done && due && byTask[d].e > due; });
       const due = Date.parse(t.due_at || (t.due ? t.due + "T23:59:00" : ""));
       byTask[t.id] = {s:nextWork(s, wd), e, deps, depEnd, cycle:!ready, lateDeps:late, due:due || 0, lateBy:due && e - due >= 6e4 ? e - due : 0, waits:depEnd > base, why, after, prev:prevOf[who] || "", started, rep:rep ? {min:+t.remaining_min, at:pa} : null};
@@ -1839,12 +1864,18 @@ function whyTime(t){
   const mt = (sched.byAgent[t.session] || []).filter(x => x.kind === "meet" && x.s < p.e && x.e > p.s); if (mt.length) out.push(`${mt.length} meeting${mt.length === 1 ? "" : "s"} in between (${fmtDur(Math.round(mt.reduce((m, x) => m + Math.min(x.e, p.e) - Math.max(x.s, p.s), 0) / 6e4))})`);
   if (p.lateDeps?.length) out.push(`moved by ${p.lateDeps.join(", ")} running late`);
   return out.join("; ") + "."; }
+/* what sets the date (council round 10, Owner Advocate): walk back from a task through the dependency or queue that set its start */
+function chainOf(id){ const out = [], seen = new Set(); let cur = id;
+  while (cur && !seen.has(cur) && out.length < 8) { seen.add(cur); out.unshift(cur); const p = sched.byTask[cur]; if (!p || p.done) break; cur = p.why === "dep" ? p.after : p.why === "queue" ? p.prev : ""; }
+  return out; }
+function chainEl(id){ const ch = chainOf(id); if (ch.length < 2) return null; const r = el("div","t-chain"); r.append(el("span","note","What sets the date:"));
+  ch.forEach((x, i) => { if (i) r.append(el("span","arr","→")); const l = taskLink(x); if (sched.byTask[x]?.lateBy) l.classList.add("late"); r.append(l); }); return r; }
 function timeBox(t){   // the task dialog's Time row
   const p = sched.byTask[t.id]; const d = el("div"); d.append(el("div","lbl","Time"));
   const r = el("div","t-time"); r.append(el("span", null, `Takes ${fmtDur(estOf(t))}${t.estimate_min ? "" : " (default)"}`));
   if (p) r.append(el("span", null, p.done ? `Finished ${fmtWhen(p.e)}` : `Planned ${fmtWhen(p.s)} to ${fmtWhen(p.e)}`));
   if (p?.due) r.append(el("span","note", `Due ${fmtWhen(p.due)}`));
-  d.append(r); const wt = whyTime(t); if (wt) d.append(el("div","note t-why", "Why this time: " + wt));
+  d.append(r); const wt = whyTime(t); if (wt) d.append(el("div","note t-why", "Why this time: " + wt)); const cz = chainEl(t.id); if (cz) d.append(cz);
   const deps = depsOf(t); if (deps.length) { const q = el("div","t-time"); q.append(el("span","note","Needs first:")); deps.forEach(x => { const pp = sched.byTask[x]; q.append(taskLink(x), el("span","note", pp ? (pp.done ? "done" : "ends " + fmtWhen(pp.e)) : "")); }); d.append(q); }
   const after = tasks.filter(x => depsOf(x).includes(t.id)); if (after.length) { const q = el("div","t-time"); q.append(el("span","note","Then:")); after.forEach(x => q.append(taskLink(x.id))); d.append(q); }
   if (p && (p.lateBy || p.lateDeps?.length)) d.append(el("div","t-warn", [lateText(p), p.lateDeps?.length ? whyText(p) : ""].filter(Boolean).join(". ")));
@@ -1910,6 +1941,8 @@ function planHealth(){
     {k:"nodue", en:"No deadline", f:t => !t.due_at && !t.due, why:() => "Never shows as late"}];
   const box = el("div","health"), last = open.reduce((a, t) => Math.max(a, P(t).e || 0), 0);
   box.append(el("b", null, "Plan health"), el("span","note", last ? `All open work done by ${fmtWhen(last)}` : "No open work"));
+  const lastT = open.find(t => (P(t).e || 0) === last), lc = lastT && chainEl(lastT.id); if (lc) { lc.firstChild.textContent = "The finish date is set by:"; box.append(lc); }
+  const bad = dataCheck(); if (bad.length) { const c = el("button","chip go h-warn", `Data problems: ${bad.length}`); c.type = "button"; c.title = "Agent data the page had to ignore"; c.onclick = () => { showTab("settings"); $("dataSet").scrollIntoView({block:"start"}); }; box.append(c); }
   let rows = [];
   kinds.forEach(K => { const l = open.filter(K.f); if (!l.length) return; const c = el("button", "chip go" + (K.warn ? " h-warn" : "")); c.type = "button";
     c.textContent = `${K.en}: ${l.length}`; c.setAttribute("aria-pressed", String(calHealth === K.k)); c.onclick = () => { calHealth = calHealth === K.k ? "" : K.k; renderCalendar(); }; box.append(c);
@@ -2123,6 +2156,7 @@ function openTask(id){
   const t = tasks.find(x => x.id === id); if (!t) return;
   const body = $("taskBody"); body.replaceChildren();
   const top = el("div"); top.append(el("span","mono", `${t.id} · ${nameOf(t.session)}`), el("h3", null, ttl(t))); body.append(top);
+  if (canWrite && ownerView()) { const on = following().includes(t.id), st = el("button","btn-lite fl-star", on ? "★ Following" : "☆ Follow"); st.type = "button"; st.setAttribute("aria-pressed", String(on)); st.title = "Keep this task in the strip above the office"; st.onclick = async () => { await toggleFollow(t.id); st.textContent = st.textContent.startsWith("★") ? "☆ Follow" : "★ Following"; }; top.append(st); }
   const st = STATES.find(s => s.k === t.state); const sr = el("div"); sr.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center"; const sc = el("span","chip"); sc.textContent = st ? st.en : (t.state || ""); sr.append(sc); if (t.feature) sr.append(flabel(t.feature)); if (versions().length) sr.append(el("span","chip", verName(verOf(t)))); sr.append(el("span","chip", "Phase: " + phaseName(phaseOf(t)))); body.append(sr);
   if (t.summary_en) { const d = el("div"); d.append(el("div","lbl","Summary"), el("div", null, t.summary_en)); body.append(d); }
   body.append(timeBox(t));
@@ -3297,6 +3331,30 @@ function enterSends(ta, send){
   ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); send(); } });
 }
 enterSends($("text"), () => $("compose").requestSubmit());
+/* the agent contract (council round 10, Engineer): what agents may write, and a check that names anything the page had to ignore */
+const T_TIME = "an ISO time with a time zone, e.g. 2026-10-24T09:00:00Z";
+const CONTRACT = {
+  agents:{state:{en:"working, waiting, blocked, done or idle", ok:v => v in AGENT_STATE}, desk:{en:"a number", ok:v => Number.isFinite(+v)}, updated_at:{en:T_TIME, time:1}, waiting_since:{en:T_TIME, time:1}, last_active_at:{en:T_TIME, time:1}},
+  tasks:{title_en:{en:"a title", req:1, ok:v => typeof v === "string" && v.trim()}, state:{en:"todo, doing, review, done or blocked", ok:v => STATES.some(x => x.k === v) || v === "test"}, session:{en:"an agent id", ok:v => !!agentById(v)},
+    estimate_min:{en:"minutes, a number above 0", ok:v => +v > 0}, due_at:{en:T_TIME, time:1}, started_at:{en:T_TIME, time:1}, done_at:{en:T_TIME, time:1}, progress_at:{en:T_TIME, time:1}, remaining_min:{en:"minutes, 0 or more", ok:v => +v >= 0},
+    depends_on:{en:"a list of task ids that exist", ok:v => Array.isArray(v) && v.every(d => tasks.some(t => t.id === d))}},
+  sessions:{state:{en:"scheduled, open or closed", ok:v => ["scheduled","open","closed"].includes(v)}, at:{en:T_TIME, time:1}, opened_at:{en:T_TIME, time:1}, members:{en:"a list of agent ids (or owner)", ok:v => Array.isArray(v) && v.every(m => m === "owner" || agentById(m))},
+    task:{en:"a task id that exists", ok:v => tasks.some(t => t.id === v)}, room:{en:"meet or huddle", ok:v => ["meet","huddle"].includes(v)}, duration_min:{en:"minutes, a number above 0", ok:v => +v > 0}},
+  messages:{at:{en:T_TIME, req:1, time:1}}};
+const isTime = v => typeof v === "string" && !isNaN(Date.parse(v)) && /(Z|[+-]\d\d:?\d\d)$/.test(v);
+function dataCheck(){
+  const out = [], src = {agents, tasks, sessions, messages:msgs.slice(-200)};
+  Object.entries(CONTRACT).forEach(([col, F]) => (src[col] || []).forEach(d => Object.entries(F).forEach(([k, r]) => { const v = d[k];
+    if (v == null || v === "") { if (r.req) out.push({col, id:d.id, k, v, en:r.en}); return; }
+    if (r.time ? !isTime(v) : r.ok && !r.ok(v)) out.push({col, id:d.id, k, v, en:r.en}); })));
+  return out; }
+function renderDataCheck(){
+  const p = $("dataSet"); if (!p) return; const bad = dataCheck(), list = $("dataList"); list.replaceChildren();
+  $("dataNote").textContent = bad.length ? `${bad.length} value${bad.length === 1 ? "" : "s"} the page had to ignore or guess. Nothing is fixed by itself.` : "Everything the agents wrote matches the contract.";
+  bad.slice(0, 40).forEach(b => { const r = el("div","dc-row"); r.append(el("span","mono", `${b.col}/${b.id}`), el("b", null, b.k), el("span", null, b.v == null ? "missing" : JSON.stringify(b.v).slice(0, 60)), el("span","note", "expected " + b.en)); list.append(r); });
+  $("dataCopy").hidden = !bad.length;
+  $("dataCopy").onclick = async () => { const txt = "Please fix these office data values:\n" + bad.map(b => `- ${b.col}/${b.id} ${b.k} = ${b.v == null ? "(missing)" : JSON.stringify(b.v)}; expected ${b.en}`).join("\n");
+    try { await navigator.clipboard.writeText(txt); $("dataCopy").textContent = "Copied"; } catch { const ta = el("textarea"); ta.value = txt; ta.rows = 6; list.prepend(ta); ta.select(); } }; }
 function renderSettings(){
   const t = $("roomRules"); if (!t || t.contains(document.activeElement)) return;
   t.replaceChildren(); const hd = el("tr"); ["Room","Most people","Open a copy when","Spots in the picture"].forEach(x => hd.append(el("th", null, x))); t.append(hd);
@@ -3428,7 +3486,7 @@ let renderQueued = false, planDirty = true;
 function renderAll(plan = true){ if (plan) planDirty = true; if (renderQueued) return; renderQueued = true; const go = () => { renderQueued = false; renderAllNow(); }; if (document.hidden) setTimeout(go, 0); else requestAnimationFrame(go); }
 /* only the tab on screen is redrawn; the others are marked and drawn when opened (council round 4, E9). Badges, Needs you and dialogs stay live. */
 const TAB_DRAW = {office:() => { drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); }, chat:() => { drawScene(); renderMsgs(); renderDecisions(); },
-  board:() => renderBoard(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); }};
+  board:() => renderBoard(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); renderDataCheck(); }};
 function drawTab(t){ staleTabs.delete(t); TAB_DRAW[t]?.(); }
 function calBadge(){ const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? `${lateN} late` : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : ""; }
 function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } watchBaseline();

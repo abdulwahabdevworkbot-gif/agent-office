@@ -85,6 +85,10 @@ The owner's requirements for the office page. Keep all of them when publishing o
 - **Halos** (council round 10): in the office, whoever is blocked glows red, waiting amber, and late orange, the same colors as Needs you.
 - **Outbox** (council round 10): owner messages still `relayed: false` after 10 minutes show as "N not picked up yet" in the Needs-you header, with a list. It appears only once agents have marked any doc `relayed: true`, so agents should set `relayed: true` (and `relayed_at`) when they handle an owner doc.
 - **Time and order in the task dialog** (council round 10): **Change the estimate, deadline or order** edits `estimate_min`, `due_at` and `depends_on`, with a live preview of what moves ("Moves 3 tasks later; BE-2 now late"). A dependency that would loop can't be picked. Saving tells the agent with a `kind: "update"` message and sets `plan_changed_by: "owner"`.
+- **Follow a task** (council round 10): **☆ Follow** in the task dialog (owner only) keeps up to 8 tasks in a "Following" strip above the office, each with its state, end time or lateness. Saved in `meta/office.follow` (task ids).
+- **Cards point at people** (council round 10): pointing at a Needs-you card lights that agent in the office and dims the rest; clicking its picture scrolls to them.
+- **What sets the date** (council round 10): the task dialog shows the chain that sets a task's start (the dependency or the previous task in the agent's queue), late links in orange; Plan health shows the chain behind the finish date.
+- **Data check** (council round 10): Settings lists every value agents wrote that breaks the agent contract below, with **Copy for the Coordinator**; Plan health shows "Data problems: N". Nothing is fixed by itself.
 - **Live-link watchdog** (council round 8): a listener error, or the tab waking after 5+ minutes hidden, shows "Reconnecting…" and subscribes again. Automatic writes wait while data is stale or the tab is hidden.
 - **Missed meetings** (council round 7): a scheduled meeting whose whole time plus 15 minutes passed while no owner page was open is closed with `missed: true`, never opened late. A repeating meeting then books its next future time once, as `<series>-<YYYY-MM-DD>`.
 - **Who writes by itself** (council round 7): opening due meetings, booking standing meetings and locking the day's plan run only from the owner's page. `meta/office.owner_id` names the owner's user id; without it any writer may.
@@ -187,3 +191,30 @@ The owner's rule: the Reviews tab (`#reviews`, with a count of tasks whose lates
 - **Filters:** agent, reviewer, times sent back (1+, 2+, 3+), latest result (approved with no notes / approved with notes / changes requested) and "only with open sub-tasks".
 
 Data: `reviews/<id>` holds `task`, `round`, `reviewer`, `outcome` (`approved` / `approved-notes` / `changes`), `at`, `notes_en`, `changes_en[]`, `subtasks[]` (task ids) and `session` (chat id). A task may also carry `parent` (the task it was split from), which counts as a sub-task too.
+
+
+## Agent contract
+
+What agents may write, and the form the page expects. A value in the wrong form is ignored or guessed, and listed under Settings → Data check.
+
+General rules: every time is ISO 8601 with a time zone (`2026-10-24T09:00:00Z`); every id must exist; after handling a doc the owner wrote (`relayed: false`), set `relayed: true` and `relayed_at`.
+
+| Collection | Field | Expected |
+| --- | --- | --- |
+| agents | state | working, waiting, blocked, done or idle |
+| agents | desk | a number |
+| agents | updated_at, waiting_since, last_active_at | ISO time with a time zone; set `waiting_since` when you start waiting on the owner |
+| agents | blocked_en, needs_en | short text: why blocked, and what is needed from the owner ("Approve X" or "Decide: A, or B" give one-tap answers) |
+| tasks | title_en | required |
+| tasks | state | todo, doing, review, done or blocked |
+| tasks | session | an agent id |
+| tasks | estimate_min, remaining_min | minutes (estimate above 0, remaining 0 or more) |
+| tasks | due_at, started_at, done_at, progress_at | ISO time with a time zone |
+| tasks | depends_on | a list of task ids that exist |
+| sessions | state | scheduled, open or closed |
+| sessions | at, opened_at | ISO time with a time zone |
+| sessions | members | agent ids, or owner |
+| sessions | task | a task id that exists |
+| sessions | room | meet or huddle |
+| sessions | duration_min | minutes above 0 |
+| messages | at | required, ISO time with a time zone |
