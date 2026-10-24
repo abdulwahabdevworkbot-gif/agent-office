@@ -366,6 +366,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .walk-h{font-size:15px;margin:0}
 .mt-cost{font-size:12.5px;font-weight:500}
 .snz-list{grid-column:1/-1;display:grid;gap:4px;padding:8px 10px;border:1px dashed var(--line);border-radius:8px}.snz-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+#byeBody input{flex:1;min-width:0}.t-edit{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:8px}
 .door-list{display:grid;gap:6px;margin:8px 0 12px}.door-row{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;cursor:pointer}
 .door-row.free{border-left-color:var(--ok);cursor:default}.door-row .tm{font-variant-numeric:tabular-nums;font-weight:600;min-width:96px}.door-row .btn-lite{margin-left:auto}.door-row:focus-visible{outline:2px solid var(--accent)}
 .ib-pend{align-self:center;font-size:12.5px;color:var(--muted)}.ib-err{align-self:center;font-size:12.5px;color:var(--bad);font-weight:600}
@@ -430,6 +431,10 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag .bang{display:none;position:absolute;top:-4%;right:-18%;width:16px;height:16px;border-radius:50%;place-items:center;font:700 11px/1 var(--font);color:#1b1300;background:#f0a83c;box-shadow:0 0 0 2px rgba(0,0,0,.35);cursor:pointer;z-index:3;animation:bang 1.6s ease-in-out infinite}
 .ag.need-w .bang,.ag.need-b .bang{display:grid}.ag.need-b .bang{background:#ff6b6b;color:#2a0505}
 .ag.late::after{content:"LATE";position:absolute;left:50%;bottom:-3%;transform:translateX(-50%);font:700 7px/1 var(--font);letter-spacing:.06em;color:#fff;background:#c4500f;border-radius:3px;padding:1px 3px;pointer-events:none}
+/* halos (council round 10, UX): a soft glow around whoever is blocked, waiting or late, in the Needs-you colors */
+.ag.need-b img.body{filter:drop-shadow(0 0 2px rgba(255,80,80,1)) drop-shadow(0 0 7px rgba(255,80,80,.75))}
+.ag.need-w img.body{filter:drop-shadow(0 0 2px rgba(240,168,60,1)) drop-shadow(0 0 7px rgba(240,168,60,.75))}
+.ag.late:not(.need-b):not(.need-w) img.body{filter:drop-shadow(0 0 2px rgba(255,130,60,1)) drop-shadow(0 0 7px rgba(255,130,60,.7))}
 @keyframes bang{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @media (prefers-reduced-motion:reduce){.ag .bang{animation:none}}
 .set-grid{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}.set-grid label,.set-chk{display:flex;gap:6px;align-items:center;font-size:14px}
@@ -613,7 +618,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
-      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
+      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
     <div class="scene">
@@ -776,6 +781,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 <dialog id="findDlg" aria-label="Find anything"><div class="dlg find" id="findBody"></div></dialog>
 <dialog id="doorDlg" aria-label="Room bookings"><div class="dlg door" id="doorBody"></div></dialog>
 <dialog id="agentDlg" aria-label="Agent"><div class="dlg" id="agentBody"></div></dialog>
+<dialog id="byeDlg" aria-label="Before you go"><div class="dlg walk" id="byeBody"></div></dialog>
 <dialog id="walkDlg" aria-label="Walk the floor"><div class="dlg walk" id="walkBody" aria-live="polite"></div></dialog>
 
 <script>
@@ -1507,7 +1513,7 @@ function renderAssistant(){
 const ago = iso => { const t = Date.parse(iso || ""); if (!t) return ""; const m = Math.max(0, Math.round((Date.now() - t) / 6e4)); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
 function replyTo(id){ chatSess = chatPair = chatTask = ""; showTab("chat"); pickers.forEach(p => p.refresh()); renderMsgs(); renderSessions(); renderCompose();
   const s = $("to"); if ([...s.options].some(o => o.value === id)) { s.value = id; s.dispatchEvent(new Event("change")); } $("text").focus(); }
-let inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
+let inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
 /* one-tap answers (council round 4, I1): "Approve X" gets Approve / Not now; "Decide: A, or B" gets A and B. Each tap sends the owner's decision to that agent. */
 function quickAnswers(needs){
   const n = String(needs || "").trim(); let m;
@@ -1527,6 +1533,28 @@ function laterPick(row, key){
   const opts = [["1 hour", Date.now() + 36e5], ["3 hours", Date.now() + 3 * 36e5], ["Tomorrow 09:00", +tm]].map(([l, t]) => { const b = el("button","btn-lite", l); b.type = "button"; b.onclick = () => snooze([key], t); return b; });
   const back = el("button","linkish","Back"); back.type = "button"; back.onclick = () => { row.replaceChildren(...keep); keep.find(n => n.textContent === "Later")?.focus(); };
   row.replaceChildren(el("span","note","Snooze until"), ...opts, back); opts[0].focus(); }
+const outbox = () => { if (!msgs.some(m => m.relayed === true) && !sessions.some(x => x.relayed === true)) return [];
+  const cut = Date.now() - 10 * 6e4; return msgs.filter(m => m.from === "owner" && m.relayed === false && (Date.parse(m.at || "") || Infinity) < cut); };
+/* "Before you go" (council round 10, Product Lead): the end-of-day check: what's still open, snooze the rest to 09:00, what's due overnight, tomorrow's first meeting, a note to the Coordinator */
+function openBye(){
+  const body = $("byeBody"), x = el("button","btn-lite","Close"); x.type = "button"; x.onclick = () => $("byeDlg").close();
+  const head = el("div","walk-head"), h = el("h2","walk-h","Before you go"); h.tabIndex = -1; head.append(h, x); body.replaceChildren(head);
+  const tm = new Date(); tm.setDate(tm.getDate() + (tm.getHours() >= 9 ? 1 : 0)); tm.setHours(9, 0, 0, 0);
+  const open = inboxItems.filter(it => !(it.key && (inboxSent.has(it.key) || pendingSend.has(it.key))));
+  body.append(el("div","lbl","Still open"));
+  if (!open.length) body.append(el("p","walk-done","Nothing is waiting for you."));
+  else { const ul = el("ul","walk-day"); open.slice(0, 8).forEach(it => ul.append(el("li", null, `${it.k}: ${it.t}`))); if (open.length > 8) ul.append(el("li","note", `and ${open.length - 8} more`)); body.append(ul);
+    if (ownerView()) { const sz = el("button","btn", `Snooze the rest to ${fmtWhen(+tm)}`); sz.type = "button"; sz.onclick = async () => { sz.disabled = true; await snooze(open.filter(it => it.key).map(snzKey), +tm); sz.textContent = "Snoozed. Nothing was answered for you."; }; body.append(el("div","row-wrap"), sz); } }
+  const now = Date.now(), due = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.due && sched.byTask[t.id].due <= +tm).sort((a, b) => sched.byTask[a.id].due - sched.byTask[b.id].due);
+  body.append(el("div","lbl","Due before then"));
+  const ul2 = el("ul","walk-day"); due.slice(0, 8).forEach(t => { const p = sched.byTask[t.id]; ul2.append(el("li", p.lateBy ? "t-warn" : null, `${t.id} ${ttl(t)}: due ${fmtWhen(p.due)}${p.lateBy ? ", " + lateText(p).toLowerCase() : ", on time"}`)); }); if (!due.length) ul2.append(el("li", null, "Nothing is due overnight.")); body.append(ul2);
+  const first = sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") > now).sort((a, b) => Date.parse(a.at) - Date.parse(b.at))[0];
+  body.append(el("div","lbl","Next meeting"), el("p", null, first ? `${first.title_en || "Meeting"}, ${fmtWhen(Date.parse(first.at))} (${(first.members || []).length} people)` : "None booked."));
+  body.append(el("div","lbl","A note for the Coordinator"));
+  const inp = el("input"); inp.placeholder = "Anything for the night (optional)"; inp.setAttribute("aria-label", "Note for the Coordinator"); const sn = el("button","btn-lite","Send"), nt = el("span","note"); sn.type = "button";
+  sn.onclick = async () => { const v = inp.value.trim(); if (!v || !db) return; sn.disabled = true; try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:"coordinator", task:null, kind:"note", text:v, author_id:me, relayed:false}); inp.value = ""; nt.textContent = "Sent."; } catch (err) { nt.textContent = writeError(err); } sn.disabled = false; };
+  enterSends(inp, () => sn.click()); const r = el("div","row-wrap"); r.append(inp, sn, nt); body.append(r);
+  if (!$("byeDlg").open) $("byeDlg").showModal(); requestAnimationFrame(() => h.focus()); }
 /* a one-tap answer waits 5 seconds with Undo before it goes, and says who gets it */
 const pendingSend = new Map();
 function quickSend(key, to, task, text, kind = "decision"){
@@ -1703,6 +1731,10 @@ function renderInbox(){
   if ($("walkDlg").open && !($("walkBody").contains(document.activeElement) && document.activeElement.matches("textarea, input"))) drawWalk();
   const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`;
   $("officeCount").textContent = todo || "";
+  $("byeBtn").classList.toggle("btn", new Date().getHours() >= 17); $("byeBtn").classList.toggle("btn-lite", new Date().getHours() < 17);   // the end-of-day check stands out after 17:00
+  /* outbox (council round 10, Engineer): what the owner wrote that no agent has picked up after 10 minutes; shown only once agents mark pick-ups (relayed:true) */
+  const ob = outbox(); if (ob.length) { const o = el("button","linkish ob-link", `${ob.length} not picked up yet`); o.type = "button"; o.title = ob.map(m => `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 80)}`).join("\n"); o.onclick = () => { inboxShowOb = !inboxShowOb; renderInbox(); }; $("inboxSum").append(" · ", o);
+    if (inboxShowOb) { const l = el("div","snz-list"); ob.forEach(m => { const r = el("div","snz-row"); r.append(avatar(m.to || "coordinator", 20), el("span", null, `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 120)}`), el("span","note", `sent ${ago(m.at)}`)); l.append(r); }); box.prepend(l); } }
   const np = $("needPill"); np.hidden = !todo; np.textContent = `${todo} need${todo === 1 ? "s" : ""} you`; np.onclick = () => { showTab("office"); $("inboxList").scrollIntoView({block:"start", behavior:reduce ? "auto" : "smooth"}); };
   if (!items.length) {   // "morning done" (council round 4, I2): what comes next, so the owner can leave with peace of mind
     const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
@@ -1816,7 +1848,39 @@ function timeBox(t){   // the task dialog's Time row
   const deps = depsOf(t); if (deps.length) { const q = el("div","t-time"); q.append(el("span","note","Needs first:")); deps.forEach(x => { const pp = sched.byTask[x]; q.append(taskLink(x), el("span","note", pp ? (pp.done ? "done" : "ends " + fmtWhen(pp.e)) : "")); }); d.append(q); }
   const after = tasks.filter(x => depsOf(x).includes(t.id)); if (after.length) { const q = el("div","t-time"); q.append(el("span","note","Then:")); after.forEach(x => q.append(taskLink(x.id))); d.append(q); }
   if (p && (p.lateBy || p.lateDeps?.length)) d.append(el("div","t-warn", [lateText(p), p.lateDeps?.length ? whyText(p) : ""].filter(Boolean).join(". ")));
+  if (canWrite && !isClosed(t)) { const ch = el("button","linkish","Change the estimate, deadline or order"); ch.type = "button"; ch.onclick = () => d.replaceWith(timeEdit(t)); d.append(ch); }
   return d; }
+/* set time and order (council round 10, Owner Advocate): estimate, deadline and "needs first", with a preview of what moves; a loop is refused; the agent is told */
+function planWith(t, patch){
+  const keepT = tasks, keepP = sched; let out = [];
+  try { buildSchedule(); const base = sched; tasks = keepT.map(x => x.id === t.id ? {...x, ...patch} : x); buildSchedule();
+    out = tasks.filter(x => !isClosed(x)).map(x => { const a = base.byTask[x.id], b = sched.byTask[x.id]; return a && b ? {t:x, d:b.e - a.e, late:!a.lateBy && !!b.lateBy, ok:!!a.lateBy && !b.lateBy} : null; }).filter(x => x && (Math.abs(x.d) >= 6e4 || x.late || x.ok)); }
+  finally { tasks = keepT; sched = keepP; }
+  return out; }
+const reaches = (from, to) => { const seen = new Set(), st = [from]; while (st.length) { const id = st.pop(); if (id === to) return true; if (seen.has(id)) continue; seen.add(id); const x = tasks.find(y => y.id === id); if (x) st.push(...depsOf(x)); } return false; };
+function timeEdit(t){
+  const d = el("div","t-edit"), toLocal = ms => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  let est = estOf(t), deps = depsOf(t).slice(), dueV = Date.parse(t.due_at || (t.due ? t.due + "T23:59:00" : "")) || 0;
+  d.append(el("div","lbl","Time and order"));
+  const er = el("div","mt-chips"); er.append(el("span","note","Takes"));
+  [[15,"15 min"],[30,"30 min"],[60,"1 h"],[120,"2 h"],[180,"3 h"],[240,"4 h"],[480,"8 h"],[960,"2 days"]].forEach(([m, l]) => { const b = el("button","chip-btn", l); b.type = "button"; b.setAttribute("aria-pressed", String(m === est)); b.onclick = () => { est = m; [...er.querySelectorAll(".chip-btn")].forEach(c => c.setAttribute("aria-pressed", String(c === b))); prev(); }; er.append(b); });
+  const dr = el("div","row-wrap"), du = el("input"); du.type = "datetime-local"; du.setAttribute("aria-label","Deadline"); if (dueV) du.value = toLocal(dueV); const nd = el("button","linkish","No deadline"); nd.type = "button";
+  du.onchange = () => { dueV = Date.parse(du.value) || 0; prev(); }; nd.onclick = () => { du.value = ""; dueV = 0; prev(); }; dr.append(el("span","note","Deadline"), du, nd);
+  const pr = el("div","row-wrap"), list = el("span","row-wrap"), add = el("select"); add.setAttribute("aria-label","Add a task it needs first");
+  const drawDeps = () => { list.replaceChildren(); deps.forEach(id => { const c = el("span","mt-p"); c.append(el("span", null, id)); const x = el("button","mt-x","×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + id); x.onclick = () => { deps = deps.filter(y => y !== id); drawDeps(); prev(); }; c.append(x); list.append(c); });
+    add.replaceChildren(new Option("Add a task it needs first…", "")); tasks.filter(x => x.id !== t.id && !deps.includes(x.id)).sort((a, b) => String(a.id).localeCompare(String(b.id))).forEach(x => { const o = new Option(`${x.id} · ${ttl(x)}${reaches(x.id, t.id) ? " (would loop)" : ""}`, x.id); o.disabled = reaches(x.id, t.id); add.append(o); }); };   // a task that already waits for this one can't come first
+  add.onchange = () => { if (add.value) { deps.push(add.value); drawDeps(); prev(); } };
+  pr.append(el("span","note","Needs first"), list, add); drawDeps();
+  const pv = el("div","mt-cost"), ok = el("button","btn","Save"), no = el("button","btn-lite","Cancel"), nt = el("span","note"); ok.type = no.type = "button";
+  const patch = () => ({estimate_min:est, due_at:dueV ? new Date(dueV).toISOString() : null, due:null, depends_on:deps});
+  function prev(){ const c = planWith(t, patch()), mv = c.filter(x => x.d >= 6e4), bk = c.filter(x => x.d <= -6e4);
+    pv.className = "mt-cost" + (c.some(x => x.late) ? " t-warn" : ""); pv.textContent = !c.length ? "Moves nothing else." : [mv.length ? `Moves ${mv.length} task${mv.length === 1 ? "" : "s"} later` : "", bk.length ? `${bk.length} earlier` : "", c.filter(x => x.late).map(x => `${x.t.id} now late`).join(", "), c.filter(x => x.ok).map(x => `${x.t.id} back on time`).join(", ")].filter(Boolean).join("; ") + "."; pv.title = c.map(x => `${x.t.id} ${x.d >= 0 ? "+" : "−"}${fmtDur(Math.round(Math.abs(x.d) / 6e4))}`).join("\n"); }
+  ok.onclick = async () => { ok.disabled = true; const pa = patch(), parts = [`takes ${fmtDur(pa.estimate_min)}`, pa.due_at ? `due ${fmtWhen(Date.parse(pa.due_at))}` : "no deadline", deps.length ? `needs ${deps.join(", ")} first` : "needs nothing first"];
+    try { await db.doc("tasks/" + t.id).update({...pa, updated_at:new Date().toISOString(), plan_changed_by:"owner"});
+      if (t.session) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:t.session, task:t.id, kind:"update", text:`Plan change for ${t.id}: ${parts.join("; ")}.`, author_id:me, relayed:false});
+      Object.assign(t, pa); renderAll(); announce(`Saved. ${nameOf(t.session)} was told.`); openTask(t.id); } catch (err) { nt.textContent = writeError(err); ok.disabled = false; } };
+  no.onclick = () => openTask(t.id);
+  const btns = el("div","row-wrap"); btns.append(ok, no, nt); d.append(er, dr, pr, pv, btns); prev(); requestAnimationFrame(() => er.querySelector("[aria-pressed=true]")?.focus() || er.querySelector(".chip-btn")?.focus()); return d; }
 let calWho = "", calWeek = 0, calHealth = "";
 // Plan health: what in the computed plan needs a look, above the Everyone list.
 /* plan baseline (council round 5, Engineer): the plan is locked once a day (first visit, or "Lock the plan now"), and the live plan is compared with it */
@@ -2716,7 +2780,7 @@ function openDueMeetings(){
   });
 }   // the snapshot that follows moves people into the room
 setInterval(() => { openDueMeetings(); ensureRituals(); }, 30000); setTimeout(() => { openDueMeetings(); ensureRituals(); }, 5000);
-$("walkBtn").onclick = openWalk;
+$("walkBtn").onclick = openWalk; $("byeBtn").onclick = openBye;
 $("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
 function writeError(err){
   if (err && err.code === "quota_exceeded") return "The office data is full. Ask the Office Manager to archive old messages.";
