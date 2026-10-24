@@ -29,6 +29,12 @@ for (const tab of ["office","chat","board","calendar","settings"]) {
   await ph.evaluate(t => document.getElementById("tab-" + t).click(), tab); await ph.waitForTimeout(400);
   const w = await ph.evaluate(() => document.documentElement.scrollWidth); if (w > 401) fails.push(`phone ${tab}: page is ${w} px wide`);
 }
+/* the calendar's wide views scroll inside their own box (council round 19): Rooms day lanes and one person's hours */
+await ph.evaluate(() => document.getElementById("tab-calendar").click()); await ph.waitForTimeout(300);
+await ph.evaluate(() => [...document.querySelectorAll("#panel-calendar button")].find(b => b.textContent.trim() === "Rooms")?.click()); await ph.waitForTimeout(400);
+let cw = await ph.evaluate(() => document.documentElement.scrollWidth); if (cw > 401) fails.push(`phone calendar rooms: page is ${cw} px wide`);
+await ph.evaluate(() => { const s = document.getElementById("calWho"), o = [...s.options].find(o => o.value && o.value !== "rooms"); if (o) { s.value = o.value; s.onchange({target:s}); } }); await ph.waitForTimeout(400);
+cw = await ph.evaluate(() => document.documentElement.scrollWidth); if (cw > 401) fails.push(`phone calendar person: page is ${cw} px wide`);
 await ph.evaluate(() => document.getElementById("tab-board").click()); await ph.evaluate(() => document.getElementById("tab-chat").click()); await ph.waitForTimeout(400);
 const covered = await ph.evaluate(() => { const s = document.getElementById("send"); if (!s) return ""; s.scrollIntoView({block:"center"}); const r = s.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return top && !s.contains(top) ? (top.id || top.className || top.tagName) : ""; });
 if (covered) fails.push(`phone chat: the Send button is covered by ${covered}`);
