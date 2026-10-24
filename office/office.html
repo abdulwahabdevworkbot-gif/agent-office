@@ -145,6 +145,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .sess-wrap .btn-lite{align-self:center}
 .ag.playing img.body{animation:swing .5s ease-in-out infinite}
 .ag .idle{position:absolute;bottom:100%;margin-bottom:2px;white-space:nowrap;background:rgba(10,14,22,.85);color:#c9d2e0;border:1px solid #3a4458;border-radius:6px;padding:0 5px;font-size:clamp(7px,1.8cqi,11px);line-height:1.5;pointer-events:none}
+[id^="room-idle"] .ag .idle{display:none}   /* in the Idle room the labels piled up: the room label counts them, and the hover card gives each date */
 .ag:not(.dormant) .idle{display:none}
 .ag.dormant img.body{filter:grayscale(.55) brightness(.85) drop-shadow(0 3px 2px rgba(0,0,0,.35))}
 @keyframes swing{0%,100%{transform:rotate(0) translateY(0)}30%{transform:rotate(-7deg) translateY(-3%)}70%{transform:rotate(6deg) translateY(-1%)}}
@@ -1405,7 +1406,8 @@ function drawScene(){
   nextLink("huddle", sessions.filter(s => s.state === "scheduled" && s.room === "huddle").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0]);
   Object.keys(ROOMS).filter(k => typeOf(k) === "main" && k !== "main").forEach(k => { const n = [...out.values()].filter(p => p.room === k).length; ROOMS[k].querySelector(".label small").textContent = n ? `Working · ${n}` : "Free desks"; });
   roomsOf("idle").forEach(k => { const nIdle = [...out.values()].filter(p => p.room === k).length;
-    ROOMS[k].querySelector(".label small").textContent = nIdle ? `Inactive ${IDLE_DAYS}+ days · ${nIdle}` : "Nobody inactive"; });
+    const since = [...out.entries()].filter(([, p]) => p.room === k).map(([id]) => idleSince(agentById(id) || {})).filter(Boolean).sort((a, b) => a - b)[0];
+    ROOMS[k].querySelector(".label small").textContent = nIdle ? `Inactive ${IDLE_DAYS}+ days · ${nIdle}${since ? ` · the longest since ${idleDate(since)}` : ""}` : "Nobody inactive"; });
   roomsOf("game").forEach(k => { if (k !== "game") ROOMS[k].querySelector(".label small").textContent = "Done or not started"; });
 }
 /* the owner's rule: a room with nobody is smaller, a room with people is normal, a crowded one a little bigger */
