@@ -238,6 +238,15 @@ h2{font-weight:700;font-size:19px;margin:0}
 .rm-pill.blocked{border-left:3px solid var(--bad)}.rm-pill .mono{white-space:nowrap;flex:none}
 .ag.copy .body{opacity:.82;filter:saturate(.8)}.mt-copy{font-size:10px;color:var(--muted);border:1px dashed var(--line);border-radius:4px;padding:0 4px;margin-left:4px}
 .conv-keep{display:flex;gap:5px;align-items:center;font-size:11px;color:var(--muted);margin:-2px 0 6px 4px;cursor:pointer}.conv-keep input{margin:0}
+.ru-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}.ru-add input{flex:1 1 280px;min-width:0}
+.ru-list{display:grid;gap:6px}.ru-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;padding:8px 10px}.ru-row.on{border-color:var(--accent)}
+.ru-tx{flex:1 1 240px;min-width:0;display:grid}.ru-text{font-weight:600;overflow-wrap:anywhere}
+.ru-sw{min-width:52px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;background:var(--panel,transparent);color:inherit;font-size:12px}.ru-sw[aria-checked="true"]{background:var(--accent);color:#fff;border-color:transparent}.ru-sw.arm{border-color:var(--bad);color:var(--bad)}
+.ru-sens{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}.rs-safe{background:#e5f4e4;color:#1f6b3a}.rs-careful{background:#e7f1fb;color:#1f4f86}.rs-money{background:#f9eeda;color:#8a5200}.rs-danger{background:#fbebeb;color:#a32020}
+.ru-tag{font-size:10px;font-weight:600;border:1px dashed var(--accent);color:var(--accent);background:none;border-radius:4px;padding:0 5px;margin-left:6px;cursor:pointer}
+.ru-done{display:grid;gap:8px}.ru-drow{border-left:3px solid var(--accent);padding:4px 10px;display:grid;gap:4px}
+.tell{margin:8px 0;border:1px dashed var(--line);border-radius:8px;padding:8px 10px}.tell-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tell-row input{flex:1 1 260px;min-width:0}
+.tell-out{display:grid;gap:6px;margin-top:6px}.tell-out:empty{display:none}.tell-step{display:flex;gap:8px;align-items:flex-start}.tell-step input{margin-top:3px}
 .ph-tag{justify-self:start;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px}
 /* Arabic replies: English and task ids on their own lines */
 .bidi{text-align:right}
@@ -700,6 +709,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <button role="tab" id="tab-chat" aria-controls="panel-chat" aria-selected="false" tabindex="-1">Chat<span class="count" id="chatCount"></span></button>
     <button role="tab" id="tab-board" aria-controls="panel-board" aria-selected="false" tabindex="-1">Task board<span class="count" id="taskCount"></span></button>
     <button role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" tabindex="-1">Reviews<span class="count" id="revCount"></span></button>
+    <button role="tab" id="tab-rules" aria-controls="panel-rules" aria-selected="false" tabindex="-1">Rules<span class="count" id="ruleCount"></span></button>
     <button role="tab" id="tab-team" aria-controls="panel-team" aria-selected="false" tabindex="-1">Team</button>
     <button role="tab" id="tab-calendar" aria-controls="panel-calendar" aria-selected="false" tabindex="-1">Calendar<span class="count" id="calCount"></span></button>
     <button role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1">Settings</button>
@@ -710,6 +720,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
       <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite new-btn" id="newBtn" type="button" hidden>What's new</button><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite ph-more" id="moreBtn" type="button" aria-expanded="false">More</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
+      <div class="tell" id="tellBox" hidden></div>
       <div class="next3" id="next3" hidden></div>
       <div id="awayBox"></div>
       <div class="night-strip" id="nightStrip" hidden></div>
@@ -807,6 +818,19 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     </div>
   </section>
 
+  <section role="tabpanel" id="panel-rules" aria-labelledby="tab-rules" class="stack" hidden>
+    <div class="panel">
+      <h2>Rules that approve for you</h2>
+      <p class="note">Autopilot: while a rule is on, agents act on the matching requests without waiting for you, and everything they do that way shows a small "By rule" tag. Each rule carries how sensitive it is: money and dangerous rules (anything that spends, deletes, touches production, security or access) need a second tap to turn on.</p>
+      <div class="ru-add" id="ruAdd"></div>
+      <div id="ruList" class="ru-list"></div>
+    </div>
+    <div class="panel">
+      <h2>Done for you by a rule</h2>
+      <p class="note">Newest first. Ask the agent to undo anything you didn't mean.</p>
+      <div id="ruDone" class="ru-done"></div>
+    </div>
+  </section>
   <section role="tabpanel" id="panel-team" aria-labelledby="tab-team" class="stack" hidden>
     <div class="panel">
       <h2>Who reports to whom</h2>
@@ -905,7 +929,7 @@ const AGENT_STATE = {
 const KIND = {question:"Question", answer:"Answer", decision:"Decision", owner:"You", note:"Note", proposal:"Proposed tasks"};
 const PALETTE = ["#3b5bdb","#c2255c","#2b8a3e","#e67700","#7048e8","#0c8599","#d9480f","#5c940d","#1971c2","#a61e4d","#087f5b","#862e9c"];
 
-let agents = [], tasks = [], msgs = [], sessions = [], reviews = [], filter = "", feat = "", selectedAgent = null, me = null, canWrite = true, db = null, user = null;
+let agents = [], tasks = [], msgs = [], sessions = [], reviews = [], rules = [], filter = "", feat = "", selectedAgent = null, me = null, canWrite = true, db = null, user = null;
 const $ = id => document.getElementById(id);
 /* the owner's rule, everywhere (chat, board, task text, reviews): Arabic text reads right to left, and every
    English run sits on its own line between the Arabic lines. Block elements get the split; short inline bits only the direction. */
@@ -948,7 +972,7 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const announce = text => { let r = document.getElementById("srLive"); if (!r) { r = el("div","sr-only"); r.id = "srLive"; r.setAttribute("aria-live", "polite"); document.body.append(r); } r.textContent = ""; setTimeout(() => { r.textContent = text; }, 50); };
 
 /* ---------- tabs ---------- */
-const TABS = ["office","roadmap","chat","board","reviews","team","calendar","settings"];   // same order as on screen, for the arrow keys
+const TABS = ["office","roadmap","chat","board","reviews","rules","team","calendar","settings"];   // same order as on screen, for the arrow keys
 const TAB_NAME = {office:"Office", roadmap:"Roadmap", chat:"Chat", board:"Task board", calendar:"Calendar", reviews:"Reviews", team:"Team", settings:"Settings"};
 let curTab = null, restoring = false;
 const navBack = [];
@@ -1994,6 +2018,7 @@ function drawWalk(focus = true){
   card.addEventListener("touchend", e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null; if (Math.abs(dx) < 70 || Math.abs(dx) < 2 * Math.abs(dy)) return; if (dx < 0) later(); else next.onclick(); }, {passive:true});
 }
 function renderInbox(){
+  renderTell();
   renderSince();
   const box = $("inboxList"); if (!box) return;
   if (box.contains(document.activeElement) && document.activeElement.matches("textarea, input")) return;   // never wipe what the owner is typing
@@ -2102,8 +2127,7 @@ function renderInbox(){
   $("callsBox").replaceChildren();
   if (ownerView() && canWrite && !callsHidden) { const ans = metaOffice?.calls || {}, Q = [
       {k:"meet_group", q:"Call a meeting: which group is ticked when it opens? Busy people send a copy, so nobody stops working. (You can change it later in Settings.)", now:metaOffice?.meet_default || "suggested", opts:[["suggested","The suggested people"],["hq","Management"],["mgr","Managers"],["coord","Only the Coordinator"],["everyone","Everyone, when they fit a room"]], save:"meet_default"},
-      {k:"autopilot", q:"Autopilot rules: agents act on set rules without asking you?", opts:[["plan","Yes, plan it"],["later","Not now"],["more","Tell me more"]]},
-      {k:"tell", q:"\"Tell the office\": one line where you write what you want and it turns into steps you confirm?", opts:[["plan","Yes, plan it"],["later","Not now"],["more","Tell me more"]]}], open = Q.filter(x => !ans[x.k]);
+      {k:"tell_done", hide:true, q:"\"Tell the office\": one line where you write what you want and it turns into steps you confirm?", opts:[["plan","Yes, plan it"],["later","Not now"],["more","Tell me more"]]}], open = Q.filter(x => !ans[x.k] && !x.hide);
     if (open.length) { const c = el("div","ib wide calls"), k = el("div","ib-k"), later = el("button","linkish","Later"); later.type = "button"; later.onclick = () => { callsHidden = true; renderInbox(); };
       k.append(el("span", null, `Your calls (${open.length})`), later); c.append(avatar("coordinator", 34), k, el("div","ib-t", "The first was settled by majority while you were away; the others were left for you. Pick what you want."));
       open.forEach(x => { const d = el("div","cq"), row = el("div","row-wrap"); d.append(el("b", null, x.q));
@@ -2939,6 +2963,124 @@ const rvF = {agent:"", reviewer:"", rej:0, out:"", openSub:false};
 const subsOf = (taskId, list) => { const ids = new Set(list.flatMap(r => Array.isArray(r.subtasks) ? r.subtasks : [])); tasks.filter(t => t.parent === taskId).forEach(t => ids.add(t.id)); return [...ids].map(id => tasks.find(t => t.id === id) || {id, missing:true}); };
 function rvSelect(sel, vals, cur, all){ const keep = cur; sel.replaceChildren(); const o = el("option", null, all); o.value = ""; sel.append(o);
   vals.forEach(v => { const x = el("option", null, nameOf(v)); x.value = v; sel.append(x); }); sel.value = vals.includes(keep) ? keep : ""; }
+/* Rules (the owner's call, 2026-10-24): autopilot rules get their own tab. Each rule is `rules/<id>` {text_en, sensitivity, on,
+   created_at, author_id}; an agent acting under one writes `by_rule: <id>` on its message, and the page tags it "By rule". Sensitivity:
+   safe, careful, money (spends or charges) or danger (deletes, production, security, access: can cause real damage). */
+const RULE_SENS = {safe:{en:"Safe", hint:"Low risk: easy to undo"}, careful:{en:"Careful", hint:"Changes plans, dates or what others see"}, money:{en:"Money", hint:"Spends, charges or refunds"}, danger:{en:"Dangerous", hint:"Deletes, production, security or access: can cause real damage"}};
+function guessSens(text){ const t = String(text || "").toLowerCase();
+  if (/\b(pay|payment|price|refund|invoice|billing|budget|spend|cost|subscription|charge|purchase|buy|money|sar|usd)\b|\$|ريال|دفع|فلوس|شراء/.test(t)) return "money";
+  if (/\b(delete|remove|drop|wipe|production|prod|deploy|release|security|password|secret|token|key|access|permission|role|database|migrat|legal|contract)\w*|حذف|إنتاج|صلاحي|امان|أمان/.test(t)) return "danger";
+  if (/\b(schedule|deadline|due|estimate|date|merge|email|message|customer|publish|meeting)\w*/.test(t)) return "careful";
+  return "safe"; }
+const ruleById = id => rules.find(r => r.id === id);
+const shortRule = r => { const t = ruleTitle(r); return t.length > 28 ? t.slice(0, 27) + "…" : t; };
+const ruleTitle = r => r ? (r.text_en || r.title_en || "a rule") : "a rule (deleted)";
+function sensTag(k){ const v = RULE_SENS[k] || RULE_SENS.safe, t = el("span", "ru-sens rs-" + (RULE_SENS[k] ? k : "safe"), v.en); t.title = v.hint; return t; }
+function ruleTag(id){ const r = ruleById(id), b = el("button","ru-tag", `By rule: ${shortRule(r)}`); b.type = "button"; b.title = `Approved for you by a rule: ${ruleTitle(r)}${r ? ` (${(RULE_SENS[r.sensitivity] || RULE_SENS.safe).en})` : ""}. Open Rules`; b.onclick = e => { e.stopPropagation(); showTab("rules"); }; return b; }
+let ruArm = "";
+function renderRules(){
+  const on = rules.filter(r => r.on && !r.deleted); $("ruleCount").textContent = on.length ? String(on.length) : ""; $("tab-rules").title = `${on.length} rule${on.length === 1 ? "" : "s"} on`;
+  if (curTab !== "rules") return;
+  const mine = canWrite && ownerView(), add = $("ruAdd"); add.replaceChildren();
+  if (mine) {
+    const ta = el("input"); ta.type = "text"; ta.placeholder = "A rule, e.g. Approve any estimate change under 30 minutes"; ta.setAttribute("aria-label","New rule");
+    const sel = el("select"); sel.setAttribute("aria-label","How sensitive"); Object.entries(RULE_SENS).forEach(([k, v]) => sel.append(new Option(v.en, k))); let picked = false;
+    sel.onchange = () => { picked = true; }; ta.oninput = () => { if (!picked) sel.value = guessSens(ta.value); };
+    const go = el("button","btn","Add rule"), note = el("span","note"); go.type = "button";
+    go.onclick = async () => { const text = ta.value.trim(); if (!text) { ta.focus(); return; } go.disabled = true;
+      try { await db.collection("rules").add({text_en:text, sensitivity:sel.value, on:false, created_at:new Date().toISOString(), author_id:me}); ta.value = ""; picked = false; note.textContent = "Added, off. Turn it on when you're sure."; } catch (err) { note.textContent = writeError(err); } go.disabled = false; };
+    enterSends(ta, () => go.click());
+    add.append(ta, sel, go, note);
+  } else add.append(el("span","note","Only the owner adds or changes rules."));
+  const list = $("ruList"); list.replaceChildren();
+  if (!rules.some(r => !r.deleted)) list.append(el("div","note","No rules yet. Every request waits for you."));
+  const usesOf = id => msgs.filter(m => m.by_rule === id);
+  const order = {danger:0, money:1, careful:2, safe:3};
+  rules.slice().sort((a, b) => (b.on - a.on) || (order[a.sensitivity] ?? 3) - (order[b.sensitivity] ?? 3) || String(a.created_at).localeCompare(String(b.created_at))).forEach(r => {
+    const row = el("div","ru-row" + (r.on ? " on" : "")), sw = el("button","ru-sw"); sw.type = "button"; sw.setAttribute("role","switch"); sw.setAttribute("aria-checked", String(!!r.on)); sw.setAttribute("aria-label", (r.on ? "Turn off: " : "Turn on: ") + ruleTitle(r)); sw.disabled = !mine;
+    const risky = r.sensitivity === "money" || r.sensitivity === "danger";
+    sw.textContent = r.on ? "On" : ruArm === r.id ? "Turn on anyway" : "Off"; if (ruArm === r.id) sw.classList.add("arm");
+    sw.onclick = async () => { if (!r.on && risky && ruArm !== r.id) { ruArm = r.id; renderRules(); announce(`${RULE_SENS[r.sensitivity].en} rule: tap again to turn it on`); return; }
+      ruArm = ""; try { await db.doc("rules/" + r.id).update({on:!r.on, [r.on ? "off_at" : "on_at"]:new Date().toISOString()}); } catch (err) { sw.textContent = writeError(err); } };
+    const tx = el("div","ru-tx"); tx.append(el("span","ru-text", ruleTitle(r)));
+    const u = usesOf(r.id), meta = el("span","note", u.length ? `Used ${u.length} time${u.length === 1 ? "" : "s"} · last ${ago(u.map(m => m.at).sort().pop())}` : r.on ? "On, not used yet" : "Off");
+    tx.append(meta);
+    const sens = el("select","ru-sel"); sens.setAttribute("aria-label","How sensitive"); Object.entries(RULE_SENS).forEach(([k, v]) => sens.append(new Option(v.en, k, false, k === (r.sensitivity || "safe")))); sens.disabled = !mine;
+    sens.onchange = async () => { const k = sens.value, up = {sensitivity:k}; if ((k === "money" || k === "danger") && r.on) up.on = false; try { await db.doc("rules/" + r.id).update(up); if (up.on === false) announce("Turned off: a money or dangerous rule needs a second tap to turn on"); } catch (err) { meta.textContent = writeError(err); } };
+    const del = el("button","linkish","Delete"); del.type = "button"; del.hidden = !mine;
+    del.onclick = async () => { if (del.dataset.arm !== "1") { del.dataset.arm = "1"; del.textContent = "Tap again to delete"; return; } try { await db.doc("rules/" + r.id).update({deleted:true, on:false, deleted_at:new Date().toISOString()}); } catch (err) { meta.textContent = writeError(err); } };
+    row.append(sw, sensTag(r.sensitivity), tx, sens, del); if (!r.deleted) list.append(row); });
+  const done = $("ruDone"); done.replaceChildren();
+  const dm = msgs.filter(m => m.by_rule).sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 50);
+  if (!dm.length) done.append(el("div","note","Nothing yet."));
+  dm.forEach(m => { const r = ruleById(m.by_rule), row = el("div","ru-drow"), top = el("div","row-wrap");
+    top.append(el("span","note", ago(m.at)), el("b", null, nameOf(m.from)), ruleTag(m.by_rule), r ? sensTag(r.sensitivity) : el("span"));
+    if (m.task && tasks.some(t => t.id === m.task)) top.append(taskLink(m.task));
+    row.append(top, el("div", null, m.text_en || m.text || ""), el("div","note", `Rule: ${ruleTitle(r)}`));
+    if (mine) { const un = el("button","btn-lite","Ask to undo"); un.type = "button"; un.onclick = async () => { un.disabled = true; try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:m.from, task:m.task || null, kind:"question", text:`Please undo what you did by rule ("${ruleTitle(r)}"): ${(m.text_en || m.text || "").slice(0, 160)}`, decided_by:null, author_id:me, relayed:false}); un.textContent = "Asked"; } catch (err) { un.textContent = writeError(err); un.disabled = false; } }; row.append(un); }
+    done.append(row); });
+}
+/* "Tell the office" (the owner's call, 2026-10-24): one line in your own words turns into clear steps (move a deadline, book a
+   meeting, send a message) that you tick and confirm before anything is sent. Whatever the page can't turn into a step goes to
+   the Coordinator as one message, who answers with proposed steps. Owner only. */
+const AR_DIGITS = s => String(s).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+const WEEKDAYS = [["sunday","sun","الأحد","الاحد"],["monday","mon","الاثنين","الإثنين"],["tuesday","tue","الثلاثاء"],["wednesday","wed","الأربعاء","الاربعاء"],["thursday","thu","الخميس"],["friday","fri","الجمعة"],["saturday","sat","السبت"]];
+function tellWhen(text){
+  const t = AR_DIGITS(text).toLowerCase(); let day = null, now = new Date(), hasDay = false, hasTime = false;
+  if (/\btoday\b|اليوم/.test(t)) { day = new Date(now); hasDay = true; }
+  if (/\btomorrow\b|بكرة|بكره|غدا|غداً/.test(t)) { day = new Date(now); day.setDate(day.getDate() + 1); hasDay = true; }
+  WEEKDAYS.forEach((names, wd) => { if (!hasDay && names.some(n => new RegExp(`(^|[^\\p{L}])${n}([^\\p{L}]|$)`, "u").test(t))) { day = new Date(now); let d = (wd - now.getDay() + 7) % 7; if (!d) d = 7; day.setDate(day.getDate() + d); hasDay = true; } });
+  const tm = /(?:\bat\s*|الساعة\s*|ساعة\s*)(\d{1,2})(?::(\d{2}))?\s*(am|pm|ص|م|الصبح|العصر|المغرب|الليل)?/.exec(t) || /\b(\d{1,2}):(\d{2})\b\s*(am|pm)?/.exec(t);
+  let h = 9, mi = 0; if (tm) { h = +tm[1]; mi = +(tm[2] || 0); const ap = tm[3] || ""; if (/pm|م|العصر|المغرب|الليل/.test(ap) && h < 12) h += 12; if (/am|ص|الصبح/.test(ap) && h === 12) h = 0; if (!ap && h >= 1 && h <= 6) h += 12; hasTime = true; }
+  if (!hasDay && !hasTime) return null;
+  const d = day || new Date(now); d.setHours(h, mi, 0, 0); if (!hasDay && d.getTime() < Date.now()) d.setDate(d.getDate() + 1);
+  return {ms:d.getTime(), hasDay, hasTime};
+}
+function tellSteps(text){
+  const low = AR_DIGITS(text).toLowerCase(), steps = [];
+  const who = agents.filter(a => a.id !== "owner" && [plainName(a.id), a.id, a.name_ar].filter(x => x && x.length > 2).some(n => new RegExp(`(^|[^\\p{L}])${n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^\\p{L}]|$)`, "u").test(low))).map(a => a.id);
+  const ids = tasks.map(x => x.id).filter(Boolean).filter(id => new RegExp(`\\b${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text));
+  const when = tellWhen(text), wantsMeet = /\b(meeting|meet|call|sync)\b|اجتماع|اجتمع|ميتنق/.test(low), wantsDue = /\b(by|before|finish|due|deadline|until)\b|قبل|يخلص|تخلص|موعد|لين/.test(low);
+  /* "...and book a meeting with them tomorrow at 10": the date after the meeting word is the meeting's, the one before is the deadline's */
+  const mIdx = low.search(/\b(meeting|meet|call)\b|اجتماع/), dueText = mIdx > 0 ? text.slice(0, mIdx) : text, meetText = mIdx >= 0 ? text.slice(mIdx) : text;
+  if (wantsDue) { const dw = tellWhen(dueText) || (!wantsMeet ? when : null); let tgt = ids.map(id => tasks.find(x => x.id === id)).filter(Boolean);
+    if (!tgt.length && who.length) tgt = who.map(id => tasks.find(x => x.session === id && x.state === "doing") || tasks.find(x => x.session === id && !isClosed(x))).filter(Boolean);
+    if (dw && tgt.length) tgt.forEach(t => { const end = new Date(dw.ms); if (!dw.hasTime) end.setHours(17, 0, 0, 0); steps.push({kind:"due", task:t.id, ms:end.getTime(), label:`Move ${t.id} (${ttl(t)}) to be done by ${fmtWhen(end.getTime())}`}); }); }
+  if (wantsMeet) { const mw = tellWhen(meetText) || when, ppl = who.length ? who : ["coordinator"], at = mw ? mw.ms : null;
+    steps.push({kind:"meet", with:ppl, ms:at, task:ids[0] || null, label:`Book a ${meetCfg().default_min}-minute meeting with ${ppl.map(nameOf).join(", ")}${at ? ` on ${fmtWhen(at)}` : ", now"}`}); }
+  const to = who[0] || "coordinator";
+  if (!steps.length) steps.push({kind:"msg", to, task:ids[0] || null, text, label:`Send to ${nameOf(to)}: "${text.length > 90 ? text.slice(0, 89) + "…" : text}"`});
+  else if (who.length && !wantsMeet) steps.push({kind:"msg", to, task:ids[0] || null, text, label:`Tell ${nameOf(to)} why: "${text.length > 70 ? text.slice(0, 69) + "…" : text}"`});
+  return steps;
+}
+async function doTellStep(st, line){
+  const now = new Date().toISOString(), base = {author_id:me, relayed:false, decided_by:null};
+  if (st.kind === "due") { const t = tasks.find(x => x.id === st.task); if (!t) throw new Error(`${st.task} is gone`);
+    await db.doc("tasks/" + t.id).update({due_at:new Date(st.ms).toISOString(), due_was:t.due_at || t.due || null, due_moved_by:"owner", updated_at:now});
+    await db.collection("messages").add({...base, at:now, from:"owner", to:t.session || "coordinator", task:t.id, kind:"decision", text:`New deadline for ${t.id}: ${fmtWhen(st.ms)}. (From "Tell the office": ${line})`}); return; }
+  if (st.kind === "meet") { const members = ["owner", "coordinator", ...st.with.filter(x => x !== "coordinator")], r = roomForCount(members.length), later = st.ms && st.ms > Date.now() + 6e4, atIso = new Date(later ? st.ms : Date.now()).toISOString();
+    const ref = await db.collection("sessions").add({kind:"meeting", task:st.task, title_en:line.length > 70 ? line.slice(0, 67) + "…" : line, opened_by:"owner", author_id:me, members, relayed:false, purpose:"discuss", duration_min:meetCfg().default_min, room:r.key, at:atIso,
+      ...(later ? {state:"scheduled", scheduled_at:now} : {state:"open", opened_at:now, copies:copiesFor(members)})});
+    await db.collection("messages").add({...base, at:now, from:"owner", to:"session", session:ref.id, task:st.task, kind:"note", text:line}); return; }
+  await db.collection("messages").add({...base, at:now, from:"owner", to:st.to, task:st.task, kind:"note", text:st.text});
+}
+function renderTell(){
+  const box = $("tellBox"); if (!box) return; box.hidden = !(canWrite && ownerView() && db); if (box.hidden || box.dataset.built) return; box.dataset.built = "1";
+  const inp = el("input"); inp.type = "text"; inp.placeholder = "Tell the office… e.g. Have Backend finish PAY-1 by Thursday and book a meeting with them tomorrow at 10"; inp.setAttribute("aria-label","Tell the office"); inp.autocomplete = "off"; inp.dir = "auto";
+  const go = el("button","btn-lite","Make steps"); go.type = "button"; const out = el("div","tell-out"); out.setAttribute("aria-live","polite");
+  const row = el("div","tell-row"); row.append(el("span","lbl","Tell the office"), inp, go); box.append(row, out);
+  go.onclick = () => { const line = inp.value.trim(); out.replaceChildren(); if (!line) { inp.focus(); return; }
+    const steps = tellSteps(line), checks = [];
+    out.append(el("div","note", "Here is what will happen. Untick anything you don't want, then confirm. Nothing is sent before that."));
+    steps.forEach(st => { const lab = el("label","tell-step"), cb = el("input"); cb.type = "checkbox"; cb.checked = true; lab.append(cb, el("span", null, st.label)); out.append(lab); checks.push([cb, st]); });
+    const ok = el("button","btn", `Do ${steps.length} step${steps.length === 1 ? "" : "s"}`), coord = el("button","linkish","Not right? Send the line to the Coordinator instead"), cancel = el("button","linkish","Cancel"), note = el("span","note"); ok.type = coord.type = cancel.type = "button";
+    const sync = () => { const n = checks.filter(([c]) => c.checked).length; ok.textContent = `Do ${n} step${n === 1 ? "" : "s"}`; ok.disabled = !n; }; checks.forEach(([c]) => c.onchange = sync);
+    ok.onclick = async () => { ok.disabled = true; let done = 0; try { for (const [c, st] of checks) if (c.checked) { await doTellStep(st, line); done++; } out.replaceChildren(el("div","mt-ok", `Done: ${done} step${done === 1 ? "" : "s"}.`)); inp.value = ""; announce(`Done: ${done} steps`); } catch (err) { note.textContent = writeError(err); ok.disabled = false; } };
+    coord.onclick = async () => { coord.disabled = true; try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:"coordinator", kind:"question", text:`Tell the office: ${line}\nTurn this into steps for me to confirm.`, author_id:me, relayed:false, decided_by:null}); out.replaceChildren(el("div","mt-ok","Sent to the Coordinator. Their proposed steps come back in Needs you.")); inp.value = ""; } catch (err) { note.textContent = writeError(err); coord.disabled = false; } };
+    cancel.onclick = () => out.replaceChildren();
+    const bar = el("div","row-wrap"); bar.append(ok, coord, cancel, note); out.append(bar); ok.focus(); };
+  enterSends(inp, () => go.click());
+}
 function renderReviews(){
   const list = $("rvList"); if (!list) return; $("rvFold").hidden = !reviews.length; $("rvFsum").textContent = [rvF.agent ? nameOf(rvF.agent) : "All agents", rvF.reviewer ? "reviewed by " + nameOf(rvF.reviewer) : "", rvF.rej ? `sent back ${rvF.rej}+` : "", rvF.out ? RV_OUT[rvF.out] : "", rvF.openSub ? "open sub-tasks" : ""].filter(Boolean).join(" · ");   // no filters over an empty list
   const byTask = new Map();
@@ -3497,6 +3639,7 @@ function msgRow(m){
     who.append(el("b", null, nameOf(m.from)));
     if (m.to && m.to !== "session") who.append(el("span","note", "→ " + nameOf(m.to)));
     if (m.kind) who.append(el("span","kind k-" + m.kind, KIND[m.kind] || m.kind));
+    if (m.by_rule) who.append(ruleTag(m.by_rule));
     if (m.quick) { const q = el("span","quick","Quick reply"); q.title = "Answered at once from the agent's role and the office data. The agent's own session follows up when real work is needed."; who.append(q); }
     if (m.task || (m.session && m.session !== chatSess)) {
       const ls = el("span","links");
@@ -4131,7 +4274,7 @@ let renderQueued = false, planDirty = true;
 function renderAll(plan = true){ if (plan) planDirty = true; if (renderQueued) return; renderQueued = true; const go = () => { renderQueued = false; renderAllNow(); }; if (document.hidden) setTimeout(go, 0); else requestAnimationFrame(go); }
 /* only the tab on screen is redrawn; the others are marked and drawn when opened (council round 4, E9). Badges, Needs you and dialogs stay live. */
 const TAB_DRAW = {office:() => { drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); }, chat:() => { drawScene(); renderMsgs(); renderDecisions(); },
-  board:() => renderBoard(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); renderDataCheck(); renderPace(); }};
+  board:() => renderBoard(), rules:() => renderRules(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); renderDataCheck(); renderPace(); }};
 function drawTab(t){ staleTabs.delete(t); TAB_DRAW[t]?.(); }
 function calBadge(){ const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : ""; }
 function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } watchBaseline();
@@ -4175,7 +4318,8 @@ renderLegend(); renderAllNow(); setTimeout(() => { setRoomBg(); setInterval(setR
     catch (err) { if (desc) subMsgs(false); else onErr(err); } };
   subMsgs(true);
   keep(db.collection("sessions").onSnapshot(s => { sessions = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("sessions"); renderAll(); }, onErr));
-  keep(db.collection("reviews").onSnapshot(s => { reviews = s.docs.map(d => ({id:d.id, ...d.data()})); renderReviews(); }, () => {})); };
+  keep(db.collection("reviews").onSnapshot(s => { reviews = s.docs.map(d => ({id:d.id, ...d.data()})); renderReviews(); }, () => {}));
+  keep(db.collection("rules").onSnapshot(s => { rules = s.docs.map(d => ({id:d.id, ...d.data()})); renderRules(); if (curTab === "chat") renderMsgs(); }, () => {})); };
   subscribeAll();
   document.addEventListener("visibilitychange", () => { if (document.hidden) { live.hiddenAt = Date.now(); return; }
     if (live.hiddenAt && Date.now() - live.hiddenAt > 5 * 6e4 && live.unsubs.every(u => typeof u === "function")) { live.stale = true; $("conn").textContent = "Reconnecting…"; subscribeAll(); } live.hiddenAt = 0; });
