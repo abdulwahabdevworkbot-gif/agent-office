@@ -828,7 +828,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <h2>Room sizes</h2>
       <p class="note">For each room: the most people it holds, and how full it gets before an exact copy opens for the next person. When fewer people need the room, the extra copy closes again.</p>
       <div class="rs-wrap"><table class="rs" id="roomRules"></table></div>
-      <div class="row-wrap"><button class="btn" type="button" id="rsSave">Save</button><button class="btn-lite" type="button" id="rsReset">Back to defaults</button><span class="note" id="rsNote"></span></div>
+      <div class="row-wrap"><button class="btn" type="button" id="rsSave" hidden>Save</button><button class="btn-lite" type="button" id="rsReset">Back to defaults</button><span class="note" id="rsNote" aria-live="polite">Changes save themselves.</span></div>
     </div>
     <div class="panel" id="mtSet">
       <h2>Meetings and rooms</h2>
@@ -1718,7 +1718,7 @@ const NEW_VER = "2026-10-24", NEW_LIST = [
   ["Review health", "Reviews shows the last 14 days in one line: first-try pass rate, rounds, waits, sent back most.", "reviews"],
   ["Agent hours", "An agent's page shows their day in hours, like Calendar; the card week folds under In order.", "agent"],
   ["Team side by side", "Departments as cards next to each other.", "team"],
-  ["Settings save themselves", "Meetings, working hours and standing meetings keep a change on their own (standing meetings rebook after a short pause); Room sizes still has Save.", "settings"],
+  ["Settings save themselves", "Meetings, working hours and standing meetings keep a change on their own (standing meetings rebook after a short pause); Room sizes too.", "settings"],
   ["Light through the day", "The office follows the clock: dawn, day, dusk and night.", "office"]];
 function renderNewBtn(){ const b = $("newBtn"); if (!b) return; let seen = ""; try { seen = localStorage.getItem("office.new") || ""; } catch {} b.hidden = false; b.classList.toggle("new-btn", seen !== NEW_VER); b.textContent = seen === NEW_VER ? "What's new" : `What's new (${NEW_LIST.length})`; }   // after a look it stays, quietly
 const showNew = to => { if (to === "agent") { const a = agents.find(x => x.state === "working" && tasks.some(t => t.session === x.id && t.state === "doing")) || agents[0]; if (a) go("#agent/" + encodeURIComponent(a.id)); return; }
@@ -3895,6 +3895,8 @@ function renderSettings(){
     const c1 = el("td"), c2 = el("td"); c1.append(mx); c2.append(at);
     tr.append(el("td", null, name), c1, c2, el("td","note", String(spotsOf(k)))); t.append(tr); });
 }
+/* Room sizes save themselves like the other cards (council round 32, UX): a change is kept after a short pause; numbers are held to what the room can show */
+let rsTm = 0; $("roomRules").addEventListener("change", e => { if (!canWrite) return; const i = e.target.closest("input"); if (i) i.value = String(Math.min(+i.max || 99, Math.max(1, Math.round(+i.value) || 1))); clearTimeout(rsTm); $("rsNote").textContent = "Saving…"; rsTm = setTimeout(() => $("rsSave").onclick(), 500); });
 $("rsSave").onclick = async () => { const rooms = {};
   document.querySelectorAll("#roomRules tr[data-k]").forEach(tr => { rooms[tr.dataset.k] = {max:+tr.querySelector("input").value, at:+tr.querySelector("select").value}; });
   $("rsNote").textContent = "Saving…";
