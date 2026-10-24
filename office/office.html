@@ -56,7 +56,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .tabs .tab-end{margin-left:auto;display:flex;gap:8px;align-items:center;position:sticky;right:0;background:linear-gradient(90deg,transparent,var(--bg) 18px);padding-left:22px;flex:0 0 auto}
 .tabs .need-pill{align-self:center;flex:0 0 auto;border:0;border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--warn);color:var(--bg)}
-.card.held{border-left-color:var(--bad)}.bf-picked-row{margin:6px 0}.grid .hd:has(.hd-held){flex-wrap:wrap}.hd .hd-held{order:3;flex-basis:100%;text-align:left;display:block;font-size:11.5px;font-weight:500;text-transform:none;letter-spacing:0;margin-top:2px}
+.card.held{border-left-color:var(--bad)}.org-node.dim{opacity:.32}.team-state{margin:0 0 8px}.bf-picked-row{margin:6px 0}.grid .hd:has(.hd-held){flex-wrap:wrap}.hd .hd-held{order:3;flex-basis:100%;text-align:left;display:block;font-size:11.5px;font-weight:500;text-transform:none;letter-spacing:0;margin-top:2px}
 @media (max-width:520px){.tabs .tab-end{padding-left:10px;gap:5px;background:var(--bg);box-shadow:-14px 0 12px -4px var(--bg)}.tabs .find-btn{padding:3px 7px}.tabs .need-pill{padding:3px 8px}.tabs button{padding:8px 10px}}
 .tabs .find-btn{font-size:13px;font-weight:500;align-self:center;padding:4px 10px;border:1px solid var(--line);border-radius:8px}
 .find input{width:100%;box-sizing:border-box;font-size:16px}.find-list{display:grid;gap:2px;margin-top:10px;max-height:60vh;overflow:auto}.find-row{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:baseline;padding:7px 8px;border-radius:6px;cursor:pointer}
@@ -2470,7 +2470,7 @@ function renderSummary(){
   const toInbox = () => { showTab("office"); $("inbox").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"}); };
   box.append(el("span","sum-lbl","Agents"));
   ["waiting","working","blocked","done","idle"].forEach(k => { if (counts[k]) { const c = stateChip(k); c.lastChild.textContent = `${k === "blocked" ? "Blocked agents" : AGENT_STATE[k].en}: ${counts[k]}`;
-    box.append(k === "waiting" || k === "blocked" ? goChip(c, toInbox, "Show them in Needs you") : goChip(c, () => showTab("team"), "Open the Team tab")); } });   // every chip goes somewhere (council round 32)
+    box.append(k === "waiting" || k === "blocked" ? goChip(c, toInbox, "Show them in Needs you") : goChip(c, () => { teamState = k; renderTeam(); showTab("team"); }, `Show who is ${AGENT_STATE[k].en.toLowerCase()} on the Team tab`)); } });   // every chip goes somewhere (council round 32)
   const open = tasks.filter(t => t.state !== "done").length;
   box.append(el("span","sum-lbl","Work"));
   box.append(goChip(el("span","chip", `Open tasks: ${open}`), () => showTab("board"), "Open the task board"));
@@ -2971,8 +2971,11 @@ function parentOf(a, ids){
   if (mgr && mgr !== a.id) return mgr;
   return dir || top;
 }
+let teamState = "";   // a header chip's state: other people dim on the Team chart (council round 36)
 function renderTeam(){
   const box = $("org"); if (!box) return;
+  { let bar = $("teamStateBar"); if (!bar) { bar = el("div","team-state"); bar.id = "teamStateBar"; box.before(bar); } bar.replaceChildren(); bar.hidden = !teamState;
+    if (teamState) { const n = agents.filter(a => (idleSince(a) ? "idle" : a.state || "idle") === teamState).length, x = el("button","chip-btn", `Showing ${AGENT_STATE[teamState]?.en || teamState}: ${n} ×`); x.type = "button"; x.setAttribute("aria-pressed", "true"); x.title = "Show everyone"; x.onclick = () => { teamState = ""; renderTeam(); }; bar.append(x); } }
   const ids = new Set(agents.map(a => a.id)), kids = new Map(), up = new Map();
   agents.forEach(a => up.set(a.id, parentOf(a, ids)));
   up.forEach((p, id) => { let x = p, seen = new Set([id]); while (x && x !== "owner") { if (seen.has(x)) { up.set(id, "owner"); break; } seen.add(x); x = up.get(x); } });
@@ -2983,7 +2986,7 @@ function renderTeam(){
     const a = agentById(id), d = deptById(deptOf(id));
     if (d && a?.position === "director") { const t = el("span","org-dept", d.code + " · " + d.name_en); t.style.background = d.color; b.append(t); b.classList.add("lead"); }
     const nm = el("b"); const dc = dcode(id); if (dc) nm.append(dc, " "); nm.append(el("bdi", null, plainName(id)));
-    b.append(avatar(id, 40), nm, el("span","pos", titleOf(a) || roleOf(a) || (id === ASSISTANT ? "Your assistant" : "")), stateChip(idleSince(a) ? "idle" : a?.state));
+    b.append(avatar(id, 40), nm, el("span","pos", titleOf(a) || roleOf(a) || (id === ASSISTANT ? "Your assistant" : "")), stateChip(idleSince(a) ? "idle" : a?.state)); if (teamState && (idleSince(a) ? "idle" : a?.state || "idle") !== teamState) b.classList.add("dim");
     b.title = [nameOf(id), titleOf(a), roleOf(a), yearsOf(a)].filter(Boolean).join(" · "); b.onclick = () => selectAgent(id); return b; };
   const branch = id => { const li = el("li");
     if (id === "owner" && ids.has(ASSISTANT)) { const pr = el("div","org-pair"); const side = node(ASSISTANT); side.classList.add("side"); pr.append(node("owner"), side); li.append(pr); } else li.append(node(id));
