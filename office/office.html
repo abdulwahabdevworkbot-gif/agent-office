@@ -198,7 +198,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .btn-lite{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:5px;padding:3px 12px;cursor:pointer;justify-self:start}
 /* roadmap */
 .rm{display:grid;gap:12px;min-width:0}
-.rm-fc{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}.rm-fc .fc-chip{font-weight:700;padding:2px 9px;border-radius:999px;color:var(--on-c);background:var(--ok)}.rm-fc .fc-chip.risk{background:var(--warn)}.rm-fc .fc-chip.late{background:var(--late)}.rm-fc .fc-chip.plan{background:var(--accent)}.rm-fc .chip{cursor:pointer}.rm-fc input[type=date]{font:inherit;padding:1px 4px}.rm-chain{flex-basis:100%;font-size:12.5px;color:var(--muted)}
+.rm-fc{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}.rm-fc .fc-chip{font-weight:700;padding:2px 9px;border-radius:999px;color:var(--on-c);background:var(--ok)}.rm-fc .fc-chip.risk{background:var(--warn)}.rm-fc .fc-chip.late{background:var(--late)}.rm-fc .fc-chip.plan{background:var(--accent)}.rm-fc .chip{cursor:pointer}.rm-fc input[type=date]{font:inherit;padding:1px 4px}#rvQueue:empty{display:none}.rq{display:grid;gap:6px;margin:4px 0 12px}.rq h3{margin:0;font-size:14px}.rq-row{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto auto;gap:4px 10px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:13px}.rq-row .w{font-variant-numeric:tabular-nums;color:var(--muted)}.rq-row .w.old{color:var(--warn);font-weight:700}.rq-row .rv-who{display:flex;gap:5px;align-items:center;color:var(--muted)}@media (max-width:600px){.rq-row{grid-template-columns:auto minmax(0,1fr) auto}.rq-row .rv-who,.rq-row .try{grid-column:2}}
+.rm-chain{flex-basis:100%;font-size:12.5px;color:var(--muted)}
 .rm-now{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;background:var(--doing-bg);border-radius:8px;padding:10px 14px}.rm-now .lbl{margin:0}.rm-now b{font-size:16px}
 .rm-filters{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .rm-ver{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0;overflow:hidden}
@@ -789,6 +790,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
         <span class="rv-out" role="group" aria-label="Latest result" id="rvOut"></span>
         <label class="rv-chk"><input type="checkbox" id="rvOpenSub"> Only with open sub-tasks</label>
       </div>
+      <div id="rvQueue"></div>
       <p class="note" id="rvSum"></p>
       <div id="rvList" class="rv-list"></div>
     </div>
@@ -2874,9 +2876,15 @@ function renderReviews(){
   const all = [...byTask.values()].flat();
   $("revCount").textContent = byTask.size ? String([...byTask.values()].filter(rs => rs[rs.length - 1].outcome === "changes").length || "") : "";
   $("rvSum").textContent = reviews.length ? `${byTask.size} task${byTask.size === 1 ? "" : "s"} reviewed · ${all.filter(r => r.outcome === "approved").length} approved clean · ${all.filter(r => r.outcome === "approved-notes").length} with notes · ${all.filter(r => r.outcome === "changes").length} sent back · showing ${rows.length}` : "";
+  /* review queue (council round 26): what is waiting for review right now, the longest wait first, which try it is and who reviews it */
+  const q = $("rvQueue"); if (q) { q.replaceChildren(); const now = Date.now(), T = v => Date.parse(v || "") || 0, inRv = tasks.filter(t => t.state === "review").map(t => ({t, at:T(t.review_at) || T(t.updated_at) || now, tries:(byTask.get(t.id) || []).length + 1})).sort((a, b) => a.at - b.at);
+    if (inRv.length) { const w = el("div","rq"); w.append(el("h3", null, `Waiting for review (${inRv.length})`));
+      inRv.forEach(({t, at, tries}) => { const r = el("div","rq-row"), wait = Math.max(1, Math.round((now - at) / 6e4)), rvw = t.reviewer || "reviewer", who = el("span","rv-who"), o = el("button","btn-lite","Open"); o.type = "button"; o.onclick = () => openTask(t.id);
+        who.append(avatar(rvw, 18), nameOf(rvw)); r.append(avatar(t.session || "coordinator", 22), taskLink(t.id), el("span", null, `${ttl(t)} · ${nameOf(t.session)}`), el("span","w" + (wait > 240 ? " old" : ""), `waiting ${fmtDur(wait)}`), el("span","note try", tries > 1 ? `try ${tries}` : "first try"), who); r.append(o); w.append(r); });
+      q.append(w); } }
   const open = new Set([...list.querySelectorAll("details[open]")].map(d => d.dataset.task));
   list.replaceChildren();
-  if (!reviews.length) { const inRv = tasks.filter(t => t.state === "review").length; list.append(emptyState("reviewer", "No reviews yet.", inRv ? `${inRv} task${inRv === 1 ? " is" : "s are"} in review now; the Reviewer's notes land here.` : "When work is ready, the Reviewer checks it and the notes land here.", inRv ? "Open them" : "", () => { showTab("board"); })); return; }
+  if (!reviews.length) { const inRv = tasks.filter(t => t.state === "review").length; list.append(emptyState("reviewer", "No finished reviews yet.", inRv ? "The tasks above are with the Reviewer; each round's result and notes land here." : "When work is ready, the Reviewer checks it and the notes land here.")); return; }
   if (!rows.length) { list.append(el("p","note","No task matches these filters.")); return; }
   rows.forEach(x => { const d = el("details","rv-task"); d.dataset.task = x.id; d.open = open.has(x.id);
     const sm = el("summary"); sm.append(el("span","rv-badge " + x.last.outcome, RV_OUT[x.last.outcome] || x.last.outcome || "?"));
