@@ -107,6 +107,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 @media (max-width:600px){header .sub{display:none}#summary{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#summary>*{flex:0 0 auto}#summary::-webkit-scrollbar{display:none}.inbox-head .row-wrap{margin-left:0}}
 .room .label{position:absolute;top:2.5%;left:3%;z-index:6000;overflow:hidden;text-overflow:ellipsis;max-width:94%;background:rgba(10,14,22,.82);color:#e8edf5;border:1px solid #2c3546;border-radius:12px;padding:1px 11px;font-size:clamp(10px,2.6cqi,15px);font-weight:700;white-space:normal;line-height:1.35}   /* wraps, so every table's conversation stays readable */
 .room .label small{color:#9aa6b8;font-weight:500;margin-left:6px}
+.room .label .lbl-next{all:unset;cursor:pointer;color:#ffd479;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}.room .label .lbl-next:focus-visible{outline:2px solid #ffd479}
 .sp{position:absolute;transform:translate(-50%,-100%);pointer-events:none}
 .ag{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:pointer;border:0;background:none;padding:0}
 .ag img.body{height:100%;width:auto;display:block;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
@@ -1379,9 +1380,14 @@ function drawScene(){
     if (!list.length) { sm.textContent = empty; return; }
     list.forEach(([pre, t], i) => { if (i) sm.append(" · "); if (pre) sm.append(pre); sm.append(el("bdi", null, t)); }); };
   const nextUp = sessions.filter(s => s.state === "scheduled" && s.room !== "huddle").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0];
-  roomLabel("meet", big.map(g => ["", g.label]), nextUp ? `Free · next ${fmtWhen(Date.parse(nextUp.at))}: ${nextUp.title_en || "Meeting"}` : "Free");
+  roomLabel("meet", big.map(g => ["", g.label]), "Free");
+  /* every meeting room label shows its next booking, busy or not; clicking it opens the Rooms calendar (council round 4, O9) */
+  const nextLink = (room, s) => { if (!s) return; const sm = ROOMS[room]?.querySelector(".label small"); if (!sm) return; const b = el("button","lbl-next", `Next ${fmtWhen(Date.parse(s.at))}: ${s.title_en || "Meeting"}`); b.type = "button"; b.title = "Open the room bookings";
+    b.onclick = e => { e.stopPropagation(); calWho = "@rooms"; calWeek = 0; showTab("calendar"); }; sm.append(" · ", b); };
+  nextLink("meet", nextUp);
   renderTalkRoom();
   roomsOf("huddle").forEach(k => roomLabel(k, groups.filter(g => g.where === k).map(g => [`Table ${g.table + 1}: `, g.label]), `${N_TABLES} free tables`));
+  nextLink("huddle", sessions.filter(s => s.state === "scheduled" && s.room === "huddle").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0]);
   Object.keys(ROOMS).filter(k => typeOf(k) === "main" && k !== "main").forEach(k => { const n = [...out.values()].filter(p => p.room === k).length; ROOMS[k].querySelector(".label small").textContent = n ? `Working · ${n}` : "Free desks"; });
   roomsOf("idle").forEach(k => { const nIdle = [...out.values()].filter(p => p.room === k).length;
     ROOMS[k].querySelector(".label small").textContent = nIdle ? `Inactive ${IDLE_DAYS}+ days · ${nIdle}` : "Nobody inactive"; });
