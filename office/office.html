@@ -1939,7 +1939,7 @@ function renderSessions(){
   const up = sessions.filter(s => s.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")));
   if (up.length) { box.append(el("div","lbl","Coming up")); up.forEach(s => { const b = el("button","up-row"); b.type = "button";
     b.append(el("span","tm", fmtWhen(Date.parse(s.at))), el("b", null, s.title_en || "Meeting"), el("span"), el("span","note", `${(s.members || []).length} people · ${s.duration_min || 30} min · ${s.room === "huddle" ? "Huddle table" : "Meeting room"}`));
-    b.onclick = () => go("#session/" + encodeURIComponent(s.id)); box.append(b); }); }
+    b.onclick = () => viewSession(s.id); box.append(b); }); }   // opens here in the chat, with Start now, Move and Cancel
   if (up.length && open.length) box.append(el("div","lbl","Open now"));
   open.forEach(s => box.append(convRow(s)));
   if (!open.length) box.append(el("div","note","No open conversations. Call a meeting, or ask about a task."));
@@ -2872,6 +2872,7 @@ function renderChatInfo(n){
     const w = el("button","linkish","Open in a window"); w.type = "button"; w.onclick = () => go("#session/" + encodeURIComponent(chatSess)); box.append(w, all());
     if (s && s.state === "open") box.append(peopleButton(s));
     if (s && s.state === "open" && canWrite) box.append(isMeeting(s) ? wrapButton(s) : doneButton(s));
+    if (s && s.state === "scheduled" && canWrite) box.append(scheduledButtons(s));
     if (Array.isArray(s?.agenda) && s.agenda.length) { const ag = el("div","agenda"); ag.append(el("span","lbl","Agenda")); const doneA = new Set(s.agenda_done || []);
       s.agenda.forEach((a, i) => { const lab = el("label"); const cb = el("input"); cb.type = "checkbox"; cb.checked = doneA.has(i); cb.disabled = !canWrite || isDone(s);
         cb.onchange = () => { const v = new Set(s.agenda_done || []); cb.checked ? v.add(i) : v.delete(i); db.doc("sessions/" + s.id).update({agenda_done:[...v]}).catch(() => {}); };
@@ -2984,11 +2985,25 @@ async function closeSession(id, by, resolution){
   await db.doc("sessions/" + id).update({state:"closed", closed_at:new Date().toISOString(), closed_by:by, resolution_en:resolution || null, relayed:false});
 }
 /* wrapping up a meeting: the owner writes the outcome; the Coordinator turns it into tasks */
+/* a meeting set for later can be started now, moved or cancelled right from its chat (council round 4, U10) */
+function scheduledButtons(s){
+  const w = el("span","wrap-up"), start = el("button","btn","Start now"), mv = el("button","btn-lite","Move"), cx = el("button","btn-lite","Cancel meeting"); start.type = mv.type = cx.type = "button";
+  start.onclick = async () => { start.disabled = true; const now = new Date().toISOString(); try { await db.doc("sessions/" + s.id).update({state:"open", opened_at:now, at:now}); } catch (err) { start.textContent = writeError(err); start.disabled = false; } };
+  mv.onclick = () => { const inp = el("input"); inp.type = "datetime-local"; inp.setAttribute("aria-label","New time"); const toLocal = ms => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 16); inp.value = toLocal(Date.parse(s.at) || Date.now());
+    const ok = el("button","btn","Save"), no = el("button","linkish","Back"), note = el("span","note"); ok.type = no.type = "button";
+    const check = () => { const t = Date.parse(inp.value), e = t + (s.duration_min || 30) * 6e4, c = t && roomTakenBy(s.room || "meet", t, e, s.id); note.textContent = c ? `The meeting room is booked then: ${c.title_en || "another meeting"}` : ""; };
+    inp.onchange = check; ok.onclick = async () => { const t = Date.parse(inp.value); if (!t) return; ok.disabled = true; try { await db.doc("sessions/" + s.id).update({at:new Date(t).toISOString()}); inp.blur(); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
+    no.onclick = () => w.replaceChildren(start, mv, cx); w.replaceChildren(inp, ok, no, note); inp.focus(); };
+  cx.onclick = async () => { if (cx.dataset.sure !== "1") { cx.dataset.sure = "1"; cx.textContent = "Cancel it?"; setTimeout(() => { if (cx.isConnected) { cx.dataset.sure = ""; cx.textContent = "Cancel meeting"; } }, 4000); return; }
+    cx.disabled = true; try { await db.doc("sessions/" + s.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), closed_by:"owner", resolution_en:"Cancelled before it started.", relayed:false}); } catch (err) { cx.textContent = writeError(err); cx.disabled = false; } };
+  w.append(start, mv, cx); return w; }
 function wrapButton(s){
   const w = el("span","wrap-up"), b = el("button","btn-lite","Wrap up"); b.type = "button";
   b.onclick = () => { const ta = el("input"); ta.placeholder = "Outcome in one line (optional)"; ta.setAttribute("aria-label","Meeting outcome");
     const ok = el("button","btn","Close meeting"), no = el("button","linkish","Cancel"); ok.type = no.type = "button";
-    ok.onclick = async () => { ok.disabled = true; try { await closeSession(s.id, "owner", ta.value.trim() || null); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
+    ok.onclick = async () => { ok.disabled = true; const out = ta.value.trim();
+      try { if (out) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", author_id:me, to:"session", session:s.id, task:s.task || null, kind:"decision", relayed:false, text:"Outcome: " + out});   // kept under Your decisions and in the task's minutes
+        await closeSession(s.id, "owner", out || null); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
     no.onclick = () => { w.replaceChildren(b); }; w.replaceChildren(ta, ok, no); ta.focus(); };
   w.append(b); return w; }
 function doneButton(s){
