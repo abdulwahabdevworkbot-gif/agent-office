@@ -369,6 +369,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ib-a{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .ib-a button{font-size:12.5px;padding:3px 10px}.ib-a input{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 8px;min-width:0}.ib-a{align-items:center}
 .ib.wide{grid-column:1 / -1}
+.ib.away{--c:var(--accent);background:var(--panel)}.away ul{grid-column:2;margin:2px 0 4px;padding-inline-start:18px;font-size:13.5px;display:grid;gap:2px}.away .t-warn{color:var(--late)}
 .ib-x{grid-column:1 / -1;margin-top:6px}
 .ib-reply{display:grid;gap:6px}.ib-reply textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:none;min-height:36px}
 .ib-sent{align-self:center;font-size:12.5px;color:var(--ok);font-weight:600}
@@ -1711,7 +1712,7 @@ addEventListener("pagehide", saveSeen);
 function renderSince(){
   const box = $("since"); if (!box) return;
   const after = iso => (Date.parse(iso || "") || 0) > seenAt;
-  if (!seenAt || Date.now() - seenAt < 2 * 6e4) { box.hidden = true; renderNight(); return; }   // nothing to say "since just now"
+  if (!seenAt || Date.now() - seenAt < 2 * 6e4 || Date.now() - seenAt >= 6 * 36e5) { box.hidden = true; renderNight(); return; }   // nothing to say "since just now"; after 6 h the While-you-were-away card says it
   const newMsgs = msgs.filter(m => m.from !== "owner" && after(m.at)).length,
     done = tasks.filter(t => t.state === "done" && after(t.done_at || t.updated_at)).length,
     added = tasks.filter(t => after(t.created_at)).length,
@@ -1900,6 +1901,14 @@ function renderInbox(){
   const ob = outbox(); if (ob.length) { const o = el("button","linkish ob-link", `${ob.length} not picked up yet`); o.type = "button"; o.title = ob.map(m => `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 80)}`).join("\n"); o.onclick = () => { inboxShowOb = !inboxShowOb; renderInbox(); }; $("inboxSum").append(" · ", o);
     if (inboxShowOb) { const l = el("div","snz-list"); ob.forEach(m => { const r = el("div","snz-row"); r.append(avatar(m.to || "coordinator", 20), el("span", null, `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 120)}`), el("span","note", `sent ${ago(m.at)}`)); l.append(r); }); box.prepend(l); } }
   const np = $("needPill"); np.hidden = !todo; np.textContent = `${todo} need${todo === 1 ? "s" : ""} you`; np.onclick = () => { showTab("office"); $("inboxList").scrollIntoView({block:"start", behavior:reduce ? "auto" : "smooth"}); };
+  /* while you were away (council round 14, UX): after 6+ hours, one card tells the night: done, went wrong, waiting; it replaces the "since" chips */
+  if (seenAt && Date.now() - seenAt >= 6 * 36e5) { const T = v => Date.parse(v || "") || 0, dn = tasks.filter(t => isClosed(t) && T(t.done_at || t.updated_at) > seenAt), lt = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy), bl = agents.filter(a => a.state === "blocked" && T(a.waiting_since || a.updated_at) > seenAt), hw = items.filter(it => held(it) && !isSent(it)), old = hw.reduce((m, it) => Math.min(m, T(it.at) || Infinity), Infinity);
+    const c = el("div","ib wide away"), k = el("div","ib-k"); k.append(el("span", null, "While you were away"), el("span","note", `since ${fmtWhen(seenAt)}`)); const ul = el("ul");
+    ul.append(el("li", null, dn.length ? `Done: ${dn.length} task${dn.length === 1 ? "" : "s"} (${dn.slice(0, 4).map(t => t.id).join(", ")}${dn.length > 4 ? ` +${dn.length - 4}` : ""})` : "Nothing was finished."));
+    const bad = [lt.length ? `${lt.length} running late (${lt.slice(0, 3).map(t => t.id).join(", ")})` : "", bl.length ? `${bl.length} got blocked` : ""].filter(Boolean); ul.append(el("li", bad.length ? "t-warn" : null, bad.length ? "Went wrong: " + bad.join(", ") : "Nothing went wrong."));
+    ul.append(el("li", null, hw.length ? `Waiting for you: ${hw.length}${old < Infinity ? `, the oldest for ${fmtDur(Math.max(1, Math.round((Date.now() - old) / 6e4)))}` : ""}` : "Nobody is waiting for you."));
+    const a = el("div","ib-a"), go1 = el("button","btn","Start my round"), ok = el("button","btn-lite","Got it"); go1.type = ok.type = "button"; go1.hidden = !todo; go1.onclick = openWalk; ok.onclick = () => { seenAt = Date.now(); saveSeen(); renderInbox(); }; a.append(go1, ok);
+    c.append(avatar("coordinator", 34), k, el("div","ib-t", todo ? `Good to see you. ${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you.` : "Good to see you. Nothing needs you."), ul, a); box.append(c); }
   if (!items.length) {   // "morning done" (council round 4, I2): what comes next, so the owner can leave with peace of mind
     const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
     box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
@@ -3716,7 +3725,13 @@ function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } 
   if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); }
 
 /* ---------- data ---------- */
-renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000); setInterval(() => renderAll(), 60000); setInterval(renderStats, 30000);
+/* warm start (council round 14, Engineer): the last known office shows at once from this browser's own copy, marked "As of", until live data arrives; automatic writes wait (live.stale) */
+const WARM_KEY = "office.warm"; let warmUsed = false;
+try { const w = JSON.parse(localStorage.getItem(WARM_KEY) || "null"); if (w && Date.now() - Date.parse(w.at) < 3 * DAY && Array.isArray(w.agents) && w.agents.length) { ({agents, tasks, sessions, msgs} = w); metaOffice = w.meta || {}; live.stale = true; warmUsed = true; } } catch {}
+const saveWarm = () => { if (live.stale || !["agents", "tasks", "sessions"].every(x => live.got.has(x))) return; try { const s = JSON.stringify({at:new Date().toISOString(), agents, tasks, sessions:sessions.filter(x => x.state !== "closed" || Date.parse(x.closed_at || "") > Date.now() - DAY), msgs:msgs.slice(-100), meta:metaOffice}); if (s.length < 1.5e6) localStorage.setItem(WARM_KEY, s); } catch {} };
+setInterval(saveWarm, 60000); document.addEventListener("visibilitychange", () => { if (document.hidden) saveWarm(); });
+renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000);
+if (warmUsed) { try { const w = JSON.parse(localStorage.getItem(WARM_KEY)); $("conn").textContent = `As of ${fmtWhen(Date.parse(w.at))} · updating…`; const n = metaOffice.product_en; if (n) $("title").textContent = `${n} Office`; } catch {} } setInterval(() => renderAll(), 60000); setInterval(renderStats, 30000);
 (async () => {
   db = await claude.use("db"); user = await claude.use("user");
   if (!db) { $("conn").textContent = "Couldn't open the office data in this view. Open the page while signed in."; $("send").disabled = true; return; }
@@ -3731,6 +3746,7 @@ renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000); setInterval(() =>
   keep(db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("agents"); $("conn").textContent = "Connected. Updates appear live."; renderAll(); }, onErr));
   keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; const sk = JSON.stringify([metaOffice.workday, metaOffice.learn_estimates]); renderAll(sk !== live.schedKey); live.schedKey = sk; /* stars and snoozes do not replan */ const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {}));
   keep(db.collection("tasks").onSnapshot(s => { const was = new Map(tasks.map(t => [t.id, t.state])), first = !tasks.length; tasks = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("tasks"); renderAll();
+    if (warmUsed) { warmUsed = false; return; }   // changes since the saved copy are not "just done"
     if (!first) { const nowDone = tasks.filter(t => t.state === "done" && was.has(t.id) && was.get(t.id) !== "done"); if (nowDone.length) doneMoment(nowDone); } }, onErr));
   /* the newest 500 messages (an ascending query with a limit would keep the oldest); falls back if the db can't sort descending */
   let msgGot = false;   // the ascending fallback is only for a db that can't sort; a later error reconnects instead
