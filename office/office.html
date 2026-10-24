@@ -1469,6 +1469,14 @@ const ago = iso => { const t = Date.parse(iso || ""); if (!t) return ""; const m
 function replyTo(id){ chatSess = chatPair = chatTask = ""; showTab("chat"); pickers.forEach(p => p.refresh()); renderMsgs(); renderSessions(); renderCompose();
   const s = $("to"); if ([...s.options].some(o => o.value === id)) { s.value = id; s.dispatchEvent(new Event("change")); } $("text").focus(); }
 let inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
+/* one-tap answers (council round 4, I1): "Approve X" gets Approve / Not now; "Decide: A, or B" gets A and B. Each tap sends the owner's decision to that agent. */
+function quickAnswers(needs){
+  const n = String(needs || "").trim(); let m;
+  if ((m = /^approve\b\s*(.*)$/i.exec(n))) return [["Approve", `Approved: ${m[1] || "go ahead"}.`], ["Not now", `Not approved for now: ${m[1] || "wait"}.`]];
+  if ((m = /^decide:\s*(.+?),?\s+or\s+(.+?)\.?$/i.exec(n))) return [m[1], m[2]].map(x => { x = x.trim(); return [x.charAt(0).toUpperCase() + x.slice(1), `Decision: ${x}.`]; });
+  return []; }
+async function quickSend(key, to, task, text){
+  if (!db) return; try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to, task:task || null, kind:"decision", decided_by:"owner", text, author_id:me, relayed:false}); inboxSent.set(key, "Decision sent"); renderInbox(); } catch {} }
 /* answer right from the card: a reply under it, Enter sends; "Send as decision" marks it the owner's decision */
 function inlineReply(key, target, ph){
   const w = el("div","ib-reply"), ta = el("textarea"); ta.rows = 1; ta.placeholder = ph; ta.setAttribute("aria-label", ph); ta.value = inboxOpen.get(key)?.draft || "";
@@ -1545,7 +1553,7 @@ function renderInbox(){
     const bi = blockInfo(a, t);
     items.push({k:"Blocked", c:"var(--bad)", who:a.id, t:nameOf(a.id), s:[t ? `${t.id} · ${t.title_en || ""}` : "", bi.why ? "Why: " + bi.why.replace(/\.$/, "") : ""].filter(Boolean).join(". "), need:bi.needs ? "Needs from you: " + bi.needs : "", at:a.updated_at,
       key:"b:" + a.id, inline:() => inlineReply("b:" + a.id, {to:a.id, task:t?.id || null}, `How should ${nameOf(a.id)} get unstuck?`),
-      acts:[["Help", "inline", true], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Huddle", () => callMeeting({task:t?.id})]]}); });
+      acts:[...quickAnswers(bi.needs).map(([lab, text], i) => [lab, () => quickSend("b:" + a.id, a.id, t?.id, text), i === 0]), ["Help", "inline", !quickAnswers(bi.needs).length], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Huddle", () => callMeeting({task:t?.id})]]}); });
   msgs.filter(m => m.kind === "proposal" && Array.isArray(m.proposed_tasks) && m.proposed_tasks.length && !(m.added || []).length && !m.dismissed).forEach(m => {
     const n = m.proposed_tasks.length;
     items.push({k:"Tasks to approve", c:"var(--accent)", who:m.from || "coordinator", t:`${n} proposed task${n === 1 ? "" : "s"}`, s:m.proposed_tasks.map(p => p.title_en).join(" · "), at:m.at,
