@@ -383,6 +383,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ib-a button{font-size:12.5px;padding:3px 10px}.ib-a input{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 8px;min-width:0}.ib-a{align-items:center}
 .ib.wide{grid-column:1 / -1}
 .ib.away{--c:var(--accent);background:var(--panel)}
+#panel-settings{grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));align-items:start}#panel-settings > .panel:first-child,#dataSet{grid-column:1 / -1}#mtSave,#whSave,#ritSave{display:none}
+.calls{--c:var(--warn);background:var(--panel)}.calls .cq{grid-column:2;display:grid;gap:4px;padding:6px 0;border-top:1px solid var(--line)}.calls .cq:first-of-type{border-top:0}.calls .cq b{font-size:13.5px}.calls .cq .row-wrap{gap:6px}.calls .cq .chip-btn[aria-pressed="true"]{font-weight:700}.calls .cq small{color:var(--muted)}
 .mb-tiles{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:6px 0 2px}.mb-tile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-width:0}.mb-tile b{font-size:22px;line-height:1.1;color:var(--ink)}.mb-tile span{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.mb-tile.warn b{color:var(--late)}.mb-tile.good b{color:var(--ok)}.mb-tile:hover{border-color:var(--accent)}.mb-tile:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 .away .night-strip{grid-column:1 / -1;margin:4px 0 0;background:var(--bg)}.away ul[hidden]{display:none}.away .ns-track{overflow:hidden}@media (max-width:520px){.away .ns-tick:nth-of-type(even){visibility:hidden}}.away > ul{grid-column:2}
 @media (min-width:521px){.inbox-list{align-items:stretch}.inbox-list > .ib{align-content:start}}.away ul{grid-column:2;margin:2px 0 4px;padding-inline-start:18px;font-size:13.5px;display:grid;gap:2px}.away .t-warn{color:var(--late)}
@@ -1969,6 +1971,20 @@ function renderInbox(){
     tile(lt.length, `late${pushed ? ` · ${pushed} pushed back` : ""}`, lt.length ? "warn" : "good", () => showTab("calendar"));
     const h = new Date().getHours(), ph = dayPhase(), hi = ph === "night" ? (h < 6 ? "Working late" : "Good evening") : ph === "dawn" || h < 12 ? "Good morning" : ph === "dusk" ? "Good evening" : "Good afternoon";
     c.append(avatar("coordinator", 34), k, el("div","ib-t", `${hi}. Here's the night.`), tiles, ul, $("nightStrip"), a); $("awayBox").replaceChildren(c); }
+  /* "Your calls" (council round 20, Owner Advocate): what the council settled by majority overnight, back to the owner with one tap each; owner only, folds when all are answered */
+  if (ownerView() && canWrite && !callsHidden) { const ans = metaOffice?.calls || {}, Q = [
+      {k:"meet_default", q:"Call a meeting: who is ticked when it opens?", now:"suggested", opts:[["suggested","The suggested people"],["everyone","Everyone"]], save:true},
+      {k:"conv_lane", q:"Task board: the Conversations lane, open or folded?", opts:[["open","Open"],["folded","Folded"]]},
+      {k:"autopilot", q:"Autopilot rules: agents act on set rules without asking you?", opts:[["plan","Yes, plan it"],["later","Not now"],["more","Tell me more"]]},
+      {k:"tell", q:"\"Tell the office\": one line where you write what you want and it turns into steps you confirm?", opts:[["plan","Yes, plan it"],["later","Not now"],["more","Tell me more"]]}], open = Q.filter(x => !ans[x.k]);
+    if (open.length) { const c = el("div","ib wide calls"), k = el("div","ib-k"), later = el("button","linkish","Later"); later.type = "button"; later.onclick = () => { callsHidden = true; renderInbox(); };
+      k.append(el("span", null, `Your calls (${open.length})`), later); c.append(avatar("coordinator", 34), k, el("div","ib-t", "The council chose these by majority while you were away. Pick what you want."));
+      open.forEach(x => { const d = el("div","cq"), row = el("div","row-wrap"); d.append(el("b", null, x.q));
+        x.opts.forEach(([v, l]) => { const b = el("button","chip-btn", l + (x.now === v ? " (running now)" : "")); b.type = "button"; b.setAttribute("aria-pressed", String(x.now === v));
+          b.onclick = async () => { row.querySelectorAll("button").forEach(z => z.disabled = true); try { await db.doc("meta/office").update({calls:{...(metaOffice?.calls || {}), [x.k]:v}, ...(x.save ? {[x.k]:v} : {})});
+            await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:"coordinator", task:null, kind:"decision", decided_by:"owner", text:`${x.q} My call: ${l}.`, author_id:me, relayed:false}); } catch (err) { d.append(el("small", null, writeError(err))); row.querySelectorAll("button").forEach(z => z.disabled = false); } };
+          row.append(b); }); d.append(row); c.append(d); });
+      $("awayBox").append(c); } }
   if (!items.length) {   // "morning done" (council round 4, I2): what comes next, so the owner can leave with peace of mind
     const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
     box.append(emptyState("coordinator", "All caught up.", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" ").replace(/^All caught up\. /, ""))); return; }
@@ -3099,7 +3115,7 @@ function callMeeting(opts){
       $("meetDlg").close(); showTab("chat"); viewSession(ref.id); $("h-chat").scrollIntoView();
     } catch (err) { note.textContent = writeError(err); start.disabled = false; }
   };
-  setWhen("now"); resuggest();
+  setWhen("now"); resuggest(); if (!opts.with?.length && metaOffice?.meet_default === "everyone") allB.click();   // the owner's call (round 20)
   if (opts.at) { setWhen("later"); at.value = toLocal(opts.at); upd(); }
   if (opts.room) rmc.querySelectorAll(".chip-btn")[opts.room === "huddle" ? 2 : 1].click();
   closeDialogs(); $("meetDlg").showModal(); ta.focus();
@@ -3761,6 +3777,8 @@ function renderMeetSettings(){
     DAYN.forEach((d, i) => { const b = el("button","chip-btn", d); b.type = "button"; b.dataset.d = i; b.setAttribute("aria-pressed", String(on.includes(i))); b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true")); days.append(b); }); }
 }
 $("whAll").onchange = e => { $("whBox").hidden = e.target.checked; };
+/* Settings save themselves (council round 20): a change saves after half a second; the note says Saved */
+["mtSet", "whSet", "ritSet"].forEach(id => { const p = $(id); if (!p) return; let tm = 0; const kick = () => { clearTimeout(tm); tm = setTimeout(() => p.querySelector(".row-wrap .btn")?.click(), 500); }; p.addEventListener("change", kick); p.addEventListener("click", ev => { if (ev.target.closest(".chip-btn")) kick(); }); });
 $("mtSave").onclick = async () => { $("mtNote").textContent = "Saving…";
   try { await db.doc("meta/office").update({meetings:{huddle_max:+$("mtHuddle").value, default_min:+$("mtLen").value}}); document.activeElement.blur(); $("mtNote").textContent = "Saved."; } catch (err) { $("mtNote").textContent = writeError(err); } };
 $("whSave").onclick = async () => { $("whNote").textContent = "Saving…";
@@ -3816,7 +3834,7 @@ function seatAll(list){
 const tableName = i => { const r = Math.floor((i - 1) / N_TABLES); return r ? `Huddle room ${r + 1} · Table ${(i - 1) % N_TABLES + 1}` : `Huddle table ${i}`; };
 const seatName = st => !st ? "" : st.key === "meet" ? "Meeting room" : tableName(+st.key.slice(1));
 /* rooms day lanes (council round 18, all four): one row per room and table across the hours, a now line, clashes marked; a click on a free gap books that room at that time */
-let calDay = null, awayOpen = false;
+let calDay = null, awayOpen = false, callsHidden = false;
 const nextFree = (items, t0) => { let t = Math.ceil(t0 / 9e5) * 9e5; for (const x of [...items].sort((a, b) => a.sp.s - b.sp.s)) if (x.sp.s < t + 9e5 && x.sp.e > t) t = Math.ceil(x.sp.e / 9e5) * 9e5; return t; };
 function bookKeys(lane, label, book){ lane.tabIndex = 0; lane.setAttribute("role", "button"); lane.setAttribute("aria-label", label); lane.onkeydown = ev => { if ((ev.key === "Enter" || ev.key === " ") && ev.target === lane) { ev.preventDefault(); book(); } }; }
 function roomsDay(){
