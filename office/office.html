@@ -256,6 +256,13 @@ h2{font-weight:700;font-size:19px;margin:0}
 .rv-task>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:10px 12px;list-style:none}.rv-task>summary::-webkit-details-marker{display:none}
 .rv-task>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:10px}
 .rv-task .who{display:inline-flex;gap:6px;align-items:center}
+.rd{display:grid;gap:8px}.rd-days{display:flex;gap:6px;flex-wrap:wrap}.rd-scroll{overflow-x:auto}.rd-grid{display:grid;grid-template-columns:128px minmax(560px,1fr);gap:5px 8px;align-items:center}
+.rd-name{font-size:12.5px;font-weight:600;white-space:nowrap}.rd-name small{display:block;font-weight:400;color:var(--muted)}
+.rd-lane{position:relative;height:36px;background:var(--panel);border:1px solid var(--line);border-radius:7px;cursor:copy;background-image:repeating-linear-gradient(90deg,transparent 0 calc(var(--hw) - 1px),var(--line) calc(var(--hw) - 1px) var(--hw))}
+.rd-lane.past{cursor:default}.rd-b{all:unset;position:absolute;top:3px;bottom:3px;box-sizing:border-box;border-radius:5px;background:var(--c);color:#fff;font-size:11.5px;line-height:30px;padding:0 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.rd-b:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.rd-b.clash{background:repeating-linear-gradient(135deg,var(--bad) 0 6px,#a83232 6px 12px)}.rd-b.done{opacity:.55}
+.rd-now{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--bad);border-radius:2px;pointer-events:none;z-index:2}.rd-hours{position:relative;height:16px;font-size:10.5px;color:var(--muted)}.rd-hours span{position:absolute;transform:translateX(-50%)}
+.rd-hint{font-size:12px;color:var(--muted)}.rd-clash{color:var(--bad);font-weight:600}
 .rv-badge{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;color:#fff;white-space:nowrap}
 .rv-badge.approved{background:var(--ok)}.rv-badge.approved-notes{background:var(--accent)}.rv-badge.changes{background:var(--bad)}
 .rv-n{font-size:12.5px;color:var(--muted,#667)}.rv-n b{color:inherit}
@@ -2253,7 +2260,7 @@ function renderCalendar(){
   const box = $("calBody"); box.replaceChildren();
   const d0 = weekStart(calWeek), d6 = new Date(+d0 + 6 * DAY);
   $("calNote").textContent = `${d0.toLocaleDateString("en-GB", {day:"numeric", month:"short"})} – ${d6.toLocaleDateString("en-GB", {day:"numeric", month:"short"})}` + (lateN ? ` · ${lateN} late` : "");
-  if (calWho === "@rooms") { box.append(roomsWeek()); return; }
+  if (calWho === "@rooms") { box.append(roomsDay(), el("div","lbl","The week"), roomsWeek()); return; }
   if (calWho) { box.append(weekGrid(sched.byAgent[calWho] || [])); return; }
   box.append(planHealth(), lastWeek());
   const now = Date.now(), all = el("div","cal-all");
@@ -2956,7 +2963,7 @@ function callMeeting(opts){
   const body = $("meetBody"); body.replaceChildren(); body.classList.add("mt");
   let about = tasks.find(t => t.id === (opts.task || chatTask)) || null, aboutId = about ? about.id : null;
   const list = agents.filter(a => a.id !== "owner").sort((a, b) => (a.id !== "coordinator") - (b.id !== "coordinator") || nameOf(a.id).localeCompare(nameOf(b.id)));
-  const picked = new Set(["coordinator"]); let touched = false, purpose = "discuss", when = "now", dur = meetCfg().default_min, atVal = "", q = "", dept = "", roomPick = "auto", repeat = "";
+  const picked = new Set(["coordinator"]); let touched = false, purpose = "discuss", when = "now", dur = meetCfg().default_min, atVal = "", q = "", dept = "", roomPick = opts.room || "auto", repeat = "";
   body.append(el("h3", null, "Call a meeting"));
   /* 1. topic */
   const ta = el("textarea"); ta.placeholder = "What do you want to talk about?"; ta.setAttribute("aria-label","Meeting topic"); ta.rows = 2; ta.className = "mt-topic";
@@ -3742,6 +3749,35 @@ function roomDay(room){
 const bookings = () => sessions.filter(s => s.state === "scheduled" ? isMeeting(s) : s.state === "open").map(s => ({s, sp:meetSpan(s) || (Date.parse(s.opened_at || s.at || "") ? {s:Math.min(Date.now(), Date.parse(s.opened_at || s.at)), e:Date.now() + 15 * 6e4} : null), room:s.room || (isMeeting(s) ? "meet" : roomForCount((s.members || []).length).key)})).filter(b => b.sp);   // an open task session holds its room too
 const roomTakenBy = (room, s, e, skip) => room !== "meet" ? null : bookings().find(b => b.room === "meet" && b.s.id !== skip && b.sp.s < e && b.sp.e > s)?.s || null;
 const tableOf = (b, all) => all.filter(x => x.room === "huddle" && x.sp.s < b.sp.e && x.sp.e > b.sp.s && String(x.s.at || x.s.opened_at) < String(b.s.at || b.s.opened_at)).length + 1;
+/* rooms day lanes (council round 18, all four): one row per room and table across the hours, a now line, clashes marked; a click on a free gap books that room at that time */
+let calDay = null;
+function roomsDay(){
+  const d0 = weekStart(calWeek), todayS = new Date(new Date().toDateString()).getTime(), days = [...Array(7)].map((_, i) => { const d = new Date(d0); d.setDate(d0.getDate() + i); return +d; });
+  if (!days.includes(calDay)) calDay = days.includes(todayS) ? todayS : days[0];
+  const w = el("div","rd"), chips = el("div","rd-days"); chips.setAttribute("role", "group"); chips.setAttribute("aria-label", "Day");
+  days.forEach(s => { const b = el("button","chip-btn", s === todayS ? "Today" : new Date(s).toLocaleDateString("en-GB", {weekday:"short", day:"numeric"})); b.type = "button"; b.setAttribute("aria-pressed", String(s === calDay)); b.onclick = () => { calDay = s; renderCalendar(); }; chips.append(b); });
+  const s = calDay, e = s + DAY, now = Date.now(), all = bookings(), list = all.filter(b => b.sp.s < e && b.sp.e > s).sort((a, b) => a.sp.s - b.sp.s);
+  const st = [...list.map(b => Math.max(s, Math.floor(b.sp.s / 36e5) * 36e5)), ...(now >= s && now < e ? [Math.max(s, Math.floor(now / 36e5) * 36e5 - 36e5)] : [])], from = st.length ? Math.min(...st) : s + 8 * 36e5, to = Math.min(e, Math.max(from + 8 * 36e5, ...list.map(b => Math.ceil(b.sp.e / 36e5) * 36e5)));   // about 8 hours around what is booked
+  const span = to - from, pct = t => (Math.min(to, Math.max(from, t)) - from) / span * 100, hours = Math.round(span / 36e5);
+  const lanes = [{key:"meet", name:"Meeting room", sub:"up to " + (SLOTS.meet?.length || 10)}, ...[...Array(N_TABLES)].map((_, i) => ({key:"t" + (i + 1), name:`Huddle table ${i + 1}`, sub:"up to 4"}))], put = new Map(lanes.map(l => [l.key, []]));
+  let clashes = 0; list.forEach(b => { const free = k => !put.get(k).some(x => x.sp.s < b.sp.e && x.sp.e > b.sp.s);
+    if (b.room !== "huddle" && free("meet")) { put.get("meet").push(b); return; }
+    const t = lanes.slice(1).find(l => free(l.key)); if (b.room !== "huddle") { b.clash = true; clashes++; }   // the meeting room was taken: the office seats it at a huddle table
+    (t ? put.get(t.key) : put.get(b.room === "huddle" ? "t1" : "meet")).push(b); if (!t) { b.clash = true; if (b.room === "huddle") clashes++; } });
+  const grid = el("div","rd-grid"), hz = el("div","rd-hours");
+  for (let h = 0; h <= hours; h += hours > 14 ? 2 : 1) { const sp = el("span", null, fmtHM(from + h * 36e5)); sp.style.left = (h / hours * 100) + "%"; if (h / hours > .95) sp.style.transform = "translateX(-100%)"; hz.append(sp); }
+  grid.append(el("span"), hz);
+  lanes.forEach(l => { const lane = el("div","rd-lane" + (e < now ? " past" : "")); lane.style.setProperty("--hw", (100 / hours) + "%");
+    put.get(l.key).forEach(b => { const x = el("button","rd-b" + (b.clash ? " clash" : "") + (b.sp.e < now ? " done" : "")); x.type = "button"; x.style.left = pct(b.sp.s) + "%"; x.style.width = Math.max(1.5, pct(b.sp.e) - pct(b.sp.s)) + "%";
+      x.style.setProperty("--c", b.room === "huddle" ? "var(--ok)" : b.s.state === "open" ? "var(--accent)" : "var(--warn)");
+      x.textContent = `${fmtHM(b.sp.s)} ${b.s.title_en || "Meeting"} · ${(b.s.members || []).length}`; x.title = `${b.s.title_en || "Meeting"}\n${fmtHM(b.sp.s)}–${fmtHM(b.sp.e)} · ${(b.s.members || []).length} people${b.clash ? "\nThe meeting room was taken: seated at a huddle table" : ""}`;
+      x.onclick = ev => { ev.stopPropagation(); go("#session/" + encodeURIComponent(b.s.id)); }; lane.append(x); });
+    if (now >= from && now <= to) { const n = el("span","rd-now"); n.style.left = pct(now) + "%"; lane.append(n); }
+    if (canWrite && e > now) { lane.title = "Click a free time to book " + l.name; lane.onclick = ev => { const r = lane.getBoundingClientRect(), t = Math.round((from + (ev.clientX - r.left) / r.width * span) / 9e5) * 9e5; callMeeting({at:Math.max(t, Math.ceil(now / 9e5) * 9e5), room:l.key === "meet" ? "meet" : "huddle"}); }; }
+    const nm = el("div","rd-name", l.name); nm.append(el("small", null, l.sub)); grid.append(nm, lane); });
+  const sc = el("div","rd-scroll"); sc.append(grid);
+  w.append(chips, sc, el("div", clashes ? "rd-clash" : "rd-hint", clashes ? `${clashes} booking${clashes === 1 ? "" : "s"} wanted the meeting room while it was taken (striped). They sit at a huddle table, or move one.` : "Click a free time on a row to book that room."));
+  return w; }
 function roomsWeek(){
   const g = el("div","cal-week"), d0 = weekStart(calWeek), today = new Date().toDateString(), all = bookings();
   for (let i = 0; i < 7; i++) { const d = new Date(d0); d.setDate(d0.getDate() + i); const s = +d, e = s + DAY;
