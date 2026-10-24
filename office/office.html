@@ -879,6 +879,12 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <div class="rs-wrap"><table class="rs" id="roomRules"></table></div>
       <div class="row-wrap"><button class="btn" type="button" id="rsSave" hidden>Save</button><button class="btn-lite" type="button" id="rsReset">Back to defaults</button><span class="note" id="rsNote" aria-live="polite">Changes save themselves.</span></div>
     </div>
+    <div class="panel" id="shownSet">
+      <h2>Rooms shown</h2>
+      <p class="note">Untick a room to hide it. A hidden room is not drawn and the agents stop using it; tick it again to bring it back. The open office and the meeting room always stay.</p>
+      <div class="shown-list" id="shownList"></div>
+      <div class="row-wrap"><span class="note" id="shownNote" role="status" aria-live="polite"></span></div>
+    </div>
     <div class="panel" id="langSet">
       <h2>Language</h2>
       <p class="note">Agent names are always English. Pick a language for each kind of writing. A conversation can still switch when you ask in it ("reply in English"), for that conversation only.</p>
@@ -1055,12 +1061,21 @@ function syncGroups(name){
   TABS.forEach(t => { $("tab-" + t).hidden = !g[2].includes(t); });
 }
 /* Settings sub-tabs: one card per tab (owner, 2026-10-24) */
-const SET_TABS = [["roomSet","Room sizes"],["langSet","Language"],["mtSet","Meetings"],["ritSet","Standing meetings"],["whSet","Working hours"],["paceSet","Estimates"],["dataSet","Data check"]];
+const SET_TABS = [["roomSet","Room sizes"],["shownSet","Rooms shown"],["langSet","Language"],["mtSet","Meetings"],["ritSet","Standing meetings"],["whSet","Working hours"],["paceSet","Estimates"],["dataSet","Data check"]];
 function showSet(id, focus){
   if (!SET_TABS.some(x => x[0] === id)) id = SET_TABS[0][0];
   try { localStorage.setItem("office.setTab", id); } catch {}
   SET_TABS.forEach(([k]) => { const b = $("st-" + k), on = k === id; if (b) { b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; } if ($(k)) $(k).hidden = !on; });
   if (focus) $("st-" + id)?.focus(); }
+function renderShownRooms(){
+  const box = $("shownList"); if (!box) return; box.replaceChildren(); const may = canWrite && ownerView();
+  HIDEABLE.forEach(([k, name, hint]) => { const lab = el("label","set-chk"), cb = el("input"); cb.type = "checkbox"; cb.checked = !roomOff(k); cb.disabled = !may;
+    cb.onchange = async () => { const cur = (Array.isArray(metaOffice.hidden_rooms) ? metaOffice.hidden_rooms : []).filter(x => x !== k), next = cb.checked ? cur : [...cur, k];
+      try { await db.doc("meta/office").update({hidden_rooms:next}); metaOffice = {...metaOffice, hidden_rooms:next}; drawScene(); $("shownNote").textContent = `${name} ${cb.checked ? "shown again" : "hidden"}.`; announce(`${name} ${cb.checked ? "shown" : "hidden"}`); }
+      catch (err) { cb.checked = !cb.checked; $("shownNote").textContent = writeError(err); } };
+    lab.append(cb, el("span", null, name), el("span","note", " · " + hint)); box.append(lab); });
+  if (!may) $("shownNote").textContent = "Only the owner changes which rooms show.";
+}
 function buildSetTabs(){
   const bar = $("setTabs"); if (!bar || bar.childElementCount) return;
   SET_TABS.forEach(([k, n], i) => { const b = el("button", null, n); b.type = "button"; b.id = "st-" + k; b.setAttribute("role", "tab"); b.setAttribute("aria-controls", k); $(k)?.setAttribute("role", "tabpanel"); $(k)?.setAttribute("aria-labelledby", b.id);
@@ -1072,7 +1087,7 @@ function buildSetTabs(){
 function showTab(name, focus, byTab){
   if (curTab && name !== curTab && !restoring && !byTab) { navBack.push(snapshot()); if (navBack.length > 12) navBack.shift(); }
   if (curTab === "team" && name !== "team") teamState = "";   // a chip's Team filter ends when you leave Team
-  curTab = name; document.body.dataset.tab = name; syncGroups(name); if (name === "settings") buildSetTabs();
+  curTab = name; document.body.dataset.tab = name; syncGroups(name); if (name === "settings") { buildSetTabs(); renderShownRooms(); }
   TABS.forEach(t => { const on = t === name; $("tab-"+t).setAttribute("aria-selected", String(on)); $("tab-"+t).tabIndex = on ? 0 : -1; $("panel-"+t).hidden = !on; });
   { const tb = $("tab-"+name), st = tb.parentElement, end = st.querySelector(".tab-end"), room = st.clientWidth - (end ? end.offsetWidth : 0); if (tb.offsetLeft < st.scrollLeft) st.scrollLeft = tb.offsetLeft - 8; else if (tb.offsetLeft + tb.offsetWidth > st.scrollLeft + room) st.scrollLeft = tb.offsetLeft + tb.offsetWidth - room + 8; }
   if (focus) (groupOf(name)[2].length > 1 ? $("tab-"+name) : document.querySelector(`#tabGroups [data-group="${groupOf(name)[0]}"]`)).focus();
@@ -1226,6 +1241,10 @@ const MULTI = ["game", "idle"], FULL_AT = .8;
 /* room sizes (the owner's rule, Settings tab): the most people a room holds and how full it gets (%) before an exact copy opens.
    Saved in meta/office.rooms; a copy closes again once fewer people need it */
 const RULE_ROOMS = [["main","Open office (desks)"],["game","Games & lounge"],["idle","Idle room"]];
+/* hidden rooms (the owner's rule, Settings > Rooms shown): a room the owner hides is not drawn and nobody uses it.
+   Saved in meta/office.hidden_rooms. The open office and the meeting room always stay. */
+const HIDEABLE = [["boss","Manager's office","You and the Office Manager are not drawn; waiting agents sit at their desks."],["huddle","Huddle room","Small meetings use the meeting room instead."],["game","Games & lounge","Agents with nothing to do sit at their desks."],["idle","Idle room","Inactive agents go to the lounge, or to their desks when the lounge is hidden too."]];
+const roomOff = t => { const h = typeof metaOffice !== "undefined" && metaOffice && metaOffice.hidden_rooms; return Array.isArray(h) && h.includes(t) && HIDEABLE.some(x => x[0] === t); };
 const spotsOf = t => t === "main" ? DESKS.length : SLOTS[t].length;
 const ruleOf = t => { const r = ((typeof metaOffice !== "undefined" && metaOffice && metaOffice.rooms) || {})[t] || {}, n = spotsOf(t);
   return {max:Math.min(n, Math.max(1, Math.round(+r.max) || n)), at:Math.min(100, Math.max(10, Math.round(+r.at) || (t === "main" ? 100 : FULL_AT * 100)))}; };
@@ -1497,7 +1516,8 @@ function plan(){
     const ids = g.ids.filter(id => !place.has(id)).sort((a, b) => (b === "owner") - (a === "owner"));
     if (!ids.length) { const p = place.get(g.ids[0]); g.where = p?.room; g.table = p?.table; return; }
     let room = "meet", p;
-    if (big || g.prefer === "huddle") { const g2 = tables.length, local = g2 % N_TABLES; room = roomKey("huddle", Math.floor(g2 / N_TABLES) + 1); ensureRoom(room); tables.push(true);
+    if (roomOff("huddle") && big) return;   // no huddle room: one meeting fits in the meeting room, the rest stay at their places
+    if (!roomOff("huddle") && (big || g.prefer === "huddle")) { const g2 = tables.length, local = g2 % N_TABLES; room = roomKey("huddle", Math.floor(g2 / N_TABLES) + 1); ensureRoom(room); tables.push(true);
       p = {room, table:local, slots:tableSlots(local)}; }
     else { big = true; p = {room, table:null, slots:SLOTS.meet.map((_, i) => i)}; }
     g.where = room; g.table = p.table;
@@ -1505,17 +1525,18 @@ function plan(){
   });
   const wants = [];
   place.forEach((p, id) => wants.push([id, p.room, p.slots]));
-  if (!place.has("owner")) out.set("owner", {room:"boss", spot:sitAt(S_BOSS_OWNER), slot:-1});
+  if (!place.has("owner")) { if (!roomOff("boss")) out.set("owner", {room:"boss", spot:sitAt(S_BOSS_OWNER), slot:-1}); }
   else { const p = place.get("owner"), i = p.slots[0]; used[p.room].add(i); out.set("owner", {room:p.room, spot:slotsOf(p.room)[i], slot:i}); }   // you take the head seat
-  if (!place.has(ASSISTANT)) out.set(ASSISTANT, {room:"boss", spot:sitAt(S_BOSS_ASSIST), slot:-1});
+  if (!place.has(ASSISTANT) && !roomOff("boss")) out.set(ASSISTANT, {room:"boss", spot:sitAt(S_BOSS_ASSIST), slot:-1});
   agents.filter(a => a.id !== ASSISTANT && !place.has(a.id)).forEach(a => {
     const st = a.state || "idle";
-    wants.push([a.id, idleSince(a) ? "idle" : st === "waiting" ? "boss" : (st === "working" || st === "blocked") ? deskBase(a) : "game", null]);
+    const lounge = roomOff("game") ? deskBase(a) : "game";
+    wants.push([a.id, idleSince(a) ? (roomOff("idle") ? lounge : "idle") : st === "waiting" ? (roomOff("boss") ? deskBase(a) : "boss") : (st === "working" || st === "blocked") ? deskBase(a) : lounge, null]);
   });
-  liveCopyList().filter(c => c.waiting && !place.has(c.id)).forEach(c => wants.push([c.id, "game", null]));   // done with the meeting: waits to merge
+  if (!roomOff("game")) liveCopyList().filter(c => c.waiting && !place.has(c.id)).forEach(c => wants.push([c.id, "game", null]));   // done with the meeting: waits to merge
   /* every department has its own work rooms; one more room for every 10 people at its desks */
   const atDesk = {};
-  agents.filter(a => !place.has(a.id) && a.id !== ASSISTANT && !idleSince(a) && (a.state === "working" || a.state === "blocked")).forEach(a => { const b = deskBase(a); atDesk[b] = (atDesk[b] || 0) + 1; });
+  wants.forEach(([id, room]) => { if (!place.has(id) && typeOf(room) === "main") atDesk[room] = (atDesk[room] || 0) + 1; });
   const nMainOf = {}; ["main", ...depts().map(d => "main@" + d.id)].forEach(b => { nMainOf[b] = Math.max(1, Math.ceil((atDesk[b] || 0) / roomCap("main"))); for (let k = 1; k <= nMainOf[b]; k++) ensureRoom(roomKey(b, k)); });
   const mainsOf = room => { const b = baseOf(room); return Array.from({length:nMainOf[b] || 1}, (_, k) => roomKey(b, k + 1)); };
   /* the lounge and the idle room: enough copies that none is fuller than 80%, with the people spread evenly over them */
@@ -1542,6 +1563,7 @@ function plan(){
     if (i < 0 && list) i = free(rm);
     if (i < 0 && MULTI.includes(room)) for (const m of copiesOf(room)) { i = free(m); if (i >= 0) { rm = m; break; } }
     /* anyone left over goes to the lounge, opening one more copy when every copy is full: nobody is left out */
+    if (i < 0 && roomOff("game")) return;   // no lounge to overflow into: left undrawn
     for (let k = 1; i < 0; k++) { const m = roomKey("game", k); if (k > nMulti.game) { ensureRoom(m); nMulti.game = k; } i = free(m); if (i >= 0) rm = m; }
     used[rm].add(i); out.set(id, {room:rm, spot:slotsOf(rm)[i], slot:i});
   });
@@ -1697,10 +1719,10 @@ function drawScene(){
 /* the owner's rule: a room with nobody is smaller, a room with people is normal, a crowded one a little bigger */
 const CROWD = 4, RW = {empty:.36, some:.5, many:.6}, RP = {empty:.72, some:.88, many:1};
 function sizeRooms(out){
-  const n = {}; Object.keys(ROOMS).forEach(k => n[k] = 0);
+  const n = {}; Object.keys(ROOMS).forEach(k => { n[k] = 0; ROOMS[k].hidden = roomOff(typeOf(k)); });
   out.forEach(p => { if (p.room in n) n[p.room]++; });
   const kind = r => !n[r] ? "empty" : n[r] >= CROWD ? "many" : "some";
-  [["boss", ...roomsOf("main")],["meet", ...roomsOf("huddle")],[...roomsOf("game"), ...roomsOf("idle")], ...depts().map(d => roomsOf("main@" + d.id))].filter(r => r.length).forEach(row => {
+  [["boss", ...roomsOf("main")],["meet", ...roomsOf("huddle")],[...roomsOf("game"), ...roomsOf("idle")], ...depts().map(d => roomsOf("main@" + d.id))].map(r => r.filter(k => !roomOff(typeOf(k)))).filter(r => r.length).forEach(row => {
     const w = row.map(r => RW[kind(r)]), sum = w.reduce((a, b) => a + b, 0), k = sum > 1 ? 1 / sum : 1;
     row.forEach((r, i) => { const el2 = ROOMS[r]; el2.style.setProperty("--rw", (w[i] * k).toFixed(3)); el2.style.setProperty("--rp", RP[kind(r)]); el2.dataset.size = kind(r);
       el2.setAttribute("aria-label", el2.getAttribute("aria-label").replace(/ \(\d+ (?:people|person)\)$/, "") + ` (${n[r]} ${n[r] === 1 ? "person" : "people"})`); });
@@ -3496,7 +3518,7 @@ setInterval(() => { if (!$("sessDlg").open || matchMedia("(prefers-reduced-motio
    click away), when (now or later, with a free-time finder), how long, and the room it will take. A later meeting is a
    session with state "scheduled": it sits in its members' calendars and opens by itself at its time. */
 const MEET_PURPOSE = [["discuss","Discussion"],["decide","Decision needed"],["follow","Follow-up"]];
-const roomForCount = n => n <= meetCfg().huddle_max ? {key:"huddle", name:"Huddle table", bg:"huddle"} : {key:"meet", name:`Meeting room (${meetBg(n).split("-")[1]} seats)`, bg:meetBg(n)};
+const roomForCount = n => n <= meetCfg().huddle_max && !roomOff("huddle") ? {key:"huddle", name:"Huddle table", bg:"huddle"} : {key:"meet", name:`Meeting room (${meetBg(n).split("-")[1]} seats)`, bg:meetBg(n)};
 const busyAt = (id, s, e, skip) => (sched.byAgent[id] || []).find(x => x.kind === "meet" && x.sess.id !== skip && x.s < e && x.e > s);
 function suggestFor(topic, taskId){
   const score = new Map(), add = (id, n) => { if (id && id !== "owner" && agentById(id)) score.set(id, (score.get(id) || 0) + n); };
@@ -3541,7 +3563,7 @@ function callMeeting(opts){
   const at = el("input"); at.type = "datetime-local"; at.hidden = true; at.setAttribute("aria-label","Meeting time");
   const freeB = el("button","linkish","Find a free time"); freeB.type = "button"; freeB.hidden = true;
   const durs = el("span","mt-chips"); [15, 30, 45, 60].forEach(m => { const b = el("button","chip-btn", `${m} min`); b.type = "button"; b.setAttribute("aria-pressed", String(m === dur)); b.onclick = () => { dur = m; [...durs.children].forEach(c => c.setAttribute("aria-pressed", String(c === b))); upd(); }; durs.append(b); });
-  const roomNow = () => roomPick === "auto" ? roomForCount(picked.size + 1) : roomPick === "huddle" ? {key:"huddle", name:"Huddle table", bg:"huddle"} : {key:"meet", name:`Meeting room (${meetBg(picked.size + 1).split("-")[1]} seats)`, bg:meetBg(picked.size + 1)};
+  const roomNow = () => roomPick === "auto" ? roomForCount(picked.size + 1) : roomPick === "huddle" && !roomOff("huddle") ? {key:"huddle", name:"Huddle table", bg:"huddle"} : {key:"meet", name:`Meeting room (${meetBg(picked.size + 1).split("-")[1]} seats)`, bg:meetBg(picked.size + 1)};
   const setWhen = w => { when = w; nowB.setAttribute("aria-pressed", String(w === "now")); laterB.setAttribute("aria-pressed", String(w === "later")); at.hidden = freeB.hidden = rep.hidden = w !== "later"; if (w === "later" && !at.value) findFree(); upd(); };
   nowB.onclick = () => setWhen("now"); laterB.onclick = () => setWhen("later"); at.onchange = () => upd();
   const toLocal = ms => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 6e4); return d.toISOString().slice(0, 16); };
@@ -3552,7 +3574,7 @@ function callMeeting(opts){
   const rep = el("select"); rep.setAttribute("aria-label","Repeat"); [["","Once"],["day","Every day"],["week","Every week"]].forEach(([v, l]) => rep.append(new Option(l, v))); rep.onchange = () => { repeat = rep.value; };
   wh.append(el("span","lbl","When"), nowB, laterB, at, freeB, rep, el("span","lbl","How long"), durs);
   const rmc = el("div","mt-when"); rmc.append(el("span","lbl","Room"));
-  [["auto","By head count"],["meet","Meeting room"],["huddle","Huddle table"]].forEach(([k, l]) => { const b = el("button","chip-btn", l); b.type = "button"; b.setAttribute("aria-pressed", String(k === roomPick)); b.onclick = () => { roomPick = k; [...rmc.querySelectorAll(".chip-btn")].forEach(c => c.setAttribute("aria-pressed", String(c === b))); upd(); }; rmc.append(b); });
+  [["auto","By head count"],["meet","Meeting room"],["huddle","Huddle table"]].filter(([k]) => k !== "huddle" || !roomOff("huddle")).forEach(([k, l]) => { const b = el("button","chip-btn", l); b.type = "button"; b.setAttribute("aria-pressed", String(k === roomPick)); b.onclick = () => { roomPick = k; [...rmc.querySelectorAll(".chip-btn")].forEach(c => c.setAttribute("aria-pressed", String(c === b))); upd(); }; rmc.append(b); });
   const agenda = el("textarea","mt-agenda"); agenda.rows = 2; agenda.placeholder = "Agenda: one point per line (optional)"; agenda.setAttribute("aria-label","Agenda");
   if (about) agenda.value = [`${about.id}: ${about.title_en || ""}`, ...depsOf(about).map(d => `Check ${d}: ${tasks.find(x => x.id === d)?.title_en || ""}`)].join("\n");
   /* 3. people */
