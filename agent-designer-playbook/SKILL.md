@@ -179,11 +179,14 @@ flowchart LR
 | 1 | `mock-api`, `devops`, `qa-api` | Owner approves the contract; mock runs with `docker compose`; `qa-api` report passes on the mock |
 | 2 | prototypes, `backend` (+ `ai-service`), QA per app | Owner approves each prototype separately, with its QA report |
 | 3 | real apps, QA per app | Each starts only after its own prototype is approved and merged; each needs a passing QA report |
-| 4 | `devops` + `coordinator` | Integrated stack runs end to end on the real backend |
+| 4 | `devops` + `coordinator` | Integrated stack runs end to end on the real backend in Pre-production |
+| 5 | `devops` + `coordinator` | Owner signs off Production in the office |
 
 A real client can start as soon as its prototype is approved: it calls the mock for any endpoint the backend has not implemented yet.
 
 **Versions** (software only): every task has a `version` (`v1`, `v2`...) and the office shows the Roadmap of versions and phases. Non-software projects use one version (`v1`) unless the owner asks for more; tasks and the kanban board work the same.
+
+**Stages** (each task's `phase`): software uses Planning → Prototype → Staging → Pre-production (the same cloud setup as Production, at the smallest size) → Production (what passed Pre-production, for real). Any other project gets phases that fit its direction, picked by the Coordinator at design time (e.g. an event: Planning, Preparation, Rehearsal, Event day, Wrap-up) and written to `meta/office.phases`; the last one is the live phase the owner signs off.
 
 ## 7. Rules every agent follows
 
@@ -202,14 +205,14 @@ A real client can start as soon as its prototype is approved: it calls the mock 
   - If the environment assigns a random branch, create the named branch from `main` and push the work there before opening the PR; the owner has asked for this, so it counts as permission.
   - PR titles start with the agent id: `[web-prototype] Quick demo sign-in`.
   - Renaming or deleting existing branches waits for the owner's yes.
-- **Merging:** pull requests for planning, the prototype and staging do not wait for the owner: the `reviewer` reviews each one, agrees it with the Coordinator, and the Coordinator merges it once CI is green and both approve, then logs it. Anything that touches production (البيئة الفعلية: deploys, production config, secrets, data) waits for the owner's yes.
+- **Merging:** pull requests for planning, the prototype, staging and pre-production do not wait for the owner: the `reviewer` reviews each one, agrees it with the Coordinator, and the Coordinator merges it once CI is green and both approve, then logs it. Anything that touches production (البيئة الفعلية: deploys, production config, secrets, data) waits for the owner's yes.
 - **Preconditions:** each agent checks its required files first. If they are missing, it stops and tells the Coordinator.
 - **Follow-ups:** new tasks go to the agent that owns that area. The Agent Designer adds a new agent only for a genuinely new workstream, and proposes it to the owner first.
 - **Environment and keys** (section 2): one environment per project; keys for outside sites go in it, never in chat or git. Locally, a gitignored `.env` filled from `.env.example`.
 - **Desktop access:** the first time an agent needs the owner's computer (files, folders, a desktop app), ask first: "Do you agree that I connect to your desktop? Which folders should I see?" Use only the folders the owner names; ask again for anything else. Do not ask at design time.
 - **Browser:** the first time a task needs browser actions, tell the owner once that it will be easier with a browser kept just for Claude: "I suggest installing Google Chrome (or a browser other than the one you use now) and adding the Claude extension to it, kept only for Claude's browser tasks." Remember the answer in project memory.
 - **Services and hosting are suggestions:** project memory holds the owner's existing accounts. At design time suggest them where they fit, research whether better or cheaper options exist now, and let the owner choose. Never treat any of them as mandatory, even for software. Paid plans need the owner's yes.
-- **Paid and external services by stage (software):** in the prototype every paid or external service is faked by the mock or a local stub; staging and production use the real one. The switch is env config only (`<SERVICE>_PROVIDER=fake|real` plus its key).
+- **Paid and external services by stage (software):** in the prototype every paid or external service is faked by the mock or a local stub; staging, pre-production and production use the real one. The switch is env config only (`<SERVICE>_PROVIDER=fake|real` plus its key).
 - **Docker (software):** every service ships as a Docker image, so the same build runs in the cloud and locally. Simulator apps are the exception.
 - **Cloud first:** work, deploys and tests run in the cloud as much as possible. Local machines only for what must run locally (simulators, device tests, local hardware), and only with the owner's yes (Desktop access).
 - **Language:** the office's Settings > Language sets three choices, read from `meta/office.lang`: `owner` (how agents answer the owner), `agents` (how agents talk with each other in the discussion log) and `tasks` (how task titles, summaries and descriptions are written). Each is `en` (English), `ar` (Arabic; only agent names stay English) or `mix` (Arabic with English terms kept in English, each on its own line, following the arabic-rtl-replies-and-links skill). Agent names are always English. Without the office, talk to the owner in the language set in `CLAUDE.md` (Arabic by default). Arabic text is always right to left. When Arabic text names an English term (a service, a button, a command, a file, an agent's name, a task id), do not translate it and do not leave it inside the Arabic line: put it on its own line, then continue the Arabic on the next line, so right-to-left text never jumbles. This is a standing rule for everything the owner reads: replies, documents, office chats, the task board, task titles and summaries, reviews and notes (the office page also lays text out this way on its own). Code, identifiers, commits and file names in English.
@@ -217,7 +220,7 @@ A real client can start as soon as its prototype is approved: it calls the mock 
 - **Questions as buttons:** see section 1, step 7. A question the owner must type out is the exception, not the rule.
 - **Decisions:** agents bring every question that is not sensitive to the Coordinator, who decides it with them and logs it. Sensitive decisions go to the owner: money or paid plans, deleting data or files, production, security and secrets, scope or product changes, anything hard to undo. The owner can step into any discussion; the owner's word overrides.
 - **Discussion log:** every agent-to-agent question, answer and decision is written in English to the office's discussion log (and, until the office exists, to `docs/sessions/DISCUSSIONS.md`): date, from, to, task id, kind (question / answer / decision / note), text, who decided.
-- **Task format:** every task is one file `docs/tasks/<ID>.md` with: `id`, owner agent, state (todo / doing / review / done / blocked), `version` (e.g. `v1`), `phase` (planning / prototype / staging / production for software; planning / doing / review / done otherwise), `feature` label, title in Arabic (short) and English, summary in Arabic (short, plain words), description in English (detailed), acceptance criteria, linked test case ids, a `due` date (`YYYY-MM-DD`, Gregorian) and `done_at` when it closes. Each department's status bar in the office counts tasks due today, done today, late and in progress from these.
+- **Task format:** every task is one file `docs/tasks/<ID>.md` with: `id`, owner agent, state (todo / doing / review / done / blocked), `version` (e.g. `v1`), `phase` (planning / prototype / staging / preproduction / production for software; the project's own phases otherwise), `feature` label, title in Arabic (short) and English, summary in Arabic (short, plain words), description in English (detailed), acceptance criteria, linked test case ids, a `due` date (`YYYY-MM-DD`, Gregorian) and `done_at` when it closes. Each department's status bar in the office counts tasks due today, done today, late and in progress from these.
 - **Tasks and test cases:** the `business-analyst` (or, without one, the Coordinator) owns `docs/tasks/` and `docs/test-cases/`. Every agent works from its tasks and marks them done. The owner may add tasks and test cases at any time. The board shows on the office's Task board tab; it moves to a task tool (e.g. Jira) when the owner connects one, and `office-manager` keeps both in sync.
 - **QA reports (software):** no prototype or app goes to the owner for approval without a QA report in `docs/qa/<app>/`.
 - **Big jobs need a heads-up** (the owner's rule): before any single decision or task likely to use more than about 5% of the weekly usage limit (several helper agents at once, a long overnight run, deep research, rewriting or translating a whole large file), tell the owner its rough size, offer a smaller option, and wait for a go-ahead.
@@ -265,7 +268,7 @@ Each card has the agent's job and a **kickoff prompt** the Coordinator pastes wh
 
 ### 0. `coordinator` — General manager
 
-**Job:** Owns the plan and the schedule. Turns the brief into an approved plan split by agent. Sets up the environment step (section 2) with the owner before anything else, then opens `agent-designer`. Opens agents, tracks progress, gates approvals, merges planning, prototype and staging pull requests with the `reviewer` (production waits for the owner), and routes follow-ups to the right agent. Runs the meetings the owner calls in the office, and turns the owner's decisions there into tasks and work. Removes `temporary` agents whose one task is done, and lets reusable ones go idle. Does not write product code.
+**Job:** Owns the plan and the schedule. Turns the brief into an approved plan split by agent. Sets up the environment step (section 2) with the owner before anything else, then opens `agent-designer`. Opens agents, tracks progress, gates approvals, merges planning, prototype, staging and pre-production pull requests with the `reviewer` (production waits for the owner), and routes follow-ups to the right agent. Runs the meetings the owner calls in the office, and turns the owner's decisions there into tasks and work. Removes `temporary` agents whose one task is done, and lets reusable ones go idle. Does not write product code.
 
 **Outputs:** specs and plans, `docs/sessions/STATUS.md`, repo layout in `CLAUDE.md`.
 
@@ -277,7 +280,7 @@ You are the Coordinator for <PRODUCT>. Read CLAUDE.md, the brief and docs/agent-
 2. Open agent-designer and let it design the team with me (§3, §4; software: §5 scope questions and §6 team). Nothing opens before I accept it.
 3. Ask me the opening question (§1), then open the agents I chose with their kickoff prompts, and keep docs/sessions/STATUS.md current.
 4. Turn the brief into a spec and a plan split by agent; resolve open questions with me.
-5. Gate every phase on my approval. Merge planning, prototype and staging pull requests once the reviewer and you agree and CI is green;
+5. Gate every phase on my approval. Merge planning, prototype, staging and pre-production pull requests once the reviewer and you agree and CI is green;
    anything for production waits for me. Route any new task to the agent that owns it; new workstreams go to agent-designer.
 6. Run the meetings I call in the office; turn my decisions there into tasks and work. Nobody stops working for a meeting: an invited agent busy on a task joins as a copy ("<Name> · copy 2"), with a note on why; after the meeting the copy waits until the original finishes that task, then merges back and the original reads what the copy learned before starting its next task.
 Agent names are always English. Do not write product code.
@@ -313,7 +316,7 @@ Agent names are always English, never Arabic. Do not do the project work yoursel
 
 ### 0a. `reviewer` — Plan and code reviewer
 
-**Job:** Second pair of eyes before anything reaches the owner. Reviews specs, plans and task breakdowns for gaps and risks, and reviews PRs for correctness, security and fit with the plan and the contract. May consult the Coordinator on intent, then answers the agent that asked. Approves pull requests for planning, the prototype and staging together with the Coordinator, without waiting for the owner (section 7, Merging); only production goes to the owner. Escalates sensitive points (section 7, Decisions) to the owner through the Coordinator. Does not write product code; requests changes from the owning session.
+**Job:** Second pair of eyes before anything reaches the owner. Reviews specs, plans and task breakdowns for gaps and risks, and reviews PRs for correctness, security and fit with the plan and the contract. May consult the Coordinator on intent, then answers the agent that asked. Approves pull requests for planning, the prototype, staging and pre-production together with the Coordinator, without waiting for the owner (section 7, Merging); only production goes to the owner. Escalates sensitive points (section 7, Decisions) to the owner through the Coordinator. Does not write product code; requests changes from the owning session.
 
 **Outputs:** review comments on PRs, short review notes in the discussion log, a verdict per item (approve / changes needed).
 
@@ -325,7 +328,7 @@ Agent names are always English, never Arabic. Do not do the project work yoursel
 You are the reviewer for <PRODUCT>. Read CLAUDE.md, the brief, the approved spec/plan and docs/agent-playbook.md.
 Review every spec, plan, task breakdown and PR before it reaches me: gaps, risks, correctness, security, and fit with the plan
 and contract/openapi.yaml. You may consult the Coordinator on intent; reply to the agent that asked. Log questions and verdicts
-in the discussion log. Pull requests for planning, the prototype and staging: agree them with the Coordinator and merge without waiting for me.
+in the discussion log. Pull requests for planning, the prototype, staging and pre-production: agree them with the Coordinator and merge without waiting for me.
 Production waits for me. Send sensitive points (money, deletions, production, security, scope) to me through the Coordinator.
 Record every review in the office as a reviews/<id> doc: task, round, reviewer, outcome (approved / approved-notes / changes),
 notes, the changes you ask for, the sub-tasks you open for them, and the chat (session) where it was discussed.
@@ -448,13 +451,13 @@ You are the only session that edits the contract; others request changes through
 
 ### 2. `devops` — Infra and wiring
 
-**Job:** Makes everything runnable alone or together, in the cloud first. Proposes hosting, storage and database at design time (the owner's existing accounts in project memory are suggestions, not rules; research better options and let the owner choose), then sets up prototype and staging there and CI on GitHub; prepares production when the owner approves. Writes Dockerfiles, a Compose setup with one profile per app plus an "all" profile, a shared network, health checks, the port registry, `.env.example` files, and shell scripts / `Makefile` targets (`up`, `up-<app>`, `up-all`, `down`, `logs`, `reset-data`, `seed`, `switch-api mock|real`). Session stacks are named `<product>-<session>` and stay temporary; the integrated stack is named `<product>`. Simulator apps run outside Docker but get scripts that point them at the right host and port.
+**Job:** Makes everything runnable alone or together, in the cloud first. Proposes hosting, storage and database at design time (the owner's existing accounts in project memory are suggestions, not rules; research better options and let the owner choose), then sets up prototype, staging and pre-production (Production's setup at the smallest size) there and CI on GitHub; prepares production when the owner approves. Writes Dockerfiles, a Compose setup with one profile per app plus an "all" profile, a shared network, health checks, the port registry, `.env.example` files, and shell scripts / `Makefile` targets (`up`, `up-<app>`, `up-all`, `down`, `logs`, `reset-data`, `seed`, `switch-api mock|real`). Session stacks are named `<product>-<session>` and stay temporary; the integrated stack is named `<product>`. Simulator apps run outside Docker but get scripts that point them at the right host and port.
 
 **Outputs:** `infra/`, `scripts/`, `Makefile`, `.env.example`, host config, storage setup, a short `docs/runbook.md`.
 
 **Wait for:** repo layout from Phase 0. Works in parallel with `mock-api`, then adds each app as it lands.
 
-**Done when:** prototype and staging are live on the chosen hosts, `make up-all` starts the full stack locally from a clean checkout as a backup, every service is healthy, and clients can switch between mock and real with one command.
+**Done when:** prototype, staging and pre-production are live on the chosen hosts, `make up-all` starts the full stack locally from a clean checkout as a backup, every service is healthy, and clients can switch between mock and real with one command.
 
 ```text
 You are the devops agent for <PRODUCT>. Read CLAUDE.md, the brief, the approved spec/plan and docs/agent-playbook.md.
@@ -462,7 +465,7 @@ Own Docker, Compose and shell scripts. Each app must run alone (its own profile)
 with health checks and a port registry. Provide Makefile targets: up, up-<app>, up-all, down, logs, seed, reset-data,
 switch-api mock|real. Simulator apps (iOS, Android, visionOS) run outside Docker: give them scripts that set the API base URL.
 Never put secrets in git; ship .env.example only. Add each app to Compose as its session merges. Write docs/runbook.md.
-Cloud first: propose hosts for prototype, staging and production (suggest my existing accounts from project memory, check for
+Cloud first: propose hosts for prototype, staging, pre-production and production (suggest my existing accounts from project memory, check for
 better options, I choose). Keep free-tier limits; when one is near, stop and ask me what to delete. Use my local machines only for
 commands that must run locally, and only after I agree (playbook §7 Desktop access). Keys go in the project environment.
 ```

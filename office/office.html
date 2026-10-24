@@ -782,7 +782,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   </section>
 
   <section role="tabpanel" id="panel-roadmap" aria-labelledby="tab-roadmap" class="stack" hidden>
-    <div class="board-head"><h2>Versions and phases</h2><span class="hint">Planning, Prototype, Staging, Production. Click a version to see its summary board.</span></div>
+    <div class="board-head"><h2>Versions and phases</h2><span class="hint">Software: Planning, Prototype, Staging, Pre-production, Production; other projects get their own phases. Click a version to see its summary board.</span></div>
     <div id="roadmap" class="rm"></div>
   </section>
 
@@ -1849,7 +1849,7 @@ const NEW_VER = "2026-10-24", NEW_LIST = [
   ["Rooms through the day", "Calendar › Rooms: a row per room and table across the hours; click a free time to book it.", "cal:rooms"],
   ["A person's week with hours", "Calendar with one person picked: their days by the hour; click a free time to meet them.", "cal:person"],
   ["Meeting clock in Chat", "A countdown before a meeting, a time-left bar while it runs, Over by N min after.", "chat"],
-  ["Will this version make it?", "The Roadmap gives the plan's finish date against your target, and what sets it; you sign off before Production.", "roadmap"],
+  ["Will this version make it?", "The Roadmap gives the plan's finish date against your target, and what sets it; you sign off before the live phase (Production for software).", "roadmap"],
   ["Review queue", "Reviews opens with what is waiting for review and for how long.", "reviews"],
   ["First thing", "After a night away, the morning card names the one answer that frees the most work, with Go.", "office"],
   ["Review health", "Reviews shows the last 14 days in one line: first-try pass rate, rounds, waits, sent back most.", "reviews"],
@@ -3004,20 +3004,32 @@ function renderAgentWork(){
 }
 $("agentDlg").addEventListener("close", () => { if ($("agentDlg").open) return; agentOpen = null; agentDraft = null; if (selectedAgent) { selectedAgent = null; drawScene(); renderRoster(); } });
 (() => { const d = $("agentDlg"); let down = null; d.addEventListener("pointerdown", e => { down = e.target; }); d.addEventListener("click", e => { if (e.target === d && down === d) d.close(); down = null; }); })();
-/* ---------- roadmap: versions, then phases (planning, prototype, staging, production) and their stages ---------- */
-const PHASES = [
-  {k:"planning",   en:"Planning",   subs:["todo","doing","done"]},
-  {k:"prototype",  en:"Prototype",  subs:["todo","doing","test","done"]},
-  {k:"staging",    en:"Staging",    subs:["todo","doing","test","done"]},
-  {k:"production", en:"Production", subs:["todo","doing","test","done"]}];
+/* ---------- roadmap: versions, then phases and their stages ----------
+   Software (the owner's rule, 2026-10-24): Planning, Prototype, Staging, Pre-production (the same cloud setup as Production at the smallest size), Production.
+   Other projects: the Coordinator writes their own phases to meta/office.phases [{k, en}], first to last; the last one is the live phase the owner signs off. */
+const SOFT_PHASES = [
+  {k:"planning",      en:"Planning",       subs:["todo","doing","done"]},
+  {k:"prototype",     en:"Prototype",      subs:["todo","doing","test","done"]},
+  {k:"staging",       en:"Staging",        subs:["todo","doing","test","done"]},
+  {k:"preproduction", en:"Pre-production", subs:["todo","doing","test","done"]},
+  {k:"production",    en:"Production",     subs:["todo","doing","test","done"]}];
+const PHASES = SOFT_PHASES.slice();
+function setPhases(){
+  const SK = ["todo","doing","test","done"], c = (Array.isArray(metaOffice.phases) ? metaOffice.phases : []).filter(p => p && p.k && p.en)
+    .map((p, i, a) => ({k:String(p.k), en:String(p.en), subs:Array.isArray(p.subs) && p.subs.length && p.subs.every(x => SK.includes(x)) ? p.subs : i === 0 && a.length > 1 ? ["todo","doing","done"] : SK}));
+  const next = c.length >= 2 ? c : SOFT_PHASES;
+  if (JSON.stringify(next) === JSON.stringify(PHASES)) return;
+  PHASES.splice(0, PHASES.length, ...next); next.forEach(p => rmap.phases.add(p.k));
+}
+const livePhase = () => PHASES[PHASES.length - 1], prePhase = () => PHASES[PHASES.length - 2] || PHASES[0];
 const SUBS = {todo:"To do", doing:"In progress", test:"Testing", done:"Done"};
 const SUB_KEYS = ["todo","doing","test","done"];
 const PHASE_GUESS = {"coordinator":"planning","reviewer":"planning","context-keeper":"planning","business-analyst":"planning","office-manager":"planning","agent-designer":"planning",
   "mock-api":"prototype","web-prototype":"prototype","mobile-prototype":"prototype","vision-prototype":"prototype",
   "backend":"staging","web-frontend":"staging","mobile-app":"staging","vision-app":"staging","devops":"staging","qa-api":"staging","qa-web":"staging","qa-mobile":"staging","qa-vision":"staging","ai-service":"staging"};
-const phaseOf = t => PHASES.some(p => p.k === t.phase) ? t.phase : (PHASE_GUESS[t.session] || "planning");
+const phaseOf = t => { if (PHASES.some(p => p.k === t.phase)) return t.phase; const g = PHASE_GUESS[t.session]; return PHASES.some(p => p.k === g) ? g : PHASES[0].k; };
 const phaseName = k => PHASES.find(p => p.k === k)?.en || k;
-const subOf = t => { const s = t.state || "todo", ph = phaseOf(t); return s === "done" ? "done" : s === "todo" ? "todo" : s === "review" ? (ph === "planning" ? "doing" : "test") : "doing"; };
+const subOf = t => { const s = t.state || "todo", ph = phaseOf(t); return s === "done" ? "done" : s === "todo" ? "todo" : s === "review" ? (ph === PHASES[0].k && !PHASES[0].subs.includes("test") ? "doing" : "test") : "doing"; };
 const verInfo = v => (Array.isArray(metaOffice.versions) ? metaOffice.versions : []).find(x => x && x.id === v) || {};
 function phaseStatus(list){
   const done = list.filter(t => isClosed(t)).length;
@@ -3289,17 +3301,17 @@ function renderRoadmap(){
     now.append(fc);
     const last = open.filter(t => sched.byTask[t.id]?.e === end)[0]; if (last && open.length > 1) { const chain = [last.id]; let x = sched.byTask[last.id]?.after; for (let i = 0; x && i < 5 && !chain.includes(x); i++) { const xt = tasks.find(y => y.id === x); if (!xt || isClosed(xt)) break; chain.unshift(x); x = sched.byTask[x]?.after; }
       const cl = el("div","rm-chain"); cl.append("The date is set by "); chain.forEach((id, i) => { if (i) cl.append(" → "); cl.append(taskLink(id)); }); now.append(cl); } }
-  /* the owner signs off before Production (council round 26, Owner Advocate): a checklist and one owner-only button with a 5 s Undo; it records the decision and switches nothing */
-  if (cur !== "*") { const so = metaOffice.signoff?.[cur]?.production, row = el("div","rm-so"), stg = all.filter(t => phaseOf(t) === "staging"), stgDone = stg.filter(isClosed).length, open = all.filter(t => !isClosed(t));
-    row.append(el("b", null, "Production sign-off"));
+  /* the owner signs off before the live phase, Production for software (council round 26, Owner Advocate): a checklist and one owner-only button with a 5 s Undo; it records the decision and switches nothing */
+  if (cur !== "*") { const so = metaOffice.signoff?.[cur]?.production, row = el("div","rm-so"), LV = livePhase().en, PRE = prePhase(), stg = all.filter(t => phaseOf(t) === PRE.k), stgDone = stg.filter(isClosed).length, open = all.filter(t => !isClosed(t));
+    row.append(el("b", null, `${LV} sign-off`));
     if (so?.at) { row.append(el("span","signed", `Signed off by you · ${fmtWhen(Date.parse(so.at))}`)); const nb2 = open.filter(blkOrHeld).length, nl2 = open.filter(t => sched.byTask[t.id]?.lateBy).length; if (nb2 || nl2) row.append(el("span","no", `Since then: ${[nb2 ? nb2 + " blocked or held" : "", nl2 ? nl2 + " late" : ""].filter(Boolean).join(", ")}`));
-      if (canWrite && ownerView()) { const wd = el("button","btn-lite","Withdraw"); wd.type = "button"; wd.onclick = async () => { if (!wd._arm) { wd._arm = 1; wd.textContent = "Withdraw the sign-off? Tap again"; return; } wd.disabled = true; const at = new Date().toISOString(); try { await db.doc("meta/office").update({signoff:{...(metaOffice.signoff || {}), [cur]:{...(metaOffice.signoff?.[cur] || {}), production:null}}}); await db.collection("messages").add({at, from:"owner", to:"coordinator", task:null, kind:"decision", decided_by:"owner", text:`I withdraw my Production sign-off for ${cur}. Hold Production.`, author_id:me, relayed:false}); } catch (err) { wd.disabled = false; wd.textContent = writeError(err); } }; row.append(wd); } }
-    else { const ck = [[`Staging done ${stgDone} of ${stg.length}`, stgDone === stg.length], [`${open.filter(t => t.state === "review").length} in review`, !open.some(t => t.state === "review")], [`${open.filter(blkOrHeld).length} blocked or held`, !open.some(blkOrHeld)], [`${open.filter(t => sched.byTask[t.id]?.lateBy).length} late`, !open.some(t => sched.byTask[t.id]?.lateBy)]];
+      if (canWrite && ownerView()) { const wd = el("button","btn-lite","Withdraw"); wd.type = "button"; wd.onclick = async () => { if (!wd._arm) { wd._arm = 1; wd.textContent = "Withdraw the sign-off? Tap again"; return; } wd.disabled = true; const at = new Date().toISOString(); try { await db.doc("meta/office").update({signoff:{...(metaOffice.signoff || {}), [cur]:{...(metaOffice.signoff?.[cur] || {}), production:null}}}); await db.collection("messages").add({at, from:"owner", to:"coordinator", task:null, kind:"decision", decided_by:"owner", text:`I withdraw my ${LV} sign-off for ${cur}. Hold ${LV}.`, author_id:me, relayed:false}); } catch (err) { wd.disabled = false; wd.textContent = writeError(err); } }; row.append(wd); } }
+    else { const ck = [[`${PRE.en} done ${stgDone} of ${stg.length}`, stgDone === stg.length], [`${open.filter(t => t.state === "review").length} in review`, !open.some(t => t.state === "review")], [`${open.filter(blkOrHeld).length} blocked or held`, !open.some(blkOrHeld)], [`${open.filter(t => sched.byTask[t.id]?.lateBy).length} late`, !open.some(t => sched.byTask[t.id]?.lateBy)]];
       ck.forEach(([l, ok]) => row.append(el("span", ok ? "ok" : "no", `${ok ? "✓" : "✗"} ${l}`)));
-      if (canWrite && ownerView()) { const allOk = ck.every(c => c[1]), lbl = allOk ? `Sign off ${cur} for Production` : "Sign off anyway", w0 = soWait[cur], b = el("button", allOk ? "btn" : "btn-lite", w0 ? "Signing in 5 s · Undo" : lbl); b.type = "button";
+      if (canWrite && ownerView()) { const allOk = ck.every(c => c[1]), lbl = allOk ? `Sign off ${cur} for ${LV}` : "Sign off anyway", w0 = soWait[cur], b = el("button", allOk ? "btn" : "btn-lite", w0 ? "Signing in 5 s · Undo" : lbl); b.type = "button";
         b.onclick = () => { const w = soWait[cur]; if (w) { clearTimeout(w); delete soWait[cur]; renderRoadmap(); return; } if (!allOk && !b._arm) { b._arm = 1; b.textContent = `Not every check is met. Tap again to sign off ${cur}`; return; } b.textContent = "Signing in 5 s · Undo";
           soWait[cur] = setTimeout(async () => { delete soWait[cur]; b.disabled = true; const at = new Date().toISOString(); try { await db.doc("meta/office").update({signoff:{...(metaOffice.signoff || {}), [cur]:{...(metaOffice.signoff?.[cur] || {}), production:{at, by:"owner"}}}});
-            await db.collection("messages").add({at, from:"owner", to:"coordinator", task:null, kind:"decision", decided_by:"owner", text:`I sign off ${cur} for Production.${allOk ? "" : " Not every check was met: " + ck.filter(c => !c[1]).map(c => c[0]).join(", ") + "."}`, author_id:me, relayed:false}); } catch (err) { b.disabled = false; b.textContent = writeError(err); } }, 5000); };
+            await db.collection("messages").add({at, from:"owner", to:"coordinator", task:null, kind:"decision", decided_by:"owner", text:`I sign off ${cur} for ${LV}.${allOk ? "" : " Not every check was met: " + ck.filter(c => !c[1]).map(c => c[0]).join(", ") + "."}`, author_id:me, relayed:false}); } catch (err) { b.disabled = false; b.textContent = writeError(err); } }, 5000); };
         row.append(b); } else row.append(el("span","note", "Waiting for the owner's sign-off.")); }
     now.append(row); }
   box.append(now);
@@ -4442,7 +4454,7 @@ renderLegend(); renderAllNow(); setTimeout(() => { setRoomBg(); setInterval(setR
 (async () => {
   user = await claude.use("user");
   try { me = user ? await user.id() : null; } catch { me = null; }
-  if (warmCopy && warmCopy.me === me && !agents.length && !live.got.size) { ({agents, tasks, sessions} = warmCopy); lastSaid = warmCopy.lastSaid || {}; metaOffice = {...(warmCopy.meta || {})}; live.stale = true; warmUsed = true;
+  if (warmCopy && warmCopy.me === me && !agents.length && !live.got.size) { ({agents, tasks, sessions} = warmCopy); lastSaid = warmCopy.lastSaid || {}; metaOffice = {...(warmCopy.meta || {})}; setPhases(); live.stale = true; warmUsed = true;
     $("conn").textContent = `As of ${fmtWhen(Date.parse(warmCopy.at))} · updating…`; if (metaOffice.product_en) $("title").textContent = `${metaOffice.product_en} Office`; renderAll(); } else if (warmCopy) dropWarm();   // another person's copy is never shown
   db = await claude.use("db");
   if (!db) { dropWarm(); $("conn").textContent = "Couldn't open the office data in this view. Open the page while signed in."; $("send").disabled = true; return; }
@@ -4454,7 +4466,7 @@ renderLegend(); renderAllNow(); setTimeout(() => { setRoomBg(); setInterval(setR
   const subscribeAll = () => { const keep = u => { live.unsubs.push(u); return u; };
   live.unsubs.forEach(u => { try { u(); } catch {} }); live.unsubs = []; live.got = new Set();
   keep(db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("agents"); renderAll(); }, onErr));
-  keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; const sk = JSON.stringify([metaOffice.workday, metaOffice.learn_estimates]); renderAll(sk !== live.schedKey); live.schedKey = sk; /* stars and snoozes do not replan */ const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; tabMark(); }, () => {}));
+  keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; setPhases(); const sk = JSON.stringify([metaOffice.workday, metaOffice.learn_estimates]); renderAll(sk !== live.schedKey); live.schedKey = sk; /* stars and snoozes do not replan */ const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; tabMark(); }, () => {}));
   keep(db.collection("tasks").onSnapshot(s => { const was = new Map(tasks.map(t => [t.id, t.state])), first = !tasks.length; tasks = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("tasks"); renderAll();
     if (warmUsed) { warmUsed = false; return; }   // changes since the saved copy are not "just done"
     if (!first) { const nowDone = tasks.filter(t => t.state === "done" && was.has(t.id) && was.get(t.id) !== "done"); if (nowDone.length) doneMoment(nowDone); } }, onErr));
