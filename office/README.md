@@ -13,4 +13,4 @@ Every requirement for the page and its data layout is in `SPEC.md`.
 
 Art: the owner's own pictures, cut out with `tools/cut/` (see `SPEC.md`, "Characters and rooms"). Every picture carries the credit tag `@Abdulwahabdev`; see the root `LICENSE`.
 
-Check before a push: serve a copy of the page with demo data and run `node tools/check/smoke.mjs <url>` (set `PLAYWRIGHT` to Playwright's `index.mjs` if the package is not installed). It opens every tab and the main dialogs and fails on any page error or empty panel.
+Check before a push: serve a copy of the page with demo data and run `node tools/check/smoke.mjs <url>` (set `PLAYWRIGHT` to Playwright's `index.mjs` if the package is not installed). It opens every tab and the main dialogs and fails on any page error or empty panel; a phone pass at 400 px fails on sideways scroll, on anything covering the chat's Send button, or on a task over 150 ms.
