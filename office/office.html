@@ -66,8 +66,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .chrome{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0b0f18;border-bottom:1px solid #232b3b;border-radius:10px 10px 0 0;color:#8b95a8;font-family:var(--font-mono);font-size:11px}
 .chrome .dots{display:flex;gap:6px}.chrome .dots i{width:11px;height:11px;border-radius:50%;display:block}
 .chrome .ttl{flex:1;text-align:center;letter-spacing:.3em;text-transform:uppercase}
-.rc-btn{all:unset;cursor:pointer;border:1px solid #2c3546;border-radius:4px;padding:1px 8px;color:#c9d2e0;letter-spacing:.08em}.rc-btn:hover,.rc-btn:focus-visible{border-color:#f0c75e;color:#f0c75e}
-.ag .rc{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;color:#1b2030;border:2px solid #222634;border-radius:9px;padding:2px 7px;font:600 clamp(8px,2.1cqi,12px)/1.35 system-ui,sans-serif;z-index:6000;pointer-events:none;animation:pop .3s ease-out}
+.rc-btn{all:unset;cursor:pointer;background:#1b2333;border:1px solid #2c3546;border-radius:999px;padding:2px 10px;color:#dfe6f2;font:600 11.5px/1.4 var(--font);letter-spacing:0}.rc-btn:hover,.rc-btn:focus-visible{border-color:#f0c75e;color:#f0c75e}
+.ag .rc{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;color:#1b2030;border:2px solid #222634;border-radius:9px;padding:2px 7px;font:600 clamp(8px,2.1cqi,12px)/1.35 system-ui,sans-serif;z-index:5900;pointer-events:none;animation:pop .3s ease-out}
 .ag.rc-on .fx,.ag.rc-on .talk{visibility:hidden}
 @media (prefers-reduced-motion:reduce){.ag .rc{animation:none}}
 .chrome .clock{border:1px solid #2c3546;border-radius:4px;padding:1px 8px;color:#f0c75e;letter-spacing:.12em}
@@ -397,14 +397,15 @@ h2{font-weight:700;font-size:19px;margin:0}
 .rooms.night .room::after{opacity:1}
 /* light through the day (council round 16): a warm low sun in the morning, amber in the evening, blue at night; an overlay only, the art is unchanged and people stay on top */
 .rooms.dawn .room::after{opacity:1;mix-blend-mode:overlay;background:radial-gradient(ellipse 80% 70% at 25% 30%,rgba(255,196,110,.55),rgba(255,180,100,.22) 55%,rgba(255,170,90,.10))}
-.rooms.dusk .room::after{opacity:1;mix-blend-mode:multiply;background:radial-gradient(ellipse 80% 70% at 70% 35%,rgba(255,214,170,.45),rgba(235,165,125,.55) 75%)}
+.rooms.dusk .room::after{opacity:1;mix-blend-mode:multiply;background:linear-gradient(250deg,rgba(255,170,110,.55),transparent 45%),radial-gradient(ellipse 90% 80% at 60% 40%,rgba(200,180,220,.55),rgba(130,110,170,.62) 80%)}
 .room{box-shadow:0 10px 24px rgba(0,0,0,.38),0 0 0 1px rgba(255,226,180,.10)}.room::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;box-shadow:inset 0 0 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,236,200,.18)}
-.ag::before{content:"";position:absolute;left:18%;right:18%;bottom:-2px;height:9%;min-height:3px;max-height:9px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.42),transparent);z-index:-1;pointer-events:none}
-.ag.walking::before{opacity:.6}
+.ag .foot{position:absolute;left:18%;right:18%;bottom:-2px;height:9%;min-height:3px;max-height:9px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.42),transparent);z-index:-1;pointer-events:none}
+.ag.walking .foot{opacity:.6}
 /* calmer bubbles (council round 16): one typing bubble per room at a time; the others get a soft screen glow at their spot */
 .ag.working:not(.turn) .fx.typing{opacity:0;transition:opacity .5s}.ag.working.turn .fx.typing{opacity:1;transition:opacity .5s}
-.ag.working:not(.turn):not(.meeting)::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:12%;min-height:4px;max-height:13px;border-radius:50%;background:radial-gradient(closest-side,rgba(110,180,255,.42),transparent);z-index:-1;pointer-events:none}
-.ag.meeting:not(.speaking) .talk{opacity:.12}
+.ag.working:not(.turn):not(.meeting):not(.quiet) .foot{left:0;right:0;height:12%;min-height:4px;max-height:13px;background:radial-gradient(closest-side,rgba(110,180,255,.42),rgba(0,0,0,.25) 60%,transparent)}
+.ag.meeting:not(.speaking) .talk{opacity:.12}.ag.meeting:hover .talk,.ag.meeting:focus-visible .talk{opacity:.85}
+.rooms.night .ag:not(.sel):not(.point):not(:focus-visible){filter:brightness(.84) saturate(.9)}.rooms.dusk .ag:not(.sel):not(.point):not(:focus-visible){filter:sepia(.12) brightness(.96)}
 @media (prefers-reduced-motion:reduce){.room::after,.ag .fx.typing{transition:none}}
 .night-strip{display:grid;gap:4px;margin:0 0 10px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:12.5px}.ns-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ns-track{overflow-x:auto}
 .ns-line{position:relative;height:34px;min-width:340px;margin:0 8px}.ns-line::before{content:"";position:absolute;left:0;right:0;top:11px;border-top:1px solid var(--line)}
@@ -679,7 +680,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     </div>
     <div class="follow-strip" id="followStrip" hidden></div>
     <div class="scene">
-      <div class="chrome"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="ttl" id="chromeTitle">Product Office</span><button class="rc-btn" id="rollBtn" type="button" title="Each person says what they are on, room by room">Roll call</button><span class="clock" id="clock"></span></div>
+      <div class="chrome"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="ttl" id="chromeTitle">Product Office</span><button class="rc-btn" id="rollBtn" type="button" title="Each person says what they are on, room by room">Roll call ▸</button><span class="clock" id="clock"></span></div>
       <div class="dept-tabs" id="deptTabs" role="tablist" aria-label="Departments" hidden></div>
       <div class="dept-stats" id="deptStats"></div>
       <div class="stats-pop" id="statsPop" hidden></div>
@@ -1275,8 +1276,8 @@ const SLOTS = {
   huddle: HUDDLE.tables.flatMap(t => t.seats.map(sitAt)).concat(HUDDLE.tables.flatMap(t => t.stand))
 };
 const N_TABLES = HUDDLE.tables.length, tableSlots = ti => [0,1,2,3].map(k => ti * 4 + k).concat([N_TABLES * 4 + ti * 2, N_TABLES * 4 + ti * 2 + 1]);
-const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 18; };
-const dayPhase = () => { const h = new Date().getHours(); return isNight() ? "night" : h < 9 ? "dawn" : h >= 16 ? "dusk" : "day"; };
+const isNight = () => { const h = new Date().getHours(); return h < 6 || h >= 19; };
+const dayPhase = () => { const h = new Date().getHours(); return isNight() ? "night" : h < 10 ? "dawn" : h >= 17 ? "dusk" : "day"; };
 function setRoomBg(){
   const bg = (k, n) => { const b = typeOf(k) === "meet" ? meetBg(meetCount) : ROOM_BG[typeOf(k)]; return b ? `url(${A}rooms/${Array.isArray(b) ? b[(n - 1) % b.length] : b}.webp)` : ""; };
   Object.entries(ROOMS).forEach(([k, r]) => { const n = k === baseOf(k) ? 1 : +k.split("-").pop() || 1; r.style.backgroundImage = bg(k, n); });
@@ -1378,7 +1379,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 function makeFig(id){
   FACINGS.forEach(f => { const p = new Image(); p.src = charUrl(id, f); });
   const b = el("button","ag"); b.type = "button";
-  const img = el("img","body"); img.alt = ""; b.append(img);
+  const img = el("img","body"); img.alt = ""; b.append(el("i","foot"), img);
   const fx = el("img","fx"); fx.alt = ""; b.append(fx);
   const talk = el("span","talk"); talk.append(el("i"), el("i"), el("i")); b.append(talk);
   const idle = el("span","idle"); b.append(idle);
@@ -1559,20 +1560,22 @@ function takeTurns(){
   turn++;
   figs.forEach(r => r.b.classList.remove("speaking"));
   lastGroups.forEach(g => { const here = g.ids.map(id => figs.get(id)).filter(r => r && (r.room === "meet" || typeOf(r.room) === "huddle") && !r.busy); if (here.length) here[turn % here.length].b.classList.add("speaking"); });
-  const byRoom = new Map(); figs.forEach(r => { r.b.classList.remove("turn"); if (r.b.classList.contains("working") && !r.b.classList.contains("meeting") && r.fx.classList.contains("typing")) byRoom.set(r.room, [...(byRoom.get(r.room) || []), r]); });
+  const byRoom = new Map(); figs.forEach(r => { r.b.classList.remove("turn"); const ag = agentById(r.id), la = ag && lastActive(ag); r.b.classList.toggle("quiet", !!(ag && ag.state === "working" && la && Date.now() - la > 2 * 36e5)); if (r.b.classList.contains("working") && !r.b.classList.contains("meeting") && r.fx.classList.contains("typing")) byRoom.set(r.room, [...(byRoom.get(r.room) || []), r]); });
   byRoom.forEach(l => l[reduce ? 0 : turn % l.length].b.classList.add("turn"));   // one typing bubble per room, taking turns
 }
 /* roll call (council round 16, Owner Advocate): each person's bubble says what they are on, one at a time in every room; after 6+ hours away it runs once by itself */
 let rcTm = [];
 function rollLine(id){ const a = agentById(id); if (!a) return ""; const t = tasks.find(x => x.session === id && x.state === "doing") || tasks.find(x => x.session === id && !isClosed(x)), p = t && sched.byTask[t.id];
   const dn = tasks.find(x => x.session === id && isClosed(x) && (Date.parse(x.done_at || "") || 0) > (seenAt || Date.now() - DAY));
-  if (a.state === "waiting") return "Waiting for you"; if (a.state === "blocked") return "Blocked" + (t ? ` on ${t.id}` : "");
-  if (t && a.state === "working") { const left = p?.e ? Math.max(0, Math.round((p.e - Date.now()) / 6e4)) : 0; return `${t.id} · ${left ? fmtDur(left) + " left" : "almost done"}`; }
+  if (a.state === "waiting") return "Waiting for you"; if (a.state === "blocked") return a.needs_en || t?.needs_en ? "Blocked · needs you" : "Blocked" + (t ? ` · ${t.id}` : "");
+  if (t && t.state === "doing") { const m = p?.e ? Math.round((p.e - Date.now()) / 6e4) : null; return m == null ? t.id : m >= 1 ? `${t.id} · ${fmtDur(m)} left` : `${t.id} · over by ${fmtDur(Math.max(1, -m))}`; }
+  if (t && a.state === "working") return `Next: ${t.id}${p?.s && p.s > Date.now() ? " at " + fmtHM(p.s) : ""}`;
   return dn ? `Done ${dn.id}` : ""; }
-function rollCall(){ rcTm.forEach(clearTimeout); rcTm = []; document.querySelectorAll(".ag .rc").forEach(x => x.remove()); document.querySelectorAll(".ag.rc-on").forEach(x => x.classList.remove("rc-on"));
+const stopRoll = () => { rcTm.forEach(clearTimeout); rcTm = []; document.querySelectorAll(".ag .rc").forEach(x => x.remove()); document.querySelectorAll(".ag.rc-on").forEach(x => x.classList.remove("rc-on")); };
+function rollCall(){ stopRoll(); if (nsPlay.tm) return;
   const byRoom = new Map(); figs.forEach(r => { if (r.id === "owner" || !r.room) return; const line = rollLine(r.id); if (line) byRoom.set(r.room, [...(byRoom.get(r.room) || []), [r, line]]); });
   const show = (r, line, ms) => { const s = el("span","rc", line); r.b.append(s); r.b.classList.add("rc-on"); rcTm.push(setTimeout(() => { s.remove(); r.b.classList.remove("rc-on"); }, ms)); };
-  if (reduce) { byRoom.forEach(l => l.forEach(([r, line]) => show(r, line, 6000))); return; }
+  if (reduce) { byRoom.forEach(l => l.slice(0, 3).forEach(([r, line]) => show(r, line, 6000))); return; }
   byRoom.forEach(l => l.slice(0, 12).forEach(([r, line], i) => rcTm.push(setTimeout(() => show(r, line, 1500), i * 1600)))); }
 function play(){
   if (reduce) return;
@@ -1795,7 +1798,7 @@ function renderNight(){
     g.forEach(e => dots.push([e, d])); line.append(d); });
   track.append(line);
   const stop = () => { clearTimeout(nsPlay.tm); nsPlay.tm = 0; nsPlay.i = -1; play.textContent = "Play the night"; dots.forEach(([, d]) => d.classList.remove("on")); };
-  play.onclick = () => { if (nsPlay.tm) { stop(); return; } const list = ev.slice(-12);
+  play.onclick = () => { if (nsPlay.tm) { stop(); return; } stopRoll(); const list = ev.slice(-12);
     if (reduce) { const ul = el("ul"); list.forEach(e => ul.append(el("li", null, `${fmtHM(e.at)} · ${e.text}`))); cap.replaceChildren(ul); return; }
     play.textContent = "Stop"; const step = i => { dots.forEach(([, d]) => d.classList.remove("on")); if (i >= list.length) { nsPlay.tm = 0; play.textContent = "Play again"; const todo = inboxItems.filter(it => !(it.key && inboxSent.has(it.key))).length; cap.textContent = `Now: ${todo ? `${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you` : "nothing needs you"}.`; return; }
       const e = list[i]; dots.find(([x]) => x === e)?.[1].classList.add("on"); cap.replaceChildren(avatar(e.who || "coordinator", 20), `${fmtHM(e.at)} · ${e.text}`); const f = figs.get(e.who); if (f) { f.b.classList.add("cheer"); setTimeout(() => f.b.classList.remove("cheer"), 1100); }
@@ -1926,7 +1929,7 @@ function renderInbox(){
   if ($("walkDlg").open && !($("walkBody").contains(document.activeElement) && document.activeElement.matches("textarea, input"))) drawWalk();
   const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`; wb.disabled = live.stale;
   $("officeCount").textContent = todo || ""; renderFollow(); renderNext3();
-  { const h = new Date().getHours(), hi = h < 5 ? "Working late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening", lt = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).length, end = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0), nx = sessions.filter(x => x.state === "scheduled" && (x.members || []).includes("owner")).sort((a, b) => String(a.at).localeCompare(String(b.at)))[0];
+  { const h = new Date().getHours(), ph = dayPhase(), hi = ph === "night" ? (h < 6 ? "Working late" : "Good evening") : ph === "dawn" || h < 12 ? "Good morning" : ph === "dusk" ? "Good evening" : "Good afternoon", lt = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).length, end = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0), nx = sessions.filter(x => x.state === "scheduled" && (x.members || []).includes("owner")).sort((a, b) => String(a.at).localeCompare(String(b.at)))[0];
     const first = items.find(it => !isSent(it) && (it.free?.length || 0) >= 2);
     $("greet").textContent = `${hi}. ` + (first ? `Start with ${nameOf(first.who)}: answering unblocks ${first.free.length} tasks. ` : "") + (todo ? `${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you; ${lt ? `${lt} task${lt === 1 ? " is" : "s are"} running late${(pb => pb ? `, ${pb} pushed back by it` : "")(tasks.filter(t => !isClosed(t) && !sched.byTask[t.id]?.lateBy && sched.byTask[t.id]?.why === "dep" && tasks.some(x => x.id === sched.byTask[t.id].after && sched.byTask[x.id]?.lateBy)).length)}` : "the rest is on track"}.` : `All clear${nx ? `. Next: ${nx.title_en || "a meeting"} at ${fmtWhen(Date.parse(nx.at))}` : ""}.`) + (end ? ` Open work finishes by ${fmtWhen(end)}.` : ""); }   // the greeting line (council round 12, UX)
   $("byeBtn").classList.toggle("btn", new Date().getHours() >= 17); $("byeBtn").classList.toggle("btn-lite", new Date().getHours() < 17);   // the end-of-day check stands out after 17:00
@@ -1959,7 +1962,7 @@ function renderInbox(){
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
       b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
     if (!sent && it.key && ownerView()) { const lt = el("button","btn-lite","Later"); lt.type = "button"; lt.title = "Snooze this card"; lt.onclick = () => laterPick(a, snzKey(it)); a.append(lt); }
-    if (!sent && a.children.length > 3) { const rest = [...a.children].slice(2), mo = el("span","ib-more"), dots = el("button","btn-lite ib-dots","⋯"); mo.hidden = !inboxMore.has(it.key); mo.append(...rest); dots.type = "button"; dots.title = rest.map(b => b.textContent).join(", "); dots.setAttribute("aria-label", "More: " + dots.title); dots.setAttribute("aria-expanded", String(!mo.hidden));
+    if (!sent && a.children.length > 2) { const ch = [...a.children], keep2 = it.k === "Blocked" && quickAnswers(blockInfo(agentById(it.who), null).needs).length ? ch[1] : ch.find(b => b.textContent === "Move the deadline") || ch.find(b => b.textContent === "Later") || ch[1], rest = ch.filter(b => b !== ch[0] && b !== keep2); mo = el("span","ib-more"), dots = el("button","btn-lite ib-dots","⋯"); mo.hidden = !inboxMore.has(it.key); mo.append(...rest); dots.type = "button"; dots.title = rest.map(b => b.textContent).join(", "); dots.setAttribute("aria-label", "More: " + dots.title); dots.setAttribute("aria-expanded", String(!mo.hidden));
       dots.onclick = () => { mo.hidden = !mo.hidden; mo.hidden ? inboxMore.delete(it.key) : inboxMore.add(it.key); dots.setAttribute("aria-expanded", String(!mo.hidden)); if (!mo.hidden) mo.querySelector("button")?.focus(); }; a.append(dots, mo); }   // calm cards (council round 16): the main answer and one more; the rest behind ⋯
     if (live.stale) a.querySelectorAll("button").forEach(b => { b.disabled = true; b.title = "Updating…"; });   // never answer from an old copy
     if (sent) { a.replaceChildren(sent); if (it.key && inboxSent.has(it.key) && !inboxSent.get(it.key).startsWith("Not sent")) { foldAt.has(it.key) || foldAt.set(it.key, Date.now() + 2500); if (Date.now() >= foldAt.get(it.key)) { c.classList.add("folded"); } else { c.classList.add("folding"); foldTm ||= setTimeout(() => { foldTm = 0; const f = document.activeElement?.closest?.("#inboxList .ib"); renderInbox(); if (f && !f.isConnected) document.querySelector("#inboxList .ib:not(.folded) .ib-a button")?.focus(); }, Math.max(0, Math.min(...[...foldAt.values()].filter(x => x > Date.now())) - Date.now()) + 50); } } }   // an answered card folds away after a moment (council round 12)
@@ -2765,6 +2768,7 @@ function renderTeam(){
   const branch = id => { const li = el("li");
     if (id === "owner" && ids.has(ASSISTANT)) { const pr = el("div","org-pair"); const side = node(ASSISTANT); side.classList.add("side"); pr.append(node("owner"), side); li.append(pr); } else li.append(node(id));
     const ch = (kids.get(id) || []).sort((x, y) => { const [a1, a2] = order(x), [b1, b2] = order(y); return a1 - b1 || a2 - b2; });
+    if (ch.length > 8) ch.sort((x, y) => !!(kids.get(x) || []).length - !!(kids.get(y) || []).length);   // the people first, then the departments with their own trees
     if (ch.length) { const ul = el("ul", ch.length > 8 ? "wrap" : null); ch.forEach(c => ul.append(branch(c))); li.append(ul); }   // a long row of people wraps (council round 16)
     return li; };
   const root = el("ul"); root.append(branch("owner")); box.replaceChildren(root);
@@ -3771,7 +3775,7 @@ let warmCopy = null; try { const w = JSON.parse(localStorage.getItem(WARM_KEY) |
 const dropWarm = () => { warmCopy = null; try { localStorage.removeItem(WARM_KEY); } catch {} };
 const saveWarm = () => { if (live.stale || !["agents", "tasks", "sessions"].every(x => live.got.has(x))) return; try { const m = metaOffice || {}, s = JSON.stringify({at:new Date().toISOString(), me, agents, tasks, sessions:sessions.filter(x => x.state !== "closed" || Date.parse(x.closed_at || "") > Date.now() - DAY), lastSaid, meta:{product_en:m.product_en, workday:m.workday, meetings:m.meetings, learn_estimates:m.learn_estimates}}); if (s.length < 1.5e6) localStorage.setItem(WARM_KEY, s); } catch {} };
 setInterval(saveWarm, 60000); document.addEventListener("visibilitychange", () => { if (document.hidden) saveWarm(); });
-renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000);
+renderLegend(); renderAllNow(); setTimeout(() => { setRoomBg(); setInterval(setRoomBg, 60000); }, 60500 - Date.now() % 60000);   // on the minute
  setInterval(() => renderAll(), 60000); setInterval(renderStats, 30000);
 (async () => {
   user = await claude.use("user");
@@ -3784,7 +3788,7 @@ renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000);
   /* live-link watchdog (council round 8, Engineer): a listener error, or waking after 5+ minutes asleep, subscribes again; automatic writes wait until data is fresh */
   const onErr = () => { live.stale = true; if (!live.unsubs.every(u => typeof u === "function")) { $("conn").textContent = "Live updates stopped. Reload the page."; return; }   // can't cancel the old listeners, so don't stack new ones
     $("conn").textContent = "Reconnecting…"; clearTimeout(live.t); live.t = setTimeout(subscribeAll, 5000); };
-  const fresh = k => { live.got.add(k); if (["agents", "tasks", "sessions"].every(x => live.got.has(x)) && live.stale !== false) { live.stale = false; $("conn").textContent = "Connected. Updates appear live."; renderAll(false); if (seenAt && Date.now() - seenAt >= 6 * 36e5 && !live.rolled) { live.rolled = true; setTimeout(rollCall, 1500); } } };   // fresh again only once all three have arrived
+  const fresh = k => { live.got.add(k); if (["agents", "tasks", "sessions"].every(x => live.got.has(x)) && live.stale !== false) { live.stale = false; $("conn").textContent = "Connected. Updates appear live."; renderAll(false); if (seenAt && Date.now() - seenAt >= 6 * 36e5 && !live.rolled) { live.rolled = true; setTimeout(() => { if (!document.hidden && curTab === "office") rollCall(); }, 2500); } } };   // fresh again only once all three have arrived
   const subscribeAll = () => { const keep = u => { live.unsubs.push(u); return u; };
   live.unsubs.forEach(u => { try { u(); } catch {} }); live.unsubs = []; live.got = new Set();
   keep(db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("agents"); renderAll(); }, onErr));
