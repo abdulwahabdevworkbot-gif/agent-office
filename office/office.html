@@ -1581,7 +1581,9 @@ function renderInbox(){
   items.sort((x, y) => isSent(x) - isSent(y));
   { const base = $("title").textContent || "Product Office"; document.title = (todo ? `(${todo}) ` : "") + base; }
   $("inboxSum").textContent = items.length ? (todo ? `${todo} thing${todo === 1 ? "" : "s"} for you` : "All answered") + ` · ${w} agents working` : "";
-  if (!items.length) { box.append(el("div","inbox-empty", `Nothing needs you right now. ${w} agents are working.`)); return; }
+  if (!items.length) {   // "morning done" (council round 4, I2): what comes next, so the owner can leave with peace of mind
+    const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
+    box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
     const c = el("div","ib"); c.style.setProperty("--c", it.c);
     const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", it.rel || ago(it.at)));
@@ -2541,14 +2543,17 @@ function renderTalkRoom(){
   if (s) { ids = (s.members || []).filter(m => m === "owner" || agentById(m)); title = s.title_en || convKind(s); key = "s:" + s.id; }
   else if (chatPair) { ids = chatPair.split("|"); title = ids.map(nameOf).join(" & "); key = "p:" + chatPair; if (msgs.some(m => m.pair === chatPair && m.from === "owner")) ids.unshift("owner"); }
   const g = lastGroups.find(x => x.key === key);
-  room.style.backgroundImage = `url(${A}rooms/${meetBg(ids.length)}.webp)`;
-  const where = !key ? "" : !g || s?.state === "closed" ? (s?.state === "closed" ? "Closed: everyone went back to work" : "Not in a room right now")
+  /* people stand in the picture only while the conversation really is in a room; otherwise the picture is the room it booked, empty */
+  const inRoom = !!g && !(s && isDone(s)), booked = s?.room === "huddle" || (g && g.where !== "meet") ? "huddle" : "meet";
+  room.style.backgroundImage = `url(${A}rooms/${inRoom || booked === "meet" ? meetBg(ids.length) : "huddle"}.webp)`;
+  const where = !key ? "" : s?.state === "scheduled" ? `Booked: ${booked === "huddle" ? "Huddle table" : "Meeting room"} at ${fmtWhen(Date.parse(s.at))}` : !inRoom ? (s && isDone(s) ? "Closed: everyone went back to work" : "Not in a room right now")
     : g.where === "meet" ? "In the meeting room" : `${ROOM_NAME.huddle}${g.where.includes("-") ? " " + g.where.split("-").pop() : ""} · Table ${g.table + 1}`;
   $("talkTitle").textContent = key ? "Room" : "Rooms";
-  room.querySelector(".label").firstChild.textContent = key ? (g?.where && g.where !== "meet" ? "Huddle table" : "Meeting room") : "Meeting room";
+  room.querySelector(".label").firstChild.textContent = key ? (booked === "huddle" ? "Huddle table" : "Meeting room") : "Meeting room";
   room.querySelector(".label small").textContent = title;
   const top = navBack[navBack.length - 1], back = top && top.tab !== "chat" ? ` Click outside the chat to go back to ${TAB_NAME[top.tab]}.` : "";
   $("talkHint").textContent = (key ? where + (ids.length ? ` · ${ids.length} ${ids.length === 1 ? "person" : "people"}.` : ".") : "Pick a conversation to see who sits with it.") + back;
+  if (key && !inRoom) return;
   ids.sort((a, b) => (b === "owner") - (a === "owner")).slice(0, MEET_SETS[meetBg(ids.length)].seats.length).forEach((id, i) => {
     const sp = MEET_SETS[meetBg(ids.length)].seats[i], P = null, b = el("button", "ag"); b.type = "button";
     const img = el("img", "body"); img.alt = ""; b.append(img);
