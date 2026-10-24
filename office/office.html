@@ -2,6 +2,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Product Office</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#f4f6fa" id="themeColor">
+<link rel="icon" id="favicon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -1681,6 +1683,17 @@ function renderNext3(){
   const rv = tasks.filter(t => t.state === "doing" && agentById(t.session)?.state !== "blocked" && !sched.byTask[t.id]?.lateBy && (sched.byTask[t.id]?.e || 0) > now + 6 * 6e4 && sched.byTask[t.id].e <= end).sort((a, b) => sched.byTask[a.id].e - sched.byTask[b.id].e);
   if (rv.length) { const w = el("span","n3"); w.append(el("b", null, fmtHM(sched.byTask[rv[0].id].e)), " ready for review: "); rv.slice(0, 3).forEach((t, i) => { if (i) w.append(", "); w.append(taskLink(t.id)); }); if (rv.length > 3) w.append(` +${rv.length - 3}`); w.dataset.t = sched.byTask[rv[0].id].e; parts.push(w); }
   box.hidden = !parts.length; box.replaceChildren(); if (!parts.length) return; box.append(el("span","lbl","Next 3 hours")); parts.sort((x, y) => x.dataset.t - y.dataset.t).forEach(x => box.append(x)); }
+/* the browser tab (council round 24, from round 20): the title and a small drawn icon carry the Needs-you count; the phone's browser bar takes the page colour */
+let tabTodo = 0, tabSig = "";
+function tabMark(n = tabTodo){ tabTodo = n; const base = $("title").textContent || "Product Office"; document.title = (n ? `(${n}) ` : "") + base;
+  const cs = getComputedStyle(document.documentElement), acc = cs.getPropertyValue("--accent").trim() || "#3b5bdb", bg = getComputedStyle(document.body).backgroundColor, sig = [n, acc, bg].join("|"); if (sig === tabSig) return; tabSig = sig;
+  const tc = $("themeColor"); if (tc) tc.content = bg;
+  const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"); if (!g) return;
+  g.fillStyle = acc; g.beginPath(); g.roundRect ? g.roundRect(4, 4, 56, 56, 14) : g.rect(4, 4, 56, 56); g.fill();
+  g.fillStyle = "#fff"; [[16, 18], [36, 18], [16, 36], [36, 36]].forEach(([x, y]) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, 12, 10, 3) : g.rect(x, y, 12, 10); g.fill(); });   // four desks seen from above
+  if (n) { g.fillStyle = "#f08c00"; g.beginPath(); g.arc(46, 18, 17, 0, 7); g.fill(); g.fillStyle = "#fff"; g.font = "bold 22px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(n > 9 ? "9+" : String(n), 46, 19); }
+  const l = $("favicon"); if (l) l.href = c.toDataURL("image/png"); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => setTimeout(() => tabMark(), 50));
 /* a "done" moment (council round 12, UX): a short gold glow on the agent and a notice; a still glow with reduced motion */
 function doneMoment(list){
   let t = $("doneToast"); if (!t) { t = el("div","done-toast"); t.id = "doneToast"; t.setAttribute("role", "status"); document.body.append(t); }
@@ -1956,7 +1969,7 @@ function renderInbox(){
   const freesOf = t => { if (!t) return []; const ok = new Set([t.id]); let grew = true; while (grew) { grew = false; tasks.forEach(x => { if (isClosed(x) || ok.has(x.id)) return; const open = depsOf(x).filter(d => !isClosed(tasks.find(y => y.id === d) || {state:"done"})); if (open.length && open.every(d => ok.has(d))) { ok.add(x.id); grew = true; } }); } ok.delete(t.id); return [...ok]; };   // only work that nothing else still holds
   items.forEach(it => { if (held(it)) it.free = freesOf(openOf(it.who)); });   /* frees N (council round 14, Owner Advocate): answering this unblocks the work that waits on it, down the chain */
   items.sort((x, y) => isSent(x) - isSent(y) || held(y) - held(x) || (y.free?.length || 0) - (x.free?.length || 0) || (held(x) ? (Date.parse(x.at || "") || 0) - (Date.parse(y.at || "") || 0) : 0));
-  { const base = $("title").textContent || "Product Office"; document.title = (todo ? `(${todo}) ` : "") + base; }
+  tabMark(todo);
   $("inboxSum").textContent = items.length ? (todo ? `${todo} thing${todo === 1 ? "" : "s"} for you` : "All answered") + ` · ${w} agents working` : "";
   if (slept.length) { const wk = el("button","linkish", `${slept.length} snoozed: show`); wk.type = "button"; wk.title = slept.map(it => `${it.t}: until ${fmtWhen(Date.parse(snz[snzKey(it)]))}`).join("\n"); wk.setAttribute("aria-expanded", String(!!inboxShowSnz)); wk.onclick = () => { inboxShowSnz = !inboxShowSnz; renderInbox(); }; $("inboxSum").append(" · ", wk);
     if (inboxShowSnz) { const sl = el("div","snz-list"); slept.forEach(it => { const r = el("div","snz-row"), b = el("button","linkish","Wake"); b.type = "button"; b.onclick = () => snooze([snzKey(it)], null); r.append(avatar(it.who, 20), el("span", null, `${it.k}: ${it.t}`), el("span","note", `until ${fmtWhen(Date.parse(snz[snzKey(it)]))}`), b); sl.append(r); }); box.append(sl); } }
@@ -3967,7 +3980,7 @@ renderLegend(); renderAllNow(); setTimeout(() => { setRoomBg(); setInterval(setR
   const subscribeAll = () => { const keep = u => { live.unsubs.push(u); return u; };
   live.unsubs.forEach(u => { try { u(); } catch {} }); live.unsubs = []; live.got = new Set();
   keep(db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("agents"); renderAll(); }, onErr));
-  keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; const sk = JSON.stringify([metaOffice.workday, metaOffice.learn_estimates]); renderAll(sk !== live.schedKey); live.schedKey = sk; /* stars and snoozes do not replan */ const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {}));
+  keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; const sk = JSON.stringify([metaOffice.workday, metaOffice.learn_estimates]); renderAll(sk !== live.schedKey); live.schedKey = sk; /* stars and snoozes do not replan */ const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; tabMark(); }, () => {}));
   keep(db.collection("tasks").onSnapshot(s => { const was = new Map(tasks.map(t => [t.id, t.state])), first = !tasks.length; tasks = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("tasks"); renderAll();
     if (warmUsed) { warmUsed = false; return; }   // changes since the saved copy are not "just done"
     if (!first) { const nowDone = tasks.filter(t => t.state === "done" && was.has(t.id) && was.get(t.id) !== "done"); if (nowDone.length) doneMoment(nowDone); } }, onErr));
