@@ -341,7 +341,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ib-t{font-weight:600;overflow-wrap:anywhere}
 .ib-s{font-size:13px;color:var(--muted);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ib-a{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.ib-a button{font-size:12.5px;padding:3px 10px}
+.ib-a button{font-size:12.5px;padding:3px 10px}.ib-a input{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 8px;min-width:0}.ib-a{align-items:center}
 .ib.wide{grid-column:1 / -1}
 .ib-x{grid-column:1 / -1;margin-top:6px}
 .ib-reply{display:grid;gap:6px}.ib-reply textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:none;min-height:36px}
@@ -849,7 +849,7 @@ function linkify(text){
   frag.append(text.slice(last)); return frag;
 }
 let routed = false;
-addEventListener("hashchange", () => route());
+addEventListener("hashchange", () => { if (route()) return; const m = /^#(\w+)$/.exec(location.hash); if (m && TABS.includes(m[1])) showTab(m[1]); });   // tab addresses work after load too
 
 /* ---------- office scene (art drawn by tools/art) ---------- */
 const A = "assets/";
@@ -1512,10 +1512,20 @@ function blockInfo(a, t){
   const why = t?.blocked_en || a?.blocked_en || (last ? (last.text_en || last.text) : "") || a?.doing_en || "";
   return {why: why.length > 140 ? why.slice(0, 137) + "…" : why, needs: a?.needs_en || t?.needs_en || ""};
 }
+/* moving a deadline: a date picker set to the forecast end rounded up to the next hour, plus an hour of slack; nothing changes until Save */
+function moveDeadline(btn, t, p){
+  const row = btn.parentElement, keep = [...row.childNodes], toLocal = ms => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  const inp = el("input"); inp.type = "datetime-local"; inp.setAttribute("aria-label", "New deadline"); inp.value = toLocal(Math.ceil(p.e / 36e5) * 36e5 + 36e5);
+  const ok = el("button","btn","Save"), no = el("button","linkish","Cancel"); ok.type = no.type = "button";
+  ok.onclick = async () => { const v = Date.parse(inp.value); if (!v) return; ok.disabled = true;
+    try { await db.doc("tasks/" + t.id).update({due_at:new Date(v).toISOString(), due_was:t.due_at || t.due || null, due_moved_by:"owner", updated_at:new Date().toISOString()}); inp.blur(); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
+  no.onclick = () => row.replaceChildren(...keep);
+  row.replaceChildren(el("span","note","New deadline"), inp, ok, no); inp.focus();
+}
 function renderInbox(){
   renderSince();
   const box = $("inboxList"); if (!box) return;
-  if (box.contains(document.activeElement) && document.activeElement.matches("textarea")) return;   // never wipe what the owner is typing
+  if (box.contains(document.activeElement) && document.activeElement.matches("textarea, input")) return;   // never wipe what the owner is typing
   box.replaceChildren();
   const items = [], openOf = id => tasks.find(t => t.session === id && t.state === "blocked") || tasks.find(t => t.session === id && t.state !== "done");
   agents.filter(a => a.state === "waiting" && a.id !== ASSISTANT).forEach(a => { const t = openOf(a.id);
@@ -1549,10 +1559,11 @@ function renderInbox(){
   tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).forEach(t => { const p = sched.byTask[t.id];
     items.push({k:"Will be late", c:"var(--bad)", who:t.session || "coordinator", t:`${t.id} · ${t.title_en || ""}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), rel:p.due > Date.now() ? "due in " + fmtDur(Math.round((p.due - Date.now()) / 6e4)) : "past due",
       key:"l:" + t.id, inline:() => inlineReply("l:" + t.id, {to:t.session || "coordinator", task:t.id}, `Ask ${nameOf(t.session)} about ${t.id}…`),
-      acts:[["Talk", "inline", true], ["Move the deadline", async () => { try { await db.doc("tasks/" + t.id).update({due_at:new Date(p.e).toISOString(), due_moved_by:"owner", updated_at:new Date().toISOString()}); } catch {} }], ["Task", () => openTask(t.id)]]}); });
-  const w = agents.filter(a => a.state === "working").length;
-  { const base = $("title").textContent || "Product Office"; document.title = (items.length ? `(${items.length}) ` : "") + base; }
-  $("inboxSum").textContent = items.length ? `${items.length} thing${items.length === 1 ? "" : "s"} for you · ${w} agents working` : "";
+      acts:[["Talk", "inline", true], ["Move the deadline", e => moveDeadline(e.currentTarget, t, p)], ["Task", () => openTask(t.id)]]}); });
+  const w = agents.filter(a => a.state === "working").length, isSent = it => it.key && inboxSent.has(it.key), todo = items.filter(it => !isSent(it)).length;
+  items.sort((x, y) => isSent(x) - isSent(y));
+  { const base = $("title").textContent || "Product Office"; document.title = (todo ? `(${todo}) ` : "") + base; }
+  $("inboxSum").textContent = items.length ? (todo ? `${todo} thing${todo === 1 ? "" : "s"} for you` : "All answered") + ` · ${w} agents working` : "";
   if (!items.length) { box.append(el("div","inbox-empty", `Nothing needs you right now. ${w} agents are working.`)); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
     const c = el("div","ib"); c.style.setProperty("--c", it.c);
