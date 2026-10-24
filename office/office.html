@@ -13,7 +13,7 @@
 :root{
   --bg:#eef1f4; --panel:#ffffff; --ink:#18212b; --muted:#5b6876; --line:#d6dde4;
   --accent:#3b5bdb; --accent-ink:#ffffff;
-  --ok:#1f8a4c; --warn:#b26a00; --bad:#c23a3a; --idle:#7b8794; --late:#c4500f;
+  --ok:#1f8a4c; --warn:#955800; --bad:#c23a3a; --idle:#7b8794; --late:#a8430b;
   --ok-bg:#e3f4ea; --warn-bg:#fff1d6; --bad-bg:#fbe3e3; --idle-bg:#eceff2; --doing-bg:#e5ebff;
   --font:"Dubai",system-ui,"Segoe UI",Tahoma,sans-serif;
   --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -355,6 +355,9 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ib-x{grid-column:1 / -1;margin-top:6px}
 .ib-reply{display:grid;gap:6px}.ib-reply textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 9px;resize:none;min-height:36px}
 .ib-sent{align-self:center;font-size:12.5px;color:var(--ok);font-weight:600}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.walk-h{font-size:15px;margin:0}
+.ib-pend{align-self:center;font-size:12.5px;color:var(--muted)}.ib-err{align-self:center;font-size:12.5px;color:var(--bad);font-weight:600}
 .inbox-empty{color:var(--muted);font-size:13.5px}
 .inbox-more{justify-self:start}
 .chip.go{cursor:pointer;border:0;font:inherit;font-size:13px}.chip.go:hover{box-shadow:0 0 0 1px var(--accent) inset}.chip.go:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -758,7 +761,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 <dialog id="sessDlg"><div class="dlg" id="sessBody"></div></dialog>
 <dialog id="meetDlg"><div class="dlg" id="meetBody"></div></dialog>
 <dialog id="agentDlg" aria-label="Agent"><div class="dlg" id="agentBody"></div></dialog>
-<dialog id="walkDlg" aria-label="Walk the floor"><div class="dlg walk" id="walkBody"></div></dialog>
+<dialog id="walkDlg" aria-label="Walk the floor"><div class="dlg walk" id="walkBody" aria-live="polite"></div></dialog>
 
 <script>
 (() => {
@@ -779,8 +782,9 @@ const nameOf = id => { const n = plainName(id), c = typeof deptCode === "functio
 const roleOf = a => a?.role_en || a?.role_ar || "";
 const doingOf = a => a?.doing_en || "";
 const colorFor = id => { const i = agents.findIndex(a => a.id === id); return PALETTE[(i < 0 ? 0 : i) % PALETTE.length]; };
-const fmt = iso => { try { return new Date(iso).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}); } catch { return ""; } };
+const fmt = iso => { if (!iso || isNaN(Date.parse(iso))) return ""; try { return new Date(iso).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}); } catch { return ""; } };
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const announce = text => { let r = document.getElementById("srLive"); if (!r) { r = el("div","sr-only"); r.id = "srLive"; r.setAttribute("aria-live", "polite"); document.body.append(r); } r.textContent = ""; setTimeout(() => { r.textContent = text; }, 50); };
 
 /* ---------- tabs ---------- */
 const TABS = ["office","roadmap","chat","board","calendar","reviews","team","settings"];
@@ -1345,10 +1349,10 @@ function dress(r, o){
   r.b.setAttribute("aria-label", o.label + (o.stateText ? ": " + o.stateText : "") + (o.meet ? " (in the meeting room)" : ""));
 }
 // Hover card (council round 3, C2): who this is, what they do now and what is next, without opening the page.
-const hc = el("div","hcard"); hc.hidden = true; hc.setAttribute("role","tooltip"); document.body.append(hc);
+const hc = el("div","hcard"); hc.id = "hcard"; hc.hidden = true; hc.setAttribute("role","tooltip"); document.body.append(hc);
 function hoverCard(id){
   const a = agentById(id), now = Date.now(), l = (sched.byAgent[id] || []).filter(x => !x.done && x.e > now);
-  const lab = x => x.kind === "meet" ? `${x.sess.title_en || "Meeting"}` : `${x.t.id} · ${x.t.title_en || ""}`;
+  const lab = x => x.kind === "meet" ? `${x.sess.title_en || "Meeting"}` : `${x.t.id} · ${ttl(x.t)}`;
   const cur = l.find(x => x.s <= now), nx = l.find(x => x.s > now);
   const top = el("div","hc-top"), nm = el("div"); nm.append(el("b", null, nameOf(id)), el("div","note", id === "owner" ? "You" : [titleOf(a || {}), roleOf(a || {})].filter(Boolean).join(" · ")));
   top.append(avatar(id, 34), nm); const rows = [top];
@@ -1361,11 +1365,13 @@ function hoverCard(id){
   if (id !== "owner") rows.push(el("div","hc-hint", "Click for their page"));
   hc.replaceChildren(...rows);
 }
-document.addEventListener("pointerover", e => { const b = e.target.closest?.(".ag"); if (!b || e.pointerType === "touch") return;
+const showHover = e => { const b = e.target.closest?.(".ag"); if (!b || e.pointerType === "touch") return;
   const id = [...figs].find(([, r]) => r.b === b)?.[0]; if (!id) return;
   hoverCard(id); hc.hidden = false; const r = b.getBoundingClientRect(), w = hc.offsetWidth, h = hc.offsetHeight;
   hc.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
-  hc.style.top = (r.top - h - 8 > 8 ? r.top - h - 8 : Math.min(innerHeight - h - 8, r.bottom + 8)) + "px"; });
+  hc.style.top = (r.top - h - 8 > 8 ? r.top - h - 8 : Math.min(innerHeight - h - 8, r.bottom + 8)) + "px"; b.setAttribute("aria-describedby", "hcard"); };
+document.addEventListener("pointerover", showHover); document.addEventListener("focusin", showHover);   // keyboard users get the card too
+document.addEventListener("focusout", e => { if (e.target.closest?.(".ag")) hc.hidden = true; });
 document.addEventListener("pointerout", e => { if (e.target.closest?.(".ag") && !e.relatedTarget?.closest?.(".ag")) hc.hidden = true; });
 addEventListener("scroll", () => { hc.hidden = true; }, {passive:true});
 let lastGroups = [];
@@ -1489,11 +1495,25 @@ let inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
 /* one-tap answers (council round 4, I1): "Approve X" gets Approve / Not now; "Decide: A, or B" gets A and B. Each tap sends the owner's decision to that agent. */
 function quickAnswers(needs){
   const n = String(needs || "").trim(); let m;
-  if ((m = /^approve\b\s*(.*)$/i.exec(n))) return [["Approve", `Approved: ${m[1] || "go ahead"}.`], ["Not now", `Not approved for now: ${m[1] || "wait"}.`]];
+  if ((m = /^approve\b\s*(.*)$/i.exec(n))) return [["Approve", m[1] ? `Approved: ${m[1]}.` : "Approved."], ["Not now", m[1] ? `Not approved for now: ${m[1]}.` : "Not approved for now."]];
   if ((m = /^decide:\s*(.+?),?\s+or\s+(.+?)\.?$/i.exec(n))) return [m[1], m[2]].map(x => { x = x.trim(); return [x.charAt(0).toUpperCase() + x.slice(1), `Decision: ${x}.`]; });
   return []; }
-async function quickSend(key, to, task, text){
-  if (!db) return; try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to, task:task || null, kind:"decision", decided_by:"owner", text, author_id:me, relayed:false}); inboxSent.set(key, "Decision sent"); renderInbox(); } catch {} }
+/* a one-tap answer waits 5 seconds with Undo before it goes, and says who gets it */
+const pendingSend = new Map();
+function quickSend(key, to, task, text){
+  if (!db) return; clearTimeout(pendingSend.get(key)?.timer);
+  const timer = setTimeout(async () => { pendingSend.delete(key);
+    try { await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to, task:task || null, kind:"decision", decided_by:"owner", text, author_id:me, relayed:false}); inboxSent.set(key, `Sent to ${nameOf(to)}`); }
+    catch (err) { inboxSent.set(key, "Not sent: " + writeError(err)); }
+    renderInbox(); if ($("walkDlg").open) drawWalk(); }, 5000);
+  pendingSend.set(key, {timer, to, text}); renderInbox(); }
+function sentEl(key){
+  const p = pendingSend.get(key);
+  if (p) { const w = el("span","ib-pend"), u = el("button","linkish","Undo"); u.type = "button"; w.setAttribute("role", "status");
+    u.onclick = () => { clearTimeout(p.timer); pendingSend.delete(key); renderInbox(); if ($("walkDlg").open) drawWalk(); };
+    w.append(`Sending to ${nameOf(p.to)}: “${p.text}” `, u); return w; }
+  const sent = key && inboxSent.get(key); if (!sent) return null;
+  return sent.startsWith("Not sent") ? el("span","ib-err", sent) : el("span","ib-sent", sent + " ✓"); }
 /* answer right from the card: a reply under it, Enter sends; "Send as decision" marks it the owner's decision */
 function inlineReply(key, target, ph){
   const w = el("div","ib-reply"), ta = el("textarea"); ta.rows = 1; ta.placeholder = ph; ta.setAttribute("aria-label", ph); ta.value = inboxOpen.get(key)?.draft || "";
@@ -1552,26 +1572,27 @@ function moveDeadline(btn, t, p){
   const inp = el("input"); inp.type = "datetime-local"; inp.setAttribute("aria-label", "New deadline"); inp.value = toLocal(Math.ceil(p.e / 36e5) * 36e5 + 36e5);
   const ok = el("button","btn","Save"), no = el("button","linkish","Cancel"); ok.type = no.type = "button";
   ok.onclick = async () => { const v = Date.parse(inp.value); if (!v) return; ok.disabled = true;
-    try { await db.doc("tasks/" + t.id).update({due_at:new Date(v).toISOString(), due_was:t.due_at || t.due || null, due_moved_by:"owner", updated_at:new Date().toISOString()}); inp.blur(); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
-  no.onclick = () => row.replaceChildren(...keep);
+    try { await db.doc("tasks/" + t.id).update({due_at:new Date(v).toISOString(), due_was:t.due_at || t.due || null, due_moved_by:"owner", updated_at:new Date().toISOString()}); inp.blur(); announce(`Deadline for ${t.id} moved to ${fmtWhen(v)}.`); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
+  no.onclick = () => { row.replaceChildren(...keep); btn.focus(); };
+  inp.onkeydown = e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); no.onclick(); } };   // Escape closes the picker, not the dialog around it
   row.replaceChildren(el("span","note","New deadline"), inp, ok, no); inp.focus();
 }
 /* Walk the floor (council round 5, UX): one Needs-you item per step with its answers, then an "All clear" page with today's plan (S1) */
 let inboxItems = [], floor = null;
 function openWalk(){ floor = {list:inboxItems.filter(it => !(it.key && inboxSent.has(it.key))), i:0, start:inboxSent.size}; drawWalk(); if (!$("walkDlg").open) $("walkDlg").showModal(); }
-function drawWalk(){
-  const body = $("walkBody"); if (!floor) return; body.replaceChildren();
+function drawWalk(focus = true){
+  const body = $("walkBody"); if (!floor) return; body.replaceChildren(); if (focus) requestAnimationFrame(() => body.querySelector(".walk-h")?.focus());
   const n = floor.list.length, it = floor.list[floor.i];
-  const head = el("div","walk-head"); head.append(el("b", null, it ? `${floor.i + 1} of ${n}` : "All clear")); const x = el("button","btn-lite","Close"); x.type = "button"; x.onclick = () => $("walkDlg").close(); head.append(x); body.append(head);
+  const head = el("div","walk-head"); const hd = el("h2","walk-h", it ? `${floor.i + 1} of ${n}` : "All clear"); hd.tabIndex = -1; head.append(hd); const x = el("button","btn-lite","Close"); x.type = "button"; x.onclick = () => $("walkDlg").close(); head.append(x); body.append(head);
   if (!it) { const sent = inboxSent.size - floor.start, now = Date.now(), end = new Date(); end.setHours(23, 59, 59, 999);
     const meets = sessions.filter(s => (s.state === "scheduled" || s.state === "open") && (s.members || []).includes("owner") && (meetSpan(s)?.s || 0) <= +end && (meetSpan(s)?.e || 0) >= now).sort((a, b) => meetSpan(a).s - meetSpan(b).s);
     const late = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy), due = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.due && sched.byTask[t.id].due <= +end && sched.byTask[t.id].due >= now);
     const last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
     body.append(el("p","walk-done", sent ? `You answered ${sent} thing${sent === 1 ? "" : "s"}. The team has what it needs from you.` : "Nothing is waiting for you."), el("div","lbl","Your day"));
     const ul = el("ul","walk-day");
-    meets.forEach(s => ul.append(el("li", null, `${fmtHM(meetSpan(s).s)} · ${s.title_en || "Meeting"} (${(s.members || []).length} people, ${s.room === "huddle" ? "huddle table" : "meeting room"})`)));
+    meets.forEach(s => ul.append(el("li", null, `${fmtHM(meetSpan(s).s)} · ${s.title_en || "Meeting"} (${(s.members || []).length} ${(s.members || []).length === 1 ? "person" : "people"}, ${s.room === "huddle" ? "huddle table" : "meeting room"})`)));
     if (!meets.length) ul.append(el("li", null, "No meetings for you today."));
-    due.forEach(t => ul.append(el("li", null, `Due today: ${t.id} ${t.title_en || ""} (${nameOf(t.session)})`)));
+    due.forEach(t => ul.append(el("li", null, `Due today: ${t.id} ${ttl(t)} (${nameOf(t.session)})`)));
     ul.append(el("li", late.length ? "t-warn" : null, late.length ? `${late.length} task${late.length === 1 ? "" : "s"} running late: ${late.map(t => t.id).join(", ")}` : "Nothing is running late."));
     if (last) ul.append(el("li", null, `Open work is planned to finish by ${fmtWhen(last)}.`));
     body.append(ul); return; }
@@ -1581,8 +1602,8 @@ function drawWalk(){
   const said = msgs.filter(m => m.from === it.who && (m.text_en || m.text)).slice(-3);
   if (said.length) { const l = el("div","walk-said"); said.forEach(m => l.append(el("div","note", `${ago(m.at)}: ${(m.text_en || m.text).slice(0, 160)}`))); tx.append(el("div","lbl","Last said"), l); }
   card.append(pic, tx); body.append(card);
-  const sent = it.key && inboxSent.get(it.key), acts = el("div","ib-a");
-  if (sent) acts.append(el("span","ib-sent", sent + " ✓"));
+  const sent = it.key && sentEl(it.key), acts = el("div","ib-a");
+  if (sent) acts.append(sent);
   else it.acts.forEach(([lab, fn, main]) => { if (fn === "inline") return; const b = el("button", main ? "btn" : "btn-lite", lab); b.type = "button"; b.onclick = async e => { await fn(e); setTimeout(() => { if ($("walkDlg").open && !document.activeElement?.matches("input, textarea")) drawWalk(); }, 400); }; acts.append(b); });
   body.append(acts);
   if (!sent && it.inline) { const r = it.inline(); body.append(r); }
@@ -1596,12 +1617,12 @@ function renderInbox(){
   box.replaceChildren();
   const items = [], openOf = id => tasks.find(t => t.session === id && t.state === "blocked") || tasks.find(t => t.session === id && t.state !== "done");
   agents.filter(a => a.state === "waiting" && a.id !== ASSISTANT).forEach(a => { const t = openOf(a.id);
-    items.push({k:"Waiting for you", c:"var(--warn)", who:a.id, t:nameOf(a.id), s:a.doing_en || (t ? `${t.id} · ${t.title_en || ""}` : "Has a question for you."), at:a.updated_at,
+    items.push({k:"Waiting for you", c:"var(--warn)", who:a.id, t:nameOf(a.id), s:a.doing_en || (t ? `${t.id} · ${ttl(t)}` : "Has a question for you."), at:a.updated_at,
       key:"w:" + a.id, inline:() => inlineReply("w:" + a.id, {to:a.id, task:t?.id || null}, `Reply to ${nameOf(a.id)}…`),
       acts:[["Reply", "inline", true], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Chat", () => replyTo(a.id)]]}); });
   agents.filter(a => a.state === "blocked").forEach(a => { const t = openOf(a.id);
     const bi = blockInfo(a, t);
-    items.push({k:"Blocked", c:"var(--bad)", who:a.id, t:nameOf(a.id), s:[t ? `${t.id} · ${t.title_en || ""}` : "", bi.why ? "Why: " + bi.why.replace(/\.$/, "") : ""].filter(Boolean).join(". "), need:bi.needs ? "Needs from you: " + bi.needs : "", at:a.updated_at,
+    items.push({k:"Blocked", c:"var(--bad)", who:a.id, t:nameOf(a.id), s:[t ? `${t.id} · ${ttl(t)}` : "", bi.why ? "Why: " + bi.why.replace(/\.$/, "") : ""].filter(Boolean).join(". "), need:bi.needs ? "Needs from you: " + bi.needs : "", at:a.updated_at,
       key:"b:" + a.id, inline:() => inlineReply("b:" + a.id, {to:a.id, task:t?.id || null}, `How should ${nameOf(a.id)} get unstuck?`),
       acts:[...quickAnswers(bi.needs).map(([lab, text], i) => [lab, () => quickSend("b:" + a.id, a.id, t?.id, text), i === 0]), ["Help", "inline", !quickAnswers(bi.needs).length], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Huddle", () => callMeeting({task:t?.id})]]}); });
   msgs.filter(m => m.kind === "proposal" && Array.isArray(m.proposed_tasks) && m.proposed_tasks.length && !(m.added || []).length && !m.dismissed).forEach(m => {
@@ -1619,12 +1640,12 @@ function renderInbox(){
       acts:[["Answer", "inline", true], ["In chat", () => { viewSession(x.id); showTab("chat"); }]]}); });
   sessions.filter(x => x.state === "scheduled" && Date.parse(x.at || "") - Date.now() < 60 * 6e4).forEach(x => {
     items.push({k:"Meeting soon", c:"var(--accent)", who:"coordinator", t:x.title_en || "Meeting", s:`${fmtWhen(Date.parse(x.at))} · ${(x.members || []).length} people · ${x.duration_min || 30} min`, at:x.scheduled_at,
-      acts:[["Start now", () => { db?.doc("sessions/" + x.id).update({state:"open", opened_at:new Date().toISOString(), at:new Date().toISOString()}); }, true], ["Open", () => go("#session/" + encodeURIComponent(x.id))]]}); });
+      acts:[["Start now", () => { db?.doc("sessions/" + x.id).update({state:"open", opened_at:new Date().toISOString(), at:new Date().toISOString(), ...freshAgenda(x)}); }, true], ["Open", () => go("#session/" + encodeURIComponent(x.id))]]}); });
   sessions.filter(x => x.state === "open" && isMeeting(x) && x.duration_min && Date.parse(x.opened_at || x.at || "") + x.duration_min * 6e4 < Date.now()).forEach(x => {
     items.push({k:"Time is up", c:"var(--ok)", who:"coordinator", t:x.title_en || "Meeting", s:`Planned for ${x.duration_min} min. Wrap it up, or keep going.`, at:x.opened_at,
       acts:[["Wrap up", () => closeSession(x.id, "owner"), true], ["Open", () => go("#session/" + encodeURIComponent(x.id))]]}); });
   tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).forEach(t => { const p = sched.byTask[t.id];
-    items.push({k:"Will be late", c:"var(--late)", who:t.session || "coordinator", t:`${t.id} · ${t.title_en || ""}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), rel:p.due > Date.now() ? "due in " + fmtDur(Math.round((p.due - Date.now()) / 6e4)) : "past due",
+    items.push({k:"Will be late", c:"var(--late)", who:t.session || "coordinator", t:`${t.id} · ${ttl(t)}`, s:[lateText(p) + ` (ends ${fmtWhen(p.e)}, due ${fmtWhen(p.due)})`, whyText(p)].filter(Boolean).join(". "), rel:p.due > Date.now() ? "due in " + fmtDur(Math.round((p.due - Date.now()) / 6e4)) : "past due",
       key:"l:" + t.id, inline:() => inlineReply("l:" + t.id, {to:t.session || "coordinator", task:t.id}, `Ask ${nameOf(t.session)} about ${t.id}…`),
       acts:[["Talk", "inline", true], ["Meeting", () => callMeeting({task:t.id})], ["Move the deadline", e => moveDeadline(e.currentTarget, t, p)], ["Task", () => openTask(t.id)]]}); });
   const w = agents.filter(a => a.state === "working").length, isSent = it => it.key && inboxSent.has(it.key), todo = items.filter(it => !isSent(it)).length;
@@ -1640,10 +1661,10 @@ function renderInbox(){
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
     const c = el("div","ib"); c.style.setProperty("--c", it.c);
     const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", it.rel || ago(it.at)));
-    const a = el("div","ib-a"), open = it.key && inboxOpen.has(it.key), sent = it.key && inboxSent.get(it.key);
+    const a = el("div","ib-a"), open = it.key && inboxOpen.has(it.key), sent = it.key && sentEl(it.key);
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
       b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
-    if (sent) a.append(el("span","ib-sent", sent + " ✓"));
+    if (sent) a.replaceChildren(sent);
     c.append(avatar(it.who, 34), k, el("div","ib-t", it.t), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
     if (open && it.inline) { const x = el("div","ib-x"); x.append(it.inline()); c.append(x); }
     box.append(c); });
@@ -1653,6 +1674,7 @@ function renderInbox(){
 const EST_DEF = 60, DAY = 864e5;
 const estOf = t => Math.max(5, Number(t.estimate_min) || EST_DEF);
 const depsOf = t => (Array.isArray(t.depends_on) ? t.depends_on : []).filter(d => d !== t.id && tasks.some(x => x.id === d));
+const ttl = t => t?.title_en || "Untitled task";
 const fmtDur = m => m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`;
 const workday = () => { const w = metaOffice?.workday || {}; const s = Number.isFinite(+w.start) ? +w.start : 0, e = Number.isFinite(+w.end) ? +w.end : 24;
   return {start:s, end:e > s ? e : 24, days:Array.isArray(w.days) && w.days.length ? w.days.map(Number) : [0,1,2,3,4,5,6]}; };   // agents work around the clock unless meta/office.workday says otherwise
@@ -1708,9 +1730,9 @@ function buildSchedule(){
   Object.values(byAgent).forEach(l => l.sort((a, b) => a.s - b.s));
   sched = {byTask, byAgent};
 }
-const fmtWhen = ms => new Date(ms).toLocaleString("en-GB", {weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
+const fmtWhen = ms => !ms || isNaN(ms) ? "no time set" : new Date(ms).toLocaleString("en-GB", {weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
 const fmtHM = ms => new Date(ms).toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"});
-const lateText = p => p.lateBy ? `Late by ${fmtDur(Math.round(p.lateBy / 6e4))}` : "";
+const lateText = p => !p.lateBy ? "" : p.lateBy >= 2 * DAY ? `Late by ${Math.round(p.lateBy / DAY)} days` : `Late by ${fmtDur(Math.round(p.lateBy / 6e4))}`;
 const whyText = p => p.cycle ? "Its dependencies loop back to it: check Needs first" : p.lateDeps?.length ? `Moved: waits for ${p.lateDeps.join(", ")}, which ${p.lateDeps.length === 1 ? "runs" : "run"} late` : p.waits && p.deps?.length ? `Starts after ${p.deps.join(", ")}` : "";
 function timeBox(t){   // the task dialog's Time row
   const p = sched.byTask[t.id]; const d = el("div"); d.append(el("div","lbl","Time"));
@@ -1729,7 +1751,8 @@ let baseline = null, baseDay = "", baseState = "";
 function watchBaseline(){ if (!db) return; const day = localDay(new Date()); if (day === baseDay) { if (baseState === "none") lockPlan("auto"); return; }
   baseDay = day; baseState = "loading"; db.doc("plans/" + day).onSnapshot(d => { if (baseDay !== day) return; baseline = d && d.exists ? d.data() : null; baseState = baseline ? "ok" : "none"; if (!baseline) lockPlan("auto"); else renderAll(false); }, () => {}); }
 function lockPlan(by){
-  if (!db || !canWrite || !tasks.length || (by === "auto" && baseState !== "none")) return; baseState = "locking";
+  if (!db || !canWrite || !tasks.length || (by === "auto" && (baseState !== "none" || !autoWriter()))) return; baseState = "locking";
+  if (planDirty) { planDirty = false; buildSchedule(); }   // lock today's plan, never a half-built one
   const open = tasks.filter(t => !isClosed(t)), T = {}; open.forEach(t => { const p = sched.byTask[t.id]; if (p) T[t.id] = {e:p.e, est:estOf(t)}; });
   db.doc("plans/" + baseDay).set({at:new Date().toISOString(), by, done_by:open.reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0), tasks:T}).catch(() => { baseState = "none"; }); }
 function drift(){
@@ -1764,7 +1787,7 @@ function planHealth(){
     box.append(line); }
   const wrap = el("div","stack"); wrap.append(box);
   if (rows.length) { const list = el("div","health-list"); rows.sort((a, b) => (P(a[0]).e || 0) - (P(b[0]).e || 0)).forEach(([t, why]) => { const r = el("button","cal-row"); r.type = "button";
-      const w = el("span","who"); w.append(avatar(t.session || "coordinator", 24), el("b", null, `${t.id} ${t.title_en || ""}`));
+      const w = el("span","who"); w.append(avatar(t.session || "coordinator", 24), el("b", null, `${t.id} ${ttl(t)}`));
       r.append(w, el("span","note", nameOf(t.session || "")), el("span","note", why || ""), el("span","note", P(t).e ? "Ends " + fmtWhen(P(t).e) : "")); r.onclick = () => openTask(t.id); list.append(r); });
     wrap.append(list); } else calHealth = "";
   return wrap;
@@ -1773,11 +1796,11 @@ function calEvent(ev){
   const b = el("button","cal-ev" + (ev.kind === "meet" ? " meet" : "") + (ev.done ? " done" : ""));
   b.type = "button";
   if (ev.kind === "meet") { const s = ev.sess; b.style.setProperty("--c", "var(--warn)");
-    b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)}`), el("b", null, (isMeeting(s) ? "Meeting: " : "Session: ") + (s.title_en || s.task || "")), el("span","note", `${(s.members || []).length} people`));
+    b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)}`), el("b", null, (isMeeting(s) ? "Meeting: " : "Session: ") + (s.title_en || s.task || "")), el("span","note", `${(s.members || []).length} ${(s.members || []).length === 1 ? "person" : "people"}`));
     b.onclick = () => go("#session/" + encodeURIComponent(s.id)); return b; }
   const t = ev.t, p = sched.byTask[t.id] || {}; if (t.feature) b.style.setProperty("--c", featColor(t.feature));
   if (p.lateBy) b.classList.add("late");
-  b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)} · ${ev.part ? fmtDur(Math.max(1, Math.round((ev.e - ev.s) / 6e4))) + " of " : ""}${fmtDur(estOf(t))}`), el("b", null, `${t.id} · ${t.title_en || ""}`));
+  b.append(el("span","tm", `${fmtHM(ev.s)}–${fmtHM(ev.e)} · ${ev.part ? fmtDur(Math.max(1, Math.round((ev.e - ev.s) / 6e4))) + " of " : ""}${fmtDur(estOf(t))}`), el("b", null, `${t.id} · ${ttl(t)}`));
   const w = [lateText(p), whyText(p)].filter(Boolean).join(". "); if (w) b.append(el("span","why", w));
   b.onclick = () => go("#task/" + encodeURIComponent(t.id)); return b; }
 function weekStart(off){ const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + off * 7); return d; }   // a rolling week: today and the 6 days after
@@ -1813,7 +1836,7 @@ function renderCalendar(){
     .sort((x, y) => (y.l.some(e => sched.byTask[e.t?.id]?.lateBy) - x.l.some(e => sched.byTask[e.t?.id]?.lateBy)) || x.l[0].s - y.l[0].s)
     .forEach(({a, l}) => { const r = el("button","cal-row"); r.type = "button"; const w = el("span","who"); w.append(avatar(a.id, 28), el("b", null, nameOf(a.id)));
       const cur = l.find(x => x.s <= now) || null, nx = l.find(x => x.s > now) || null, lastT = [...l].reverse().find(x => x.kind === "task");
-      const lab = x => x ? (x.kind === "meet" ? `${x.sess.title_en || "Meeting"}` : `${x.t.id} ${x.t.title_en || ""}`) : "—";
+      const lab = x => x ? (x.kind === "meet" ? `${x.sess.title_en || "Meeting"}` : `${x.t.id} ${ttl(x.t)}`) : "—";
       const late = l.filter(x => x.kind === "task" && sched.byTask[x.t.id]?.lateBy).length;
       r.append(w, el("span","note", "Now: " + lab(cur)), el("span","note", "Next: " + (nx ? fmtWhen(nx.s).replace(/^\w+ /, "") + " · " + lab(nx) : "—")),
         el("span", late ? "t-warn" : "note", late ? `${late} late` : lastT ? "Free from " + fmtWhen(lastT.e) : ""));
@@ -1945,13 +1968,13 @@ function renderBoard(){
       tasks.filter(t => t.session === id && (t.state||"todo") === s.k && shown(t)).sort((a,b) => (a.order ?? 999) - (b.order ?? 999) || String(a.id).localeCompare(String(b.id))).forEach(t => {
         const b = el("button","card s-"+s.k); b.type = "button"; b.dataset.task = t.id;
         if (t.feature) b.append(flabel(t.feature));
-        b.append(el("span","t", t.title_en || t.id), el("span","ph-tag ph-" + phaseOf(t), phaseName(phaseOf(t))));
+        b.append(el("span","t", ttl(t)), el("span","ph-tag ph-" + phaseOf(t), phaseName(phaseOf(t))));
         const ab = !isClosed(t) && agentById(t.session)?.state === "blocked";
         if (t.state !== "blocked" && ab) b.append(el("span","blk-tag", "Agent blocked"));
         if (t.state === "blocked" || ab) { const bi = blockInfo(ab ? agentById(t.session) : null, t); if (bi.why) b.append(el("span","blk-why", bi.why)); if (bi.needs) b.append(el("span","blk-why need", "Needs from you: " + bi.needs)); }
         const os = openSessionFor(t.id);
         if (os) { const q = el("span","qbadge go","Question open"); q.title = "Go to the session"; q.dataset.session = os.id; b.append(q); }
-        const pl = sched.byTask[t.id]; if (pl && !pl.done) { const tm = el("span","est", `${fmtDur(estOf(t))} · ends ${fmtWhen(pl.e)}`); b.append(tm); if (pl.lateBy || pl.lateDeps?.length) b.append(el("span","late-tag", [lateText(pl), pl.lateDeps?.length ? "after " + pl.lateDeps.join(", ") : ""].filter(Boolean).join(" · "))); }
+        const pl = sched.byTask[t.id]; if (pl && !pl.done) { const tm = el("span","est", `${fmtDur(estOf(t))} · ends ${fmtWhen(pl.e)}`); b.append(tm); if (pl.cycle) b.append(el("span","late-tag", "Dependencies loop")); if (pl.lateBy || pl.lateDeps?.length) b.append(el("span","late-tag", [lateText(pl), pl.lateDeps?.length ? "after " + pl.lateDeps.join(", ") : ""].filter(Boolean).join(" · "))); }
         const m = el("span","meta"); m.append(el("span","mono", t.id), el("span","note", (Array.isArray(t.test_cases) && t.test_cases.length) ? `${t.test_cases.length} test case${t.test_cases.length === 1 ? "" : "s"}` : ""));
         b.append(m); b.onclick = e => e.target.dataset.session ? go("#session/" + encodeURIComponent(e.target.dataset.session)) : go("#task/" + encodeURIComponent(t.id)); cell.append(b);
       });
@@ -1962,7 +1985,7 @@ function renderBoard(){
 function openTask(id){
   const t = tasks.find(x => x.id === id); if (!t) return;
   const body = $("taskBody"); body.replaceChildren();
-  const top = el("div"); top.append(el("span","mono", `${t.id} · ${nameOf(t.session)}`), el("h3", null, t.title_en || t.id)); body.append(top);
+  const top = el("div"); top.append(el("span","mono", `${t.id} · ${nameOf(t.session)}`), el("h3", null, ttl(t))); body.append(top);
   const st = STATES.find(s => s.k === t.state); const sr = el("div"); sr.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center"; const sc = el("span","chip"); sc.textContent = st ? st.en : (t.state || ""); sr.append(sc); if (t.feature) sr.append(flabel(t.feature)); if (versions().length) sr.append(el("span","chip", verName(verOf(t)))); sr.append(el("span","chip", "Phase: " + phaseName(phaseOf(t)))); body.append(sr);
   if (t.summary_en) { const d = el("div"); d.append(el("div","lbl","Summary"), el("div", null, t.summary_en)); body.append(d); }
   body.append(timeBox(t));
@@ -2031,7 +2054,7 @@ function renderSessions(){
   const open = sessions.filter(s => s.state === "open").sort(sortByLast);
   const up = sessions.filter(s => s.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")));
   if (up.length) { box.append(el("div","lbl","Coming up")); up.forEach(s => { const b = el("button","up-row"); b.type = "button";
-    b.append(el("span","tm", fmtWhen(Date.parse(s.at))), el("b", null, s.title_en || "Meeting"), el("span"), el("span","note", `${(s.members || []).length} people · ${s.duration_min || 30} min · ${s.room === "huddle" ? "Huddle table" : "Meeting room"}`));
+    b.append(el("span","tm", fmtWhen(Date.parse(s.at))), el("b", null, s.title_en || "Meeting"), el("span"), el("span","note", `${(s.members || []).length} ${(s.members || []).length === 1 ? "person" : "people"} · ${s.duration_min || 30} min · ${s.room === "huddle" ? "Huddle table" : "Meeting room"}`));
     b.onclick = () => viewSession(s.id); box.append(b); }); }   // opens here in the chat, with Start now, Move and Cancel
   if (up.length && open.length) box.append(el("div","lbl","Open now"));
   open.forEach(s => box.append(convRow(s)));
@@ -2185,7 +2208,7 @@ function renderAgentWork(){
   box.append(th);
   const tl = el("div","ag-list"); const shownT = mine.filter(t => agentTaskView === "all" || (agentTaskView === "done") === isClosed(t));
   shownT.forEach(t => { const b = el("button","ag-row"); b.type = "button";
-    b.append(el("span","mono", t.id), el("span","tt", t.title_en || t.id), el("span","tp-tag" + (isClosed(t) ? " closed" : ""), stateName(t)));
+    b.append(el("span","mono", t.id), el("span","tt", ttl(t)), el("span","tp-tag" + (isClosed(t) ? " closed" : ""), stateName(t)));
     if (t.feature) b.append(flabel(t.feature)); if (versions().length) b.append(el("span","tp-tag", verName(verOf(t)))); b.append(el("span","tp-tag", phaseName(phaseOf(t))));
     b.onclick = () => go("#task/" + encodeURIComponent(t.id)); tl.append(b); });
   if (!shownT.length) tl.append(el("div","note", mine.length ? "None here." : "No tasks yet."));
@@ -2397,7 +2420,7 @@ function versionKanban(v, vt, np){
       if (!p.subs.includes(k)) { cell.classList.add("na"); cell.append(el("span","note","Not used in this phase")); grid.append(cell); return; }
       const list = pt.filter(t => subOf(t) === k).sort(byOrder);
       cell.append(el("span","rm-n", String(list.length)));
-      if (rmap.tasks) { list.slice(0, 5).forEach(t => { const b = el("button","rm-pill" + (t.state === "blocked" ? " blocked" : "")); b.type = "button"; b.title = `${t.id} · ${t.title_en || ""} (${nameOf(t.session)})`;
+      if (rmap.tasks) { list.slice(0, 5).forEach(t => { const b = el("button","rm-pill" + (t.state === "blocked" ? " blocked" : "")); b.type = "button"; b.title = `${t.id} · ${ttl(t)} (${nameOf(t.session)})`;
         b.append(el("span","mono", t.id), el("span","tt", t.title_en || "")); b.onclick = () => go("#task/" + encodeURIComponent(t.id)); cell.append(b); });
         if (list.length > 5) cell.append(el("span","note", `+${list.length - 5} more`)); }
       grid.append(cell);
@@ -2590,14 +2613,20 @@ function callMeeting(opts){
   if (opts.at) { setWhen("later"); at.value = toLocal(opts.at); upd(); }
   closeDialogs(); $("meetDlg").showModal(); ta.focus();
 }
+/* a standing meeting takes today's agenda when it opens; the people booked stay as they are */
+const freshAgenda = s => { if (!s.ritual) return {}; const f = ritualPlan(s.ritual); return {agenda:f.agenda, tasks:f.tasks, agenda_done:[]}; };
 /* a scheduled meeting opens by itself at its time, and walks its people into the room */
+/* automatic writes (opening and booking meetings, locking the plan) come from the owner's page only; meta/office.owner_id names the owner, and without it any writer may */
+const autoWriter = () => !!db && canWrite && (!metaOffice?.owner_id || metaOffice.owner_id === me);
+const missedBy = s => { const t = Date.parse(s.at || ""); return t && t + ((s.duration_min || 30) + 15) * 6e4 < Date.now(); };   // the whole meeting, plus 15 min, is in the past
 function openDueMeetings(){
-  if (!db || !canWrite) return;
+  if (!autoWriter()) return;
   sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now()).forEach(s => {
-    const fresh = s.ritual ? ritualPlan(s.ritual) : null;   // a standing meeting takes today's agenda and people when it opens
-    db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at, ...(fresh ? {agenda:fresh.agenda, tasks:fresh.tasks, members:fresh.members, agenda_done:[]} : {})}).catch(() => {});
-    if (s.repeat) { const series = s.series || s.id, next = new Date(Date.parse(s.at) + (s.repeat === "week" ? 7 : 1) * DAY).toISOString();   // a repeating meeting books its next time
-      if (!sessions.some(x => (x.series || x.id) === series && x.at === next)) { const {id, ...rest} = s; db.collection("sessions").add({...rest, series, at:next, state:"scheduled", scheduled_at:new Date().toISOString(), opened_at:null}).catch(() => {}); } }
+    if (missedBy(s)) db.doc("sessions/" + s.id).update({state:"closed", missed:true, closed_at:new Date().toISOString(), resolution_en:"Missed: the office page was not open when it was due."}).catch(() => {});   // never replay old meetings one by one
+    else db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at, ...freshAgenda(s)}).catch(() => {});
+    if (s.repeat) { const series = s.series || s.id, step = (s.repeat === "week" ? 7 : 1) * DAY; let n = Date.parse(s.at) + step; while (n <= Date.now()) n += step;   // a repeating meeting books its next future time
+      const next = new Date(n).toISOString(), nid = `${series}-${localDay(new Date(n))}`;   // a fixed id, so two open tabs book it once
+      if (!sessions.some(x => x.id === nid || ((x.series || x.id) === series && x.at === next))) { const {id, ...rest} = s; db.doc("sessions/" + nid).set({...rest, series, at:next, state:"scheduled", scheduled_at:new Date().toISOString(), opened_at:null, missed:null, moved:null}).catch(() => {}); } }
   });
 }   // the snapshot that follows moves people into the room
 setInterval(() => { openDueMeetings(); ensureRituals(); }, 30000); setTimeout(() => { openDueMeetings(); ensureRituals(); }, 5000);
@@ -2796,7 +2825,7 @@ const boardVer = () => { const v = bf.ver ?? currentVer(); return v === "*" || v
 /* ---------- items: tasks and conversations, filtered the same way everywhere ----------
    version first, then stage checkboxes (Done is off by default), then feature checkboxes */
 const KINDS = {meeting:"Meeting", question:"Quick question", consult:"Consultation", chat:"Chat"};
-const convKind = s => KINDS[s?.kind] || "Task session";
+const convKind = s => KINDS[s?.kind] || (s?.task ? "Task session" : "Session");
 const convTask = s => tasks.find(t => t.id === s.task);
 const convState = s => s.state === "open" ? "doing" : "done";
 const convVer = s => s.version || verOf(convTask(s) || {}) || "";
@@ -2811,7 +2840,7 @@ const featOn = f => f.feats.size > 0 || f.tasks.size > 0;
 const featOk = (it, f) => !featOn(f) || f.feats.has(it.feature) || f.tasks.has(it.type === "conv" ? (it.s?.task || "") : it.id);
 const fVer = f => { const v = f.ver ?? currentVer(); return v === "*" || versions().includes(v) ? v : currentVer(); };
 function items(withConvs){
-  const a = tasks.map(t => ({type:"task", id:t.id, title:t.title_en || t.id, state:t.state || "todo", version:verOf(t), feature:t.feature || "", owner:t.session, order:t.order, t}));
+  const a = tasks.map(t => ({type:"task", id:t.id, title:ttl(t), state:t.state || "todo", version:verOf(t), feature:t.feature || "", owner:t.session, order:t.order, t}));
   if (withConvs) sessions.forEach(s => a.push({type:"conv", id:s.id, title:s.title_en || "Conversation", state:convState(s), version:convVer(s), feature:convFeat(s), kind:convKind(s), members:s.members || [], s}));
   return a;
 }
@@ -3086,15 +3115,15 @@ async function closeSession(id, by, resolution){
 /* a meeting set for later can be started now, moved or cancelled right from its chat (council round 4, U10) */
 function scheduledButtons(s){
   const w = el("span","wrap-up"), start = el("button","btn","Start now"), mv = el("button","btn-lite","Move"), cx = el("button","btn-lite","Cancel meeting"); start.type = mv.type = cx.type = "button";
-  start.onclick = async () => { start.disabled = true; const now = new Date().toISOString(); try { await db.doc("sessions/" + s.id).update({state:"open", opened_at:now, at:now}); } catch (err) { start.textContent = writeError(err); start.disabled = false; } };
+  start.onclick = async () => { start.disabled = true; const now = new Date().toISOString(); try { await db.doc("sessions/" + s.id).update({state:"open", opened_at:now, at:now, ...freshAgenda(s)}); } catch (err) { start.textContent = writeError(err); start.disabled = false; } };
   mv.onclick = () => { const inp = el("input"); inp.type = "datetime-local"; inp.setAttribute("aria-label","New time"); const toLocal = ms => new Date(ms - new Date(ms).getTimezoneOffset() * 6e4).toISOString().slice(0, 16); inp.value = toLocal(Date.parse(s.at) || Date.now());
     const ok = el("button","btn","Save"), no = el("button","linkish","Back"), note = el("span","note"); ok.type = no.type = "button";
     const check = () => { const t = Date.parse(inp.value), e = t + (s.duration_min || 30) * 6e4, c = t && roomTakenBy(s.room || "meet", t, e, s.id); note.textContent = c ? `The meeting room is booked then: ${c.title_en || "another meeting"}` : ""; };
-    inp.onchange = check; ok.onclick = async () => { const t = Date.parse(inp.value); if (!t) return; ok.disabled = true; try { await db.doc("sessions/" + s.id).update({at:new Date(t).toISOString()}); inp.blur(); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
+    inp.onchange = check; ok.onclick = async () => { const t = Date.parse(inp.value); if (!t) return; ok.disabled = true; try { await db.doc("sessions/" + s.id).update({at:new Date(t).toISOString(), moved:true}); inp.blur(); } catch (err) { ok.textContent = writeError(err); ok.disabled = false; } };
     no.onclick = () => w.replaceChildren(start, mv, cx); w.replaceChildren(inp, ok, no, note); inp.focus(); };
   cx.onclick = async () => { if (cx.dataset.sure !== "1") { cx.dataset.sure = "1"; cx.textContent = "Cancel it?"; setTimeout(() => { if (cx.isConnected) { cx.dataset.sure = ""; cx.textContent = "Cancel meeting"; } }, 4000); return; }
     cx.disabled = true; try { await db.doc("sessions/" + s.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), closed_by:"owner", resolution_en:"Cancelled before it started.", relayed:false}); } catch (err) { cx.textContent = writeError(err); cx.disabled = false; } };
-  w.append(start, mv, cx); return w; }
+  w.setAttribute("aria-live", "polite"); w.append(start, mv, cx); return w; }
 function wrapButton(s){
   const w = el("span","wrap-up"), b = el("button","btn-lite","Wrap up"); b.type = "button";
   b.onclick = () => { const ta = el("input"); ta.placeholder = "Outcome in one line (optional)"; ta.setAttribute("aria-label","Meeting outcome");
@@ -3143,7 +3172,7 @@ const ritCfg = () => { const r = metaOffice?.rituals || {}, su = r.standup || {}
   return {standup:{on:!!su.on, time:su.time || "09:00", min:+su.min || 15}, review:{on:!!rv.on, day:Number.isFinite(+rv.day) ? +rv.day : 0, time:rv.time || "10:00", min:+rv.min || 30}}; };
 function ritualPlan(kind){
   const lines = [], taskIds = new Set(), people = new Set(["coordinator"]), now = Date.now();
-  tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).forEach(t => { lines.push(`Late: ${t.id} ${t.title_en || ""} (${lateText(sched.byTask[t.id])})`); taskIds.add(t.id); people.add(t.session); });
+  tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).forEach(t => { lines.push(`Late: ${t.id} ${ttl(t)} (${lateText(sched.byTask[t.id])})`); taskIds.add(t.id); people.add(t.session); });
   agents.filter(a => a.state === "blocked").forEach(a => { const t = tasks.find(x => x.session === a.id && !isClosed(x)); const bi = blockInfo(a, t); lines.push(`Blocked: ${nameOf(a.id)}${bi.why ? ", " + bi.why.replace(/\.$/, "") : ""}`); if (t) taskIds.add(t.id); people.add(a.id); });
   agents.filter(a => a.state === "waiting" && a.id !== ASSISTANT).forEach(a => { lines.push(`Decision for you: ${nameOf(a.id)}${a.doing_en ? ", " + a.doing_en : ""}`); people.add(a.id); });
   if (kind === "review") { const wk = now - 7 * DAY, done = tasks.filter(t => isClosed(t) && (Date.parse(t.done_at || t.updated_at || "") || 0) > wk).length, last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
@@ -3153,8 +3182,8 @@ function ritualPlan(kind){
 const nextAt = (time, day) => { const [h, m] = String(time).split(":").map(Number), d = new Date(); d.setSeconds(0, 0); d.setHours(h || 0, m || 0);
   if (day == null) { if (+d <= Date.now()) d.setDate(d.getDate() + 1); } else { d.setDate(d.getDate() + ((day - d.getDay() + 7) % 7)); if (+d <= Date.now()) d.setDate(d.getDate() + 7); } return d; };
 function ensureRituals(){
-  if (!db || !canWrite) return; const c = ritCfg();
-  Object.keys(RITUALS).forEach(k => { if (!c[k].on) return; const at = nextAt(c[k].time, k === "review" ? c[k].day : null), id = `ritual-${k}-${localDay(at)}`;
+  if (!autoWriter()) return; const c = ritCfg();
+  Object.keys(RITUALS).forEach(k => { if (!c[k].on) return; const at = nextAt(c[k].time, k === "review" ? c[k].day : null), id = `ritual-${k}-${localDay(at)}-${c[k].time.replace(":", "")}`;   // the time is in the id, so a new time books a new doc
     if (sessions.some(x => x.id === id) || sessions.some(x => x.ritual === k && x.state === "scheduled")) return;   // one id per date, so two open tabs can't book it twice
     const pl = ritualPlan(k);
     db.doc("sessions/" + id).set({kind:"meeting", ritual:k, title_en:RITUALS[k].title, purpose:RITUALS[k].purpose, opened_by:"owner", author_id:me, members:pl.members, agenda:pl.agenda, tasks:pl.tasks,
@@ -3168,8 +3197,11 @@ function renderRitSettings(){
   $("ritRvD").replaceChildren(...DAYN.map((d, i) => new Option(d, i, false, i === c.review.day))); $("ritSu").checked = c.standup.on; $("ritRv").checked = c.review.on; }
 $("ritSave").onclick = async () => { $("ritNote").textContent = "Saving…";
   const v = {standup:{on:$("ritSu").checked, time:$("ritSuT").value, min:+$("ritSuL").value}, review:{on:$("ritRv").checked, day:+$("ritRvD").value, time:$("ritRvT").value, min:+$("ritRvL").value}};
+  const was = ritCfg();
   try { await db.doc("meta/office").update({rituals:v});
-    for (const k of Object.keys(RITUALS)) for (const x of sessions.filter(x => x.ritual === k && x.state === "scheduled")) await db.doc("sessions/" + x.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), resolution_en:"Rebooked after a settings change."});   // the next one is booked with the new time
+    for (const k of Object.keys(RITUALS)) { const a = was[k], b = v[k], booked = sessions.filter(x => x.ritual === k && x.state === "scheduled" && !x.moved);   // a meeting moved by hand stays where it was put
+      if (a.on !== b.on || a.time !== b.time || a.day !== b.day) { for (const x of booked) await db.doc("sessions/" + x.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), resolution_en:"Rebooked after a settings change."}); }
+      else if (a.min !== b.min) { for (const x of booked) await db.doc("sessions/" + x.id).update({duration_min:b.min}); } }
     document.activeElement.blur(); $("ritNote").textContent = "Saved. The next ones are booked."; setTimeout(ensureRituals, 300); } catch (err) { $("ritNote").textContent = writeError(err); } };
 function renderMeetSettings(){
   renderRitSettings();
