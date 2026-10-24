@@ -618,7 +618,7 @@ form.compose{grid-template-columns:minmax(0,1fr)}
 .card:hover{border-color:var(--accent)} .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .card .t{font-weight:700;font-size:13.5px;line-height:1.35}
 .card .meta{display:flex;justify-content:space-between;gap:6px;align-items:center}
-.empty{color:var(--muted);font-size:13px;padding:4px 2px}
+.empty{color:var(--muted);font-size:13px;padding:4px 2px}.es{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;border:1px dashed var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font-size:13.5px;max-width:640px}.es .av{flex:none}.es p{margin:0;flex:1 1 220px;min-width:0}.es p small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
 .feat-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.feat-row .lbl{margin:0}
 .fctl{display:grid;gap:8px;min-width:0}
 .frow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;min-width:0}.frow>.lbl{margin:0;min-width:62px}
@@ -1971,7 +1971,7 @@ function renderInbox(){
     c.append(avatar("coordinator", 34), k, el("div","ib-t", `${hi}. Here's the night.`), tiles, ul, $("nightStrip"), a); $("awayBox").replaceChildren(c); }
   if (!items.length) {   // "morning done" (council round 4, I2): what comes next, so the owner can leave with peace of mind
     const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
-    box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
+    box.append(emptyState("coordinator", "All caught up.", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" ").replace(/^All caught up\. /, ""))); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
     const c = el("div","ib" + (inboxOpenCard.has(it.key) || (it.key && inboxOpen.has(it.key)) ? " open" : "")); c.style.setProperty("--c", it.c);
     c.addEventListener("click", e => { if (e.target.closest("button, input, textarea, a, .av") || !matchMedia("(max-width:520px)").matches) return; inboxOpenCard.has(it.key) ? inboxOpenCard.delete(it.key) : inboxOpenCard.add(it.key); c.classList.toggle("open"); c.setAttribute("aria-expanded", String(c.classList.contains("open"))); });
@@ -2275,6 +2275,7 @@ function personHours(evs, id){
     if (canWrite && to > now) { lane.title = `Click a free time to meet ${nameOf(id)}`; lane.onclick = ev => { const r = lane.getBoundingClientRect(), t = Math.round((from + (ev.clientX - r.left) / r.width * span) / 9e5) * 9e5; callMeeting({at:Math.max(t, Math.ceil(now / 9e5) * 9e5), with:[id]}); };
       bookKeys(lane, `Meet ${nameOf(id)} on ${label}: Enter picks their next free time`, () => callMeeting({at:nextFree(list.map(x => ({sp:x})), Math.max(from, now)), with:[id]})); }
     grid.append(el("div","rd-name", ds === todayS ? "Today" : label), lane); }
+  if (!segs.length) w.append(emptyState(id, `Nothing planned for ${nameOf(id)} this week.`, "Their tasks and meetings show here by the hour.", canWrite ? `Book a meeting with ${nameOf(id)}` : "", () => callMeeting({with:[id]})));
   const sc = el("div","rd-scroll"); sc.append(grid); w.append(sc);
   w.append(el("div","rd-free", (free.length ? `Free: ${free.join(", ")}. ` : "") + "Orange stripes: running late. Red stripes: blocked. Click a free time on a day (or focus it and press Enter) to book a meeting with them."));
   return w; }
@@ -2321,6 +2322,8 @@ function renderCalendar(){
 $("calWho").onchange = e => { calWho = e.target.value; renderCalendar(); };
 document.querySelectorAll(".cal-pills button").forEach(b => b.onclick = () => { calWho = b.dataset.v; renderCalendar(); });
 $("calPrev").onclick = () => { calWeek--; renderCalendar(); }; $("calNext").onclick = () => { calWeek++; renderCalendar(); }; $("calToday").onclick = () => { calWeek = 0; renderCalendar(); };
+/* friendly empty states (council round 20): who this view belongs to, why it is empty, and one way on */
+function emptyState(who, text, sub, label, fn){ const w = el("div","es"), p = el("p", null, text); if (sub) p.append(el("small", null, sub)); w.append(avatar(who, 40), p); if (label && fn) { const b = el("button","btn-lite", label); b.type = "button"; b.onclick = fn; w.append(b); } return w; }
 function avatar(id, size){ const av = el("span","av"); av.dataset.id = id; av.style.backgroundImage = `url(${charUrl(id,"front-left")})`; av.style.borderColor = id === "owner" ? "var(--accent)" : colorFor(id); if (size) { av.style.width = av.style.height = size + "px"; } return av; }
 function stateChip(st){ const s = AGENT_STATE[st] || AGENT_STATE.idle; const c = el("span","chip "+s.cls); c.append(el("span","dot"), s.en); return c; }
 function renderRoster(){
@@ -2426,7 +2429,7 @@ function renderBoard(){
   const convs = items(true).filter(it => it.type === "conv" && itemIn(it, bf) && (!filter || it.members.includes(filter))).map(it => it.s);
   cols.forEach(s => { const h = el("div","hd"); h.append(s.en, el("span", null, String(tasks.filter(t => (t.state||"todo") === s.k && shown(t)).length + convs.filter(c => convState(c) === s.k).length))); grid.append(h); });
   const lanes = laneIds().filter(id => (!filter || id === filter) && tasks.some(t => t.session === id && shown(t)));
-  if (!lanes.length && !convs.length) { const e = el("div","empty", tasks.length ? "Nothing here with these filters. Change the version, stage or feature, or use Find." : "No tasks yet. The Business Analyst adds them here."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
+  if (!lanes.length && !convs.length) { const e = tasks.length ? emptyState("coordinator", "No task matches these filters.", "Change the version, stage or feature, or use Find.", "Show everything", () => { bf.ver = null; bf.feats.clear(); bf.tasks.clear(); bf.phases.clear(); bf.states = new Set(["todo","doing","review","blocked"]); renderBoard(); }) : emptyState("business-analyst", "No tasks yet.", "The Business Analyst adds them here."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
   if (convs.length) {
     const folded = convFolded(), ln = el("div","lane-name"); const fb = el("button","conv-fold"); fb.type = "button"; fb.setAttribute("aria-expanded", String(!folded));
     fb.append(folded ? "▸" : "▾", "Conversations", el("small", null, `${convs.filter(c => c.state === "open").length} open`)); fb.onclick = () => { setConvFolded(!folded); renderBoard(); }; ln.append(fb); grid.append(ln);
@@ -2757,7 +2760,7 @@ function renderReviews(){
   $("rvSum").textContent = reviews.length ? `${byTask.size} task${byTask.size === 1 ? "" : "s"} reviewed · ${all.filter(r => r.outcome === "approved").length} approved clean · ${all.filter(r => r.outcome === "approved-notes").length} with notes · ${all.filter(r => r.outcome === "changes").length} sent back · showing ${rows.length}` : "";
   const open = new Set([...list.querySelectorAll("details[open]")].map(d => d.dataset.task));
   list.replaceChildren();
-  if (!reviews.length) { list.append(el("p","note","No reviews yet. They appear here when the Reviewer checks someone's work.")); return; }
+  if (!reviews.length) { const inRv = tasks.filter(t => t.state === "review").length; list.append(emptyState("reviewer", "No reviews yet.", inRv ? `${inRv} task${inRv === 1 ? " is" : "s are"} in review now; the Reviewer's notes land here.` : "When work is ready, the Reviewer checks it and the notes land here.", inRv ? "Open them" : "", () => { showTab("board"); })); return; }
   if (!rows.length) { list.append(el("p","note","No task matches these filters.")); return; }
   rows.forEach(x => { const d = el("details","rv-task"); d.dataset.task = x.id; d.open = open.has(x.id);
     const sm = el("summary"); sm.append(el("span","rv-badge " + x.last.outcome, RV_OUT[x.last.outcome] || x.last.outcome || "?"));
@@ -3176,7 +3179,7 @@ function renderMsgs(){
   const sessTask = id => sessions.find(x => x.id === id)?.task;
   const feed = chatSess ? msgs.filter(m => m.session === chatSess) : chatPair ? msgs.filter(m => !m.session && (m.pair === chatPair || [m.from, m.to].sort().join("|") === chatPair)) : chatTask ? msgs.filter(m => m.task === chatTask || (m.session && sessTask(m.session) === chatTask)) : msgs.filter(m => !m.session);
   renderChatInfo(feed.length);
-  if (!feed.length) box.append(el("div","empty", chatSess || chatPair ? "No messages yet." : chatTask ? "Nothing has been discussed about this task yet." : "No discussions yet. Agents' questions and decisions show up here."));
+  if (!feed.length) box.append(chatSess || chatPair || chatTask ? el("div","empty", chatTask && !chatSess && !chatPair ? "Nothing has been discussed about this task yet." : "No messages yet.") : emptyState("coordinator", "No discussions yet.", "Agents' questions and decisions show up here.", canWrite ? "Call a meeting" : "", () => callMeeting({})));
   feed.forEach(m => box.append(msgRow(m)));
   const ty = typingRow(); if (ty) box.append(ty);
   if (atBottom || chatJump || ty) box.scrollTop = box.scrollHeight; chatJump = false;
