@@ -20,13 +20,13 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#10151c; --panel:#18202a; --ink:#e4e9ef; --muted:#97a3b1; --line:#2a3442;
-  --accent:#8aa2ff; --accent-ink:#0e1320;
+  --accent:#8aa2ff; --accent-ink:#0e1320; --btn:#4c6ef5; --btn-ink:#ffffff;
   --ok:#4fc483; --warn:#f0a83c; --bad:#ff7a7a; --idle:#8b97a5; --late:#ff9b54;
   --ok-bg:#163223; --warn-bg:#3a2a0f; --bad-bg:#3d1a1a; --idle-bg:#222a34; --doing-bg:#1d2747;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#10151c; --panel:#18202a; --ink:#e4e9ef; --muted:#97a3b1; --line:#2a3442;
-  --accent:#8aa2ff; --accent-ink:#0e1320;
+  --accent:#8aa2ff; --accent-ink:#0e1320; --btn:#4c6ef5; --btn-ink:#ffffff;
   --ok:#4fc483; --warn:#f0a83c; --bad:#ff7a7a; --idle:#8b97a5; --late:#ff9b54;
   --ok-bg:#163223; --warn-bg:#3a2a0f; --bad-bg:#3d1a1a; --idle-bg:#222a34; --doing-bg:#1d2747;
   color-scheme:dark}
@@ -215,8 +215,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .rm-pt{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .rm-who{display:flex;flex-wrap:wrap;gap:3px}.rm-av{all:unset;cursor:pointer;border-radius:7px}.rm-av:focus-visible{outline:2px solid var(--accent)}
 .rm-cell{display:grid;gap:4px;align-content:start;padding:8px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);min-width:0}
-.rm-cell.na{background:repeating-linear-gradient(135deg,transparent 0 6px,var(--bg) 6px 12px)}
-.rm-n{font-family:var(--font-mono);font-size:18px;font-weight:700}
+.rm-cell.na{background:rgba(127,127,127,.05)}.rm-cell.na .note{font-style:italic;opacity:.75}
+.rm-n{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}.rm-n.zero{color:var(--muted);font-weight:400;opacity:.6}
 .rm-pill{all:unset;cursor:pointer;display:flex;gap:6px;align-items:baseline;font-size:12.5px;border:1px solid var(--line);border-radius:5px;padding:2px 6px;min-width:0}
 .rm-pill:hover{border-color:var(--accent)}.rm-pill:focus-visible{outline:2px solid var(--accent)}
 .rm-pill .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;unicode-bidi:plaintext}
@@ -269,6 +269,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .org li:first-child::before,.org li:last-child::after{border:0}.org li:last-child::before{border-right:2px solid var(--line);border-radius:0 6px 0 0}.org li:first-child::after{border-radius:6px 0 0 0}
 .org ul ul::before{content:"";position:absolute;top:0;left:50%;height:22px;border-left:2px solid var(--line)}
 .org>ul>li::before,.org>ul>li::after{display:none}
+.org ul.wrap{flex-wrap:wrap;gap:10px 6px;max-width:1100px;margin:22px auto 0;padding:14px 8px 0;border-top:2px solid var(--line);border-radius:10px 10px 0 0}.org ul.wrap > li{padding-top:0}.org ul.wrap > li::before,.org ul.wrap > li::after{display:none}.org ul.wrap::before{top:-24px}
 .org-node{all:unset;cursor:pointer;display:grid;justify-items:center;gap:2px;min-width:104px;max-width:140px;padding:8px 8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);text-align:center;font-size:12px}
 .org-node:hover,.org-node:focus-visible{border-color:var(--accent);outline:none}
 .org-node b{font-size:12.5px;line-height:1.25;overflow-wrap:anywhere}.org-node .pos{color:var(--muted,#667)}
@@ -357,7 +358,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .since .chip.go{cursor:pointer}
 .inbox-list{align-items:start;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:8px}
 .ib{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;align-items:start;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:9px 11px;background:var(--bg)}
-.ib .av{grid-row:span 3}
+.ib .av{grid-row:span 3;box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--c);border-radius:50%}
+.ib-more{display:contents}.ib-more[hidden]{display:none !important}.ib-dots{letter-spacing:1px;font-weight:700}
 .ib-k{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--c);display:flex;gap:8px;justify-content:space-between}
 .ib-k .note{font-weight:400;text-transform:none;letter-spacing:0}
 .ib-t{font-weight:600;overflow-wrap:anywhere}
@@ -568,7 +570,8 @@ form.compose{grid-template-columns:minmax(0,1fr)}
 .hd .tog:focus-visible,.done-more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .done-more{all:unset;cursor:pointer;font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:5px;padding:4px 8px;text-align:center}
 .done-more:hover{color:var(--ink);border-color:var(--accent)}
-.btn{font:inherit;font-weight:700;border:0;border-radius:5px;padding:6px 18px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.btn{font:inherit;font-weight:700;border:0;border-radius:5px;padding:6px 18px;background:var(--btn,var(--accent));color:var(--btn-ink,var(--accent-ink));cursor:pointer}
+[hidden]{display:none !important}
 .btn:disabled{opacity:.5;cursor:default}
 /* board: stage columns x agent lanes */
 .board-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
@@ -1586,7 +1589,7 @@ function renderAssistant(){
 const ago = iso => { const t = Date.parse(iso || ""); if (!t) return ""; const m = Math.max(0, Math.round((Date.now() - t) / 6e4)); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
 function replyTo(id){ chatSess = chatPair = chatTask = ""; showTab("chat"); pickers.forEach(p => p.refresh()); renderMsgs(); renderSessions(); renderCompose();
   const s = $("to"); if ([...s.options].some(o => o.value === id)) { s.value = id; s.dispatchEvent(new Event("change")); } $("text").focus(); }
-const foldAt = new Map(), cardPoint = {keep:null}, inboxOpenCard = new Set(); let inboxShowWy = false, inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map(), sentVer = new Map(); let foldTm = 0; const wyDone = new Map();
+const foldAt = new Map(), cardPoint = {keep:null}, inboxOpenCard = new Set(); let inboxShowWy = false, inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map(), sentVer = new Map(), inboxMore = new Set(); let foldTm = 0; const wyDone = new Map();
 /* one-tap answers (council round 4, I1): "Approve X" gets Approve / Not now; "Decide: A, or B" gets A and B. Each tap sends the owner's decision to that agent. */
 function quickAnswers(needs){
   const n = String(needs || "").trim(); let m;
@@ -1940,6 +1943,8 @@ function renderInbox(){
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
       b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
     if (!sent && it.key && ownerView()) { const lt = el("button","btn-lite","Later"); lt.type = "button"; lt.title = "Snooze this card"; lt.onclick = () => laterPick(a, snzKey(it)); a.append(lt); }
+    if (!sent && a.children.length > 3) { const rest = [...a.children].slice(2), mo = el("span","ib-more"), dots = el("button","btn-lite ib-dots","⋯"); mo.hidden = !inboxMore.has(it.key); mo.append(...rest); dots.type = "button"; dots.title = rest.map(b => b.textContent).join(", "); dots.setAttribute("aria-label", "More: " + dots.title); dots.setAttribute("aria-expanded", String(!mo.hidden));
+      dots.onclick = () => { mo.hidden = !mo.hidden; mo.hidden ? inboxMore.delete(it.key) : inboxMore.add(it.key); dots.setAttribute("aria-expanded", String(!mo.hidden)); if (!mo.hidden) mo.querySelector("button")?.focus(); }; a.append(dots, mo); }   // calm cards (council round 16): the main answer and one more; the rest behind ⋯
     if (live.stale) a.querySelectorAll("button").forEach(b => { b.disabled = true; b.title = "Updating…"; });   // never answer from an old copy
     if (sent) { a.replaceChildren(sent); if (it.key && inboxSent.has(it.key) && !inboxSent.get(it.key).startsWith("Not sent")) { foldAt.has(it.key) || foldAt.set(it.key, Date.now() + 2500); if (Date.now() >= foldAt.get(it.key)) { c.classList.add("folded"); } else { c.classList.add("folding"); foldTm ||= setTimeout(() => { foldTm = 0; const f = document.activeElement?.closest?.("#inboxList .ib"); renderInbox(); if (f && !f.isConnected) document.querySelector("#inboxList .ib:not(.folded) .ib-a button")?.focus(); }, Math.max(0, Math.min(...[...foldAt.values()].filter(x => x > Date.now())) - Date.now()) + 50); } } }   // an answered card folds away after a moment (council round 12)
     const av = avatar(it.who, 34); if (figs.has(it.who)) { av.classList.add("go"); av.title = `Show ${nameOf(it.who)} in the office`; av.tabIndex = 0; av.setAttribute("role", "button"); av.setAttribute("aria-label", av.title); av.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); av.onclick(); } }; av.onclick = () => { const f = figs.get(it.who); f?.b.scrollIntoView({block:"center", behavior:reduce ? "auto" : "smooth"}); f?.b.focus({preventScroll:true}); }; }
@@ -2744,7 +2749,7 @@ function renderTeam(){
   const branch = id => { const li = el("li");
     if (id === "owner" && ids.has(ASSISTANT)) { const pr = el("div","org-pair"); const side = node(ASSISTANT); side.classList.add("side"); pr.append(node("owner"), side); li.append(pr); } else li.append(node(id));
     const ch = (kids.get(id) || []).sort((x, y) => { const [a1, a2] = order(x), [b1, b2] = order(y); return a1 - b1 || a2 - b2; });
-    if (ch.length) { const ul = el("ul"); ch.forEach(c => ul.append(branch(c))); li.append(ul); }
+    if (ch.length) { const ul = el("ul", ch.length > 8 ? "wrap" : null); ch.forEach(c => ul.append(branch(c))); li.append(ul); }   // a long row of people wraps (council round 16)
     return li; };
   const root = el("ul"); root.append(branch("owner")); box.replaceChildren(root);
 }
@@ -2826,7 +2831,7 @@ function versionKanban(v, vt, np){
       const cell = el("div","rm-cell");
       if (!p.subs.includes(k)) { cell.classList.add("na"); cell.append(el("span","note","Not used in this phase")); grid.append(cell); return; }
       const list = pt.filter(t => subOf(t) === k).sort(byOrder);
-      cell.append(el("span","rm-n", String(list.length)));
+      cell.append(el("span","rm-n" + (list.length ? "" : " zero"), list.length ? String(list.length) : "–"));
       if (rmap.tasks) { list.slice(0, 5).forEach(t => { const b = el("button","rm-pill" + (t.state === "blocked" ? " blocked" : "")); b.type = "button"; b.title = `${t.id} · ${ttl(t)} (${nameOf(t.session)})`;
         b.append(el("span","mono", t.id), el("span","tt", t.title_en || "")); b.onclick = () => go("#task/" + encodeURIComponent(t.id)); cell.append(b); });
         if (list.length > 5) cell.append(el("span","note", `+${list.length - 5} more`)); }
