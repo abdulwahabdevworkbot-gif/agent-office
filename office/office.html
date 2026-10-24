@@ -200,7 +200,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .btn-lite{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:5px;padding:3px 12px;cursor:pointer;justify-self:start}
 /* roadmap */
 .rm{display:grid;gap:12px;min-width:0}
-.rm-fc{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}.rm-fc .fc-chip{font-weight:700;padding:2px 9px;border-radius:999px;color:var(--on-c);background:var(--ok)}.rm-fc .fc-chip.risk{background:var(--warn)}.rm-fc .fc-chip.late{background:var(--late)}.rm-fc .fc-chip.plan{background:var(--accent)}.rm-fc .chip{cursor:pointer}.rm-fc input[type=date]{font:inherit;padding:1px 4px}#rvQueue:empty{display:none}.rq{display:grid;gap:6px;margin:4px 0 12px}.rq h3{margin:0;font-size:14px}.rq-row{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto auto;gap:4px 10px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:13px}.rq-row .w{font-variant-numeric:tabular-nums;color:var(--muted)}.rq-row .w.old{color:var(--warn);font-weight:700}.rq-row .rv-who{display:flex;gap:5px;align-items:center;color:var(--muted)}@media (max-width:600px){.rq-row{grid-template-columns:auto minmax(0,1fr) auto}.rq-row .rv-who,.rq-row .try{grid-column:2}}
+.rm-fc{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px}.rm-fc .fc-chip{font-weight:700;padding:2px 9px;border-radius:999px;color:var(--on-c);background:var(--ok)}.rm-fc .fc-chip.risk{background:var(--warn)}.rm-fc .fc-chip.late{background:var(--late)}.rm-fc .fc-chip.plan{background:var(--accent)}.rm-fc .chip{cursor:pointer}.rm-fc input[type=date]{font:inherit;padding:1px 4px}#rvQueue:empty{display:none}.rq{display:grid;gap:6px;margin:4px 0 12px}.rq h3{margin:0;font-size:14px}.rq-row{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto auto auto;gap:4px 10px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:13px}.rq-row .w{font-variant-numeric:tabular-nums;color:var(--muted)}.rq-row .w.old{color:var(--warn);font-weight:700}.rq-row .rv-who{display:flex;gap:5px;align-items:center;color:var(--muted)}@media (max-width:600px){.rq-row{grid-template-columns:auto minmax(0,1fr) auto}.rq-row .rv-who,.rq-row .try{grid-column:2}}
 .rm-so{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12.5px;padding-top:6px;border-top:1px solid var(--line)}.rm-so b{font-size:13px}.rm-so .ok{color:var(--ok)}.rm-so .no{color:var(--late)}.rm-so .signed{color:var(--ok);font-weight:700}
 .rm-chain{flex-basis:100%;font-size:12.5px;color:var(--muted)}
 .rm-now{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;background:var(--doing-bg);border-radius:8px;padding:10px 14px}.rm-now .lbl{margin:0}.rm-now b{font-size:16px}
@@ -267,6 +267,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag-box h3{margin:0;font-size:15px}
 .ag-sprites{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
 .ag-sp{all:unset;cursor:pointer;height:56px;border:2px solid var(--line);border-radius:7px;background:var(--bg) no-repeat 50% 8%/140% auto}
+.rv-fold{border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin:8px 0;background:var(--panel)}.rv-fold>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;list-style:none}.rv-fold>summary::-webkit-details-marker{display:none}.rv-fold>summary .linkish{margin-left:auto}.rv-fold[open]>summary .linkish{display:none}
 .rv-filters{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:8px 0}.rv-filters label{display:inline-flex;gap:6px;align-items:center;font-size:13px}
 .rv-out{display:inline-flex;flex-wrap:wrap;gap:6px}
 .rv-list{display:grid;gap:8px}
@@ -790,13 +791,14 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <div class="panel">
       <h2>Reviews</h2>
       <p class="note">Every time the Reviewer checks another agent's work: approved clean, approved with notes, or sent back with changes. Open a task to see each round, the changes asked, the sub-tasks opened for them and the chat.</p>
+      <details class="rv-fold" id="rvFold"><summary><b>Filters</b> <span class="note" id="rvFsum"></span> <span class="linkish">Change</span></summary>
       <div class="rv-filters">
         <label>Agent <select id="rvAgent"></select></label>
         <label>Reviewer <select id="rvReviewer"></select></label>
         <label>Sent back <select id="rvRej"><option value="0">Any</option><option value="1">1+ times</option><option value="2">2+ times</option><option value="3">3+ times</option></select></label>
         <span class="rv-out" role="group" aria-label="Latest result" id="rvOut"></span>
         <label class="rv-chk"><input type="checkbox" id="rvOpenSub"> Only with open sub-tasks</label>
-      </div>
+      </div></details>
       <div id="rvQueue"></div>
       <p class="note" id="rvSum"></p>
       <div id="rvList" class="rv-list"></div>
@@ -2406,7 +2408,11 @@ function lastWeek(){
 function renderCalendar(){
   const sel = $("calWho"); if (!sel) return;
   const people = agents.filter(a => a.id !== "owner").sort((a, b) => nameOf(a.id).localeCompare(nameOf(b.id)));
-  const keep = calWho; sel.replaceChildren(new Option("Everyone", ""), new Option("Rooms (bookings)", "@rooms")); people.forEach(a => sel.append(new Option(nameOf(a.id), a.id))); sel.value = keep === "@rooms" || people.some(a => a.id === keep) ? keep : ""; calWho = sel.value;
+  const keep = calWho; sel.replaceChildren(new Option("Everyone", ""), new Option("Rooms (bookings)", "@rooms")); { /* the person picker in groups (council round 32, Product): who needs attention first, then each department */
+    const need = people.filter(a => ["waiting","blocked"].includes(a.state) || quietMs(a) || tasks.some(t => t.session === a.id && !isClosed(t) && sched.byTask[t.id]?.lateBy)), grp = (label, list) => { if (!list.length) return; const g = document.createElement("optgroup"); g.label = label; list.forEach(a => g.append(new Option(nameOf(a.id), a.id))); sel.append(g); };
+    grp("Needs attention", need); const ds = new Map(); people.filter(a => !need.includes(a)).forEach(a => { const d = deptOf(a.id); ds.set(d, [...(ds.get(d) || []), a]); });
+    [...ds.entries()].sort((x, y) => (x[0] === "") - (y[0] === "") || String(deptById(x[0])?.name_en || "").localeCompare(String(deptById(y[0])?.name_en || ""))).forEach(([d, list]) => grp(d ? deptById(d)?.name_en || d : "Product office", list)); }
+  sel.value = keep === "@rooms" || people.some(a => a.id === keep) ? keep : ""; calWho = sel.value;
   const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : "";
   document.querySelectorAll(".cal-pills button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === calWho)));
   const box = $("calBody"); box.replaceChildren();
@@ -2889,7 +2895,7 @@ const subsOf = (taskId, list) => { const ids = new Set(list.flatMap(r => Array.i
 function rvSelect(sel, vals, cur, all){ const keep = cur; sel.replaceChildren(); const o = el("option", null, all); o.value = ""; sel.append(o);
   vals.forEach(v => { const x = el("option", null, nameOf(v)); x.value = v; sel.append(x); }); sel.value = vals.includes(keep) ? keep : ""; }
 function renderReviews(){
-  const list = $("rvList"); if (!list) return; document.querySelector(".rv-filters").hidden = !reviews.length;   // no filters over an empty list
+  const list = $("rvList"); if (!list) return; $("rvFold").hidden = !reviews.length; $("rvFsum").textContent = [rvF.agent ? nameOf(rvF.agent) : "All agents", rvF.reviewer ? "reviewed by " + nameOf(rvF.reviewer) : "", rvF.rej ? `sent back ${rvF.rej}+` : "", rvF.out ? RV_OUT[rvF.out] : "", rvF.openSub ? "open sub-tasks" : ""].filter(Boolean).join(" · ");   // no filters over an empty list
   const byTask = new Map();
   reviews.forEach(r => { if (!r.task) return; if (!byTask.has(r.task)) byTask.set(r.task, []); byTask.get(r.task).push(r); });
   byTask.forEach(v => v.sort((a, b) => (a.round ?? 0) - (b.round ?? 0) || String(a.at || "").localeCompare(String(b.at || ""))));
