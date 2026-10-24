@@ -9,15 +9,16 @@ p.on("pageerror", e => errs.push(e.message));
 p.on("console", m => { if (m.type() === "error" && !/favicon|Failed to load resource/.test(m.text())) errs.push(m.text()); });
 await p.goto(url); await p.waitForTimeout(3500);
 const check = async (what, sel) => { const n = await p.locator(sel).count(); const txt = n ? (await p.locator(sel).first().innerText()).trim() : ""; if (!txt) fails.push(`${what}: ${sel} is empty`); };
-for (const tab of ["office","roadmap","chat","board","calendar","reviews","team","settings"]) {
-  await p.click(`#tab-${tab}`); await p.waitForTimeout(400); await check(`tab ${tab}`, `#panel-${tab}`);
+for (const g of ["office","chat","work","people","settings"]) { await p.click(`#tabGroups [data-group="${g}"]`); await p.waitForTimeout(300); if (!(await p.locator(".tab-groups .tg[aria-current=\"true\"]").getAttribute("data-group") === g)) fails.push(`section ${g} did not open`); }
+for (const tab of ["office","roadmap","chat","board","calendar","reviews","rules","team","settings"]) {
+  await p.evaluate(t => document.getElementById("tab-" + t).click(), tab); await p.waitForTimeout(400); await check(`tab ${tab}`, `#panel-${tab}`);
 }
-await p.click("#tab-office"); await p.waitForTimeout(300);
+await p.evaluate(() => document.getElementById("tab-office").click()); await p.waitForTimeout(300);
 await check("Needs you", "#inboxList");
 await p.click("#callMeet4"); await p.waitForTimeout(400); await check("meeting dialog", "#meetBody"); await p.keyboard.press("Escape");
-await p.click("#tab-board"); await p.waitForTimeout(300);
+await p.evaluate(() => document.getElementById("tab-board").click()); await p.waitForTimeout(300);
 const card = p.locator(".card").first(); if (await card.count()) { await card.click(); await p.waitForTimeout(400); await check("task dialog", "#taskBody"); await p.keyboard.press("Escape"); } else fails.push("board: no cards");
-await p.click("#tab-calendar"); await p.waitForTimeout(300);
+await p.evaluate(() => document.getElementById("tab-calendar").click()); await p.waitForTimeout(300);
 for (const v of ["@rooms"]) { await p.selectOption("#calWho", v); await p.waitForTimeout(300); await check(`calendar ${v}`, "#calBody"); }
 /* phone pass (council round 4, E10): no sideways page scroll at 400 px, nothing fixed covering the chat's Send button, no task over 150 ms once loaded */
 const ph = await b.newPage({viewport:{width:400, height:860}, isMobile:true, hasTouch:true});

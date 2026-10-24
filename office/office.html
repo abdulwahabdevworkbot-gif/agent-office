@@ -50,15 +50,21 @@ h2{font-weight:700;font-size:19px;margin:0}
 .hint,.note{color:var(--muted);font-size:13px}
 .mono{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
 /* tabs */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:400;background:var(--bg)}
+.tabbar{position:sticky;top:0;z-index:400;background:var(--bg)}
+.tab-groups{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;align-items:stretch}.tab-groups::-webkit-scrollbar{display:none}
+.tab-groups .tg{font:inherit;font-weight:700;font-size:15px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:9px 14px;cursor:pointer;margin-bottom:-1px;flex:0 0 auto;display:flex;gap:5px;align-items:center}
+.tab-groups .tg[aria-current="true"]{color:var(--ink);border-bottom-color:var(--accent)}.tab-groups .tg .caret{font-size:10px;opacity:.6}
+.tab-groups .tg .count{font-size:12px;color:var(--warn);font-weight:700}.tab-groups .tg .count:empty{display:none}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;background:var(--bg)}
+.tabs.sub{background:var(--panel-2,var(--bg));padding-left:10px}.tabs.sub button{font-size:13.5px;padding:6px 12px}.tabs.single{display:none}
 .tabs::-webkit-scrollbar{display:none}.tabs [role="tab"]{flex:0 0 auto}
 .tabs button{font:inherit;font-weight:600;font-size:15px;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;cursor:pointer;margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
-.tabs .tab-end{margin-left:auto;display:flex;gap:8px;align-items:center;position:sticky;right:0;background:linear-gradient(90deg,transparent,var(--bg) 18px);padding-left:22px;flex:0 0 auto}
-.tabs .need-pill{align-self:center;flex:0 0 auto;border:0;border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--warn);color:var(--bg)}
+.tabbar .tab-end{margin-left:auto;display:flex;gap:8px;align-items:center;position:sticky;right:0;background:linear-gradient(90deg,transparent,var(--bg) 18px);padding-left:22px;flex:0 0 auto}
+.tabbar .need-pill{align-self:center;flex:0 0 auto;border:0;border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--warn);color:var(--bg)}
 .card.held{border-left-color:var(--bad)}.org-node.dim,.org-pair .side.dim{opacity:.45;filter:grayscale(.7)}body.has-back{padding-bottom:64px}@media (max-width:520px){body[data-tab="chat"] .nav-back{bottom:calc(92px + env(safe-area-inset-bottom, 0px))}}.team-state{margin:0 0 8px}.bf-picked-row{margin:6px 0}.grid .hd:has(.hd-held){flex-wrap:wrap}.hd .hd-held{order:3;flex-basis:100%;text-align:left;display:block;font-size:11.5px;font-weight:500;text-transform:none;letter-spacing:0;margin-top:2px}
-@media (max-width:520px){.tabs .tab-end{padding-left:10px;gap:5px;background:var(--bg);box-shadow:-14px 0 12px -4px var(--bg)}.tabs .find-btn{padding:3px 7px}.tabs .need-pill{padding:3px 8px}.tabs button{padding:8px 10px}}
-.tabs .find-btn{font-size:13px;font-weight:500;align-self:center;padding:4px 10px;border:1px solid var(--line);border-radius:8px}
+@media (max-width:520px){.tabbar .tab-end{padding-left:10px;gap:5px;background:var(--bg);box-shadow:-14px 0 12px -4px var(--bg)}.tabbar .find-btn{padding:3px 7px}.tabbar .need-pill{padding:3px 8px}.tabs button{padding:8px 10px}}
+.tabbar .find-btn{font-size:13px;font-weight:500;align-self:center;padding:4px 10px;border:1px solid var(--line);border-radius:8px}
 .find input{width:100%;box-sizing:border-box;font-size:16px}.find-list{display:grid;gap:2px;margin-top:10px;max-height:60vh;overflow:auto}.find-row{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:baseline;padding:7px 8px;border-radius:6px;cursor:pointer}
 .find-row:hover,.find-row:focus-visible,.find-row.on{background:var(--chip, rgba(127,127,127,.12))}.find-row .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:88px}.find-row .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
@@ -704,6 +710,8 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <div class="chips" id="summary"></div>
   </header>
 
+  <div class="tabbar">
+  <nav class="tab-groups" id="tabGroups" aria-label="Sections"></nav>
   <div class="tabs" role="tablist" aria-label="Views">
     <button role="tab" id="tab-office" aria-controls="panel-office" aria-selected="true">Office<span class="count look" id="officeCount"></span></button>
     <button role="tab" id="tab-roadmap" aria-controls="panel-roadmap" aria-selected="false" tabindex="-1">Roadmap</button>
@@ -716,6 +724,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <button role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1">Settings</button>
     <span class="tab-end"><button type="button" class="find-btn" id="findBtn" title="Find anything (Ctrl+K)" aria-keyshortcuts="Control+K">Find</button>
     <button type="button" class="need-pill" id="needPill" hidden></button></span>
+  </div>
   </div>
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
@@ -1013,13 +1022,32 @@ function goBack(){
   backBar();
 }
 const staleTabs = new Set();   // tabs whose data changed while they were hidden
+/* two layers of tabs (the owner's call, 2026-10-24): sections on top, their views below. Work holds Roadmap, Task board,
+   Reviews and Rules; People & time holds Team and Calendar. A section opens the view you used last in it; its badge adds up its views' counts. */
+const TAB_GROUPS = [["office","Office",["office"]],["chat","Chat",["chat"]],["work","Work",["roadmap","board","reviews","rules"]],["people","People & time",["team","calendar"]],["settings","Settings",["settings"]]];
+const groupOf = t => TAB_GROUPS.find(g => g[2].includes(t)) || TAB_GROUPS[0];
+const lastIn = {};
+function buildGroups(){
+  const nav = $("tabGroups"); if (!nav || nav.dataset.built) return; nav.dataset.built = "1";
+  TAB_GROUPS.forEach(([k, label, kids]) => { const b = el("button","tg"); b.type = "button"; b.dataset.group = k; b.append(el("span", null, label), el("span","count")); if (kids.length > 1) b.append(el("span","caret","▾"));
+    b.onclick = () => showTab(lastIn[k] && kids.includes(lastIn[k]) ? lastIn[k] : kids[0], true); nav.append(b); });
+  nav.append(document.querySelector(".tabbar .tab-end"));
+  const sumUp = () => TAB_GROUPS.forEach(([k, , kids]) => { const n = kids.reduce((a, t) => a + (parseInt(document.querySelector(`#tab-${t} .count`)?.textContent, 10) || 0), 0); const c = nav.querySelector(`[data-group="${k}"] .count`); if (c) c.textContent = n ? String(n) : ""; });
+  new MutationObserver(sumUp).observe(document.querySelector(".tabs"), {subtree:true, childList:true, characterData:true}); sumUp();
+}
+function syncGroups(name){
+  buildGroups(); const g = groupOf(name); lastIn[g[0]] = name;
+  document.querySelectorAll("#tabGroups .tg").forEach(b => b.setAttribute("aria-current", String(b.dataset.group === g[0])));
+  const bar = document.querySelector(".tabs"); bar.classList.toggle("single", g[2].length < 2); bar.classList.add("sub");
+  TABS.forEach(t => { $("tab-" + t).hidden = !g[2].includes(t); });
+}
 function showTab(name, focus, byTab){
   if (curTab && name !== curTab && !restoring && !byTab) { navBack.push(snapshot()); if (navBack.length > 12) navBack.shift(); }
   if (curTab === "team" && name !== "team") teamState = "";   // a chip's Team filter ends when you leave Team
-  curTab = name; document.body.dataset.tab = name;
+  curTab = name; document.body.dataset.tab = name; syncGroups(name);
   TABS.forEach(t => { const on = t === name; $("tab-"+t).setAttribute("aria-selected", String(on)); $("tab-"+t).tabIndex = on ? 0 : -1; $("panel-"+t).hidden = !on; });
   { const tb = $("tab-"+name), st = tb.parentElement, end = st.querySelector(".tab-end"), room = st.clientWidth - (end ? end.offsetWidth : 0); if (tb.offsetLeft < st.scrollLeft) st.scrollLeft = tb.offsetLeft - 8; else if (tb.offsetLeft + tb.offsetWidth > st.scrollLeft + room) st.scrollLeft = tb.offsetLeft + tb.offsetWidth - room + 8; }
-  if (focus) $("tab-"+name).focus();
+  if (focus) (groupOf(name)[2].length > 1 ? $("tab-"+name) : document.querySelector(`#tabGroups [data-group="${groupOf(name)[0]}"]`)).focus();
   try { history.replaceState(null, "", "#" + name); } catch {}
   backBar();
   if (staleTabs.has(name)) drawTab(name);
@@ -3165,6 +3193,7 @@ function parentOf(a, ids){
   return dir || top;
 }
 let teamState = "";   // a header chip's state: other people dim on the Team chart (council round 36)
+const TIER_NAME = {director:"Directors", manager:"Managers", "senior-consultant":"Senior consultants", consultant:"Consultants", senior:"Seniors", junior:"Team", intern:"Interns"};
 function renderTeam(){
   const box = $("org"); if (!box) return;
   { let bar = $("teamStateBar"); if (!bar) { bar = el("div","team-state"); bar.id = "teamStateBar"; box.before(bar); } bar.replaceChildren(); bar.hidden = !teamState;
@@ -3173,7 +3202,7 @@ function renderTeam(){
   agents.forEach(a => up.set(a.id, parentOf(a, ids)));
   up.forEach((p, id) => { let x = p, seen = new Set([id]); while (x && x !== "owner") { if (seen.has(x)) { up.set(id, "owner"); break; } seen.add(x); x = up.get(x); } });
   up.forEach((p, id) => { if (id === ASSISTANT) return; if (!kids.has(p)) kids.set(p, []); kids.get(p).push(id); });
-  const order = id => { const a = agentById(id); return [-rankOf(a), a?.desk ?? 999]; };
+  const order = id => { const a = agentById(id); return [-rankOf(a), -(+a?.years || 0), a?.desk ?? 999]; };
   const node = id => { const b = el("button","org-node"); b.type = "button";
     if (id === "owner") { b.classList.add("me"); if (teamState) b.classList.add("dim"); b.tabIndex = -1; b.append(avatar("owner", 40), el("b", null, "You"), el("span","pos","Owner")); return b; }
     const a = agentById(id), d = deptById(deptOf(id));
@@ -3183,13 +3212,14 @@ function renderTeam(){
     b.title = [nameOf(id), titleOf(a), roleOf(a), yearsOf(a)].filter(Boolean).join(" · "); b.onclick = () => selectAgent(id); return b; };
   const branch = id => { const li = el("li");
     if (id === "owner" && ids.has(ASSISTANT)) { const pr = el("div","org-pair"); const side = node(ASSISTANT); side.classList.add("side"); pr.append(node("owner"), side); li.append(pr); } else li.append(node(id));
-    const ch = (kids.get(id) || []).sort((x, y) => { const [a1, a2] = order(x), [b1, b2] = order(y); return a1 - b1 || a2 - b2; });
-    if (ch.length > 8) ch.sort((x, y) => !!(kids.get(x) || []).length - !!(kids.get(y) || []).length);   // the people first, then the departments with their own trees
-    if (ch.filter(c => (kids.get(c) || []).length).length >= 2) {   // departments side by side as cards, the people who report to you above them (council round 24)
-      const ppl = ch.filter(c => !(kids.get(c) || []).length), dps = ch.filter(c => (kids.get(c) || []).length);
-      if (ppl.length) { const ul = el("ul", ppl.length > 8 ? "wrap" : null); ppl.forEach(c => ul.append(branch(c))); li.append(ul); }
-      const ud = el("ul","depts"); dps.forEach(c => ud.append(branch(c))); li.append(el("div","org-hq", `Departments (${dps.length})`), ud); return li; }
-    if (ch.length) { const ul = el("ul", ch.length > 8 ? "wrap" : null); ch.forEach(c => ul.append(branch(c))); li.append(ul); }   // a long row of people wraps (council round 16)
+    const ch = (kids.get(id) || []).sort((x, y) => { const a = order(x), b = order(y); return a[0] - b[0] || a[1] - b[1] || a[2] - b[2]; });
+    /* one hierarchy (the owner's call, 2026-10-24): departments and people are not split apart. Under each person the people who
+       report to them stand in rows by position, highest first (Directors with their departments, then Managers, ... Interns),
+       and within a row by years of experience */
+    const tiers = []; ch.forEach(c => { const r = rankOf(agentById(c)), t = tiers.find(x => x.r === r); t ? t.ids.push(c) : tiers.push({r, ids:[c]}); });
+    tiers.forEach((t, i) => { const lead = t.ids.some(c => (kids.get(c) || []).length);
+      if (tiers.length > 1) li.append(el("div","org-hq", `${TIER_NAME[POSITIONS[t.r]] || "Team"} (${t.ids.length})`));
+      const ul = el("ul", lead && t.ids.length > 1 ? "depts" : t.ids.length > 8 ? "wrap" : null); t.ids.forEach(c => ul.append(branch(c))); li.append(ul); });
     return li; };
   const root = el("ul"); root.append(branch("owner")); box.replaceChildren(root);
 }
@@ -4177,11 +4207,16 @@ const LANG_RULE = {ar:"Write simple Gulf Arabic, right to left; translate everyt
   en:"Write in English."};
 function renderLangSettings(){
   const mine = canWrite && ownerView(), box = $("langRows"); box.replaceChildren();
+  const ap = el("button","btn","Apply"); ap.type = "button"; ap.disabled = true; ap.hidden = !mine;
   LANG_SCOPES.forEach(([k, name, hint]) => { const row = el("div","lang-row"), lab = el("label"), sel = el("select"); sel.disabled = !mine; sel.setAttribute("aria-label", name);
     LANG_OPTS.forEach(([v, l]) => sel.append(new Option(l, v, false, v === langFor(k))));
-    sel.onchange = async () => { const cur = Object.fromEntries(LANG_SCOPES.map(([x]) => [x, langFor(x)])); cur[k] = sel.value;
-      try { await db.doc("meta/office").update({lang:cur}); $("langNote").textContent = `Saved: ${name}, ${LANG_OPTS.find(o => o[0] === sel.value)[1]}.`; } catch (err) { $("langNote").textContent = writeError(err); } };
+    sel.dataset.scope = k; sel.onchange = () => { const dirty = [...box.querySelectorAll("select")].some(x => x.value !== langFor(x.dataset.scope)); ap.disabled = !dirty; $("langNote").textContent = dirty ? "Not applied yet." : ""; };
     const tx = el("span"); tx.append(el("b", null, name), el("small", null, hint)); lab.append(tx, sel); row.append(lab); box.append(row); });
+  /* Apply saves all three at once and redraws the whole page, so every chat, card and task shows the new setting right away */
+  ap.onclick = async () => { ap.disabled = true; const v = Object.fromEntries([...box.querySelectorAll("select")].map(x => [x.dataset.scope, x.value]));
+    try { await db.doc("meta/office").update({lang:v}); metaOffice = {...(metaOffice || {}), lang:v}; mainLang = ""; renderAll(true); renderLangSettings(); $("langNote").textContent = "Applied everywhere: " + LANG_SCOPES.map(([x, n]) => `${n}: ${LANG_OPTS.find(o => o[0] === v[x])[1]}`).join(" · "); announce("Language applied"); }
+    catch (err) { $("langNote").textContent = writeError(err); ap.disabled = false; } };
+  const apRow = el("div","row-wrap"); apRow.append(ap); box.append(apRow);
   const ex = el("div","lang-ex"); ex.append(el("small", null, "Arabic with English terms looks like this:")); const p = el("div", null, "لما تضغط Call a meeting تطلع قائمة الوكلاء."); ex.append(p); box.append(ex);
   if (!mine) $("langNote").textContent = "Only the owner changes the language.";
 }
