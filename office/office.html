@@ -376,6 +376,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ag.cheer img.body{filter:drop-shadow(0 0 4px #ffd43b) drop-shadow(0 0 12px rgba(255,212,59,.9));animation:cheer 1s ease-out 2}
 @keyframes cheer{50%{transform:translateY(-4%)}}
 @media (prefers-reduced-motion:reduce){.ag.cheer img.body{animation:none}.done-toast{transition:none}}
+.ib.folded{display:none}
+.lw{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--panel)}.lw summary{cursor:pointer;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.lw .walk-day{margin:8px 0 0}
 .rp-chips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.rp-chips .chip-btn{font-size:12px;padding:2px 9px}
 .room::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 75%,rgba(255,190,110,.18),transparent 60%),rgba(18,28,78,.42);mix-blend-mode:multiply;opacity:0;transition:opacity 2s;border-radius:inherit}
 .rooms.night .room::after{opacity:1}
@@ -618,7 +620,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   <header>
     <div>
       <h1 id="title">Product Office</h1>
-      <p class="sub">Every agent, task and discussion in one place. Click an agent or a task for details.</p>
+      <p class="sub" id="greet">Every agent, task and discussion in one place. Click an agent or a task for details.</p>
     </div>
     <div class="chips" id="summary"></div>
   </header>
@@ -1550,7 +1552,7 @@ function renderAssistant(){
 const ago = iso => { const t = Date.parse(iso || ""); if (!t) return ""; const m = Math.max(0, Math.round((Date.now() - t) / 6e4)); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
 function replyTo(id){ chatSess = chatPair = chatTask = ""; showTab("chat"); pickers.forEach(p => p.refresh()); renderMsgs(); renderSessions(); renderCompose();
   const s = $("to"); if ([...s.options].some(o => o.value === id)) { s.value = id; s.dispatchEvent(new Event("change")); } $("text").focus(); }
-const cardPoint = {keep:null}, inboxOpenCard = new Set(); let inboxShowWy = false, inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
+const foldAt = new Map(), cardPoint = {keep:null}, inboxOpenCard = new Set(); let inboxShowWy = false, inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
 /* one-tap answers (council round 4, I1): "Approve X" gets Approve / Not now; "Decide: A, or B" gets A and B. Each tap sends the owner's decision to that agent. */
 function quickAnswers(needs){
   const n = String(needs || "").trim(); let m;
@@ -1771,6 +1773,12 @@ function renderInbox(){
     items.push({k:"Blocked", c:"var(--bad)", who:a.id, t:nameOf(a.id), s:[t ? `${t.id} · ${ttl(t)}` : "", bi.why ? "Why: " + bi.why.replace(/\.$/, "") : ""].filter(Boolean).join(". "), need:bi.needs ? "Needs from you: " + bi.needs : "", at:a.waiting_since || a.updated_at, rel:waitedFor(a.waiting_since || a.updated_at),
       key:"b:" + a.id, inline:() => inlineReply("b:" + a.id, {to:a.id, task:t?.id || null}, `How should ${nameOf(a.id)} get unstuck?`),
       acts:[...quickAnswers(bi.needs).map(([lab, text], i) => [lab, () => quickSend("b:" + a.id, a.id, t?.id, text), i === 0]), ["Help", "inline", !quickAnswers(bi.needs).length], ...(t ? [["Task " + t.id, () => openTask(t.id)]] : []), ["Huddle", () => callMeeting({task:t?.id})]]}); });
+  /* "you set this" (council round 12, Owner Advocate): a value the owner set that an agent later changed; Keep mine (5 s Undo) or Accept */
+  tasks.filter(t => !isClosed(t) && t.owner_set).forEach(t => { const diff = Object.entries(t.owner_set).filter(([k, v]) => JSON.stringify(t[k] ?? null) !== JSON.stringify(v ?? null)); if (!diff.length) return;
+    const show = (k, v) => k === "estimate_min" ? fmtDur(+v || 0) : k === "due_at" ? (v ? fmtWhen(Date.parse(v)) : "no deadline") : (v || []).join(", ") || "nothing first", key = "o:" + t.id + ":" + diff.map(([k]) => k).join(",");
+    items.push({k:"Changed what you set", c:"var(--accent)", who:t.session || "coordinator", t:`${t.id} · ${ttl(t)}`, s:diff.map(([k, v]) => `${k === "estimate_min" ? "Estimate" : k === "due_at" ? "Deadline" : "Needs first"}: you set ${show(k, v)}, now ${show(k, t[k])}`).join(". "), at:t.updated_at, key,
+      acts:[["Keep mine", () => delaySend(key, "Putting your values back", async () => { await db.doc("tasks/" + t.id).update({...Object.fromEntries(diff), updated_at:new Date().toISOString(), plan_changed_by:"owner"}); if (t.session) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:t.session, task:t.id, kind:"update", text:`I set these for ${t.id} and I'm keeping them: ${diff.map(([k, v]) => show(k, v)).join("; ")}.`, author_id:me, relayed:false}); return "Kept yours"; }), true],
+        ["Accept", async () => { const os = {...t.owner_set}; diff.forEach(([k]) => delete os[k]); try { await db.doc("tasks/" + t.id).update({owner_set:os}); inboxSent.set(key, "Accepted"); renderInbox(); } catch (err) { inboxSent.set(key, "Not sent: " + writeError(err)); renderInbox(); } }], ["Task", () => openTask(t.id)]]}); });
   /* quiet agents (council round 8, Engineer): "working" but no sign of life for max(2 h, 1.5 x the task's estimate) */
   const quiet = agents.filter(a => a.state === "working" && !NEVER_IDLE.has(a.id) && a.id !== ASSISTANT).map(a => { const t = tasks.find(x => x.session === a.id && x.state === "doing"), la = lastActive(a), lim = Math.max(2 * 36e5, 1.5 * (t ? estOf(t) : 0) * 6e4);
     return la && Date.now() - la > lim ? {a, t, la} : null; }).filter(Boolean).sort((x, y) => x.la - y.la);
@@ -1815,6 +1823,8 @@ function renderInbox(){
   if ($("walkDlg").open && !($("walkBody").contains(document.activeElement) && document.activeElement.matches("textarea, input"))) drawWalk();
   const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`;
   $("officeCount").textContent = todo || ""; renderFollow(); renderNext3();
+  { const h = new Date().getHours(), hi = h < 5 ? "Working late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening", lt = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).length, end = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0), nx = sessions.filter(x => x.state === "scheduled" && (x.members || []).includes("owner")).sort((a, b) => String(a.at).localeCompare(String(b.at)))[0];
+    $("greet").textContent = `${hi}. ` + (todo ? `${todo} thing${todo === 1 ? "" : "s"} need${todo === 1 ? "s" : ""} you; ${lt ? `${lt} task${lt === 1 ? " is" : "s are"} running late` : "the rest is on track"}.` : `All clear${nx ? `. Next: ${nx.title_en || "a meeting"} at ${fmtWhen(Date.parse(nx.at))}` : ""}.`) + (end ? ` Open work finishes by ${fmtWhen(end)}.` : ""); }   // the greeting line (council round 12, UX)
   $("byeBtn").classList.toggle("btn", new Date().getHours() >= 17); $("byeBtn").classList.toggle("btn-lite", new Date().getHours() < 17);   // the end-of-day check stands out after 17:00
   /* outbox (council round 10, Engineer): what the owner wrote that no agent has picked up after 10 minutes; shown only once agents mark pick-ups (relayed:true) */
   /* "without you" (council round 12, Owner Advocate): what changed since the last visit without the owner's tap; the page's own bookings can be cancelled */
@@ -1835,7 +1845,7 @@ function renderInbox(){
     it.acts.forEach(([lab, fn, main]) => { const b = el("button", main ? "btn" : "btn-lite", fn === "inline" && open ? "Close" : lab); b.type = "button";
       b.onclick = fn === "inline" ? () => { open ? inboxOpen.delete(it.key) : inboxOpen.set(it.key, {focus:true}); inboxSent.delete(it.key); renderInbox(); } : fn; a.append(b); });
     if (!sent && it.key && ownerView()) { const lt = el("button","btn-lite","Later"); lt.type = "button"; lt.title = "Snooze this card"; lt.onclick = () => laterPick(a, snzKey(it)); a.append(lt); }
-    if (sent) a.replaceChildren(sent);
+    if (sent) { a.replaceChildren(sent); if (it.key && inboxSent.has(it.key) && !inboxSent.get(it.key).startsWith("Not sent")) { foldAt.has(it.key) || foldAt.set(it.key, Date.now() + 2500); if (Date.now() >= foldAt.get(it.key)) { c.classList.add("folded"); } else setTimeout(() => renderInbox(), foldAt.get(it.key) - Date.now() + 50); } }   // an answered card folds away after a moment (council round 12)
     const av = avatar(it.who, 34); if (figs.has(it.who)) { av.classList.add("go"); av.title = `Show ${nameOf(it.who)} in the office`; av.tabIndex = 0; av.setAttribute("role", "button"); av.setAttribute("aria-label", av.title); av.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); av.onclick(); } }; av.onclick = () => { const f = figs.get(it.who); f?.b.scrollIntoView({block:"center", behavior:reduce ? "auto" : "smooth"}); f?.b.focus({preventScroll:true}); }; }
     c.append(av, k, el("div","ib-t", it.t), el("div","ib-s", it.s), ...(it.need ? [el("div","ib-need", it.need)] : []), a);
     if (open && it.inline) { const x = el("div","ib-x"); x.append(it.inline()); c.append(x); }
@@ -1957,6 +1967,7 @@ function timeBox(t){   // the task dialog's Time row
   const r = el("div","t-time"); r.append(el("span", null, `Takes ${fmtDur(estOf(t))}${t.estimate_min ? "" : " (default)"}`));
   if (p) r.append(el("span", null, p.done ? `Finished ${fmtWhen(p.e)}` : `Planned ${fmtWhen(p.s)} to ${fmtWhen(p.e)}`));
   if (p?.due) r.append(el("span","note", `Due ${fmtWhen(p.due)}`));
+  if (t.owner_set) { const tags = Object.keys(t.owner_set).filter(k => JSON.stringify(t[k] ?? null) === JSON.stringify(t.owner_set[k] ?? null)).map(k => k === "estimate_min" ? "estimate" : k === "due_at" ? "deadline" : "order"); if (tags.length) r.append(el("span","tp-tag", "Set by you: " + tags.join(", "))); }
   d.append(r); const wt = whyTime(t); if (wt) d.append(el("div","note t-why", "Why this time: " + wt)); const cz = chainEl(t.id); if (cz) d.append(cz);
   const deps = depsOf(t); if (deps.length) { const q = el("div","t-time"); q.append(el("span","note","Needs first:")); deps.forEach(x => { const pp = sched.byTask[x]; q.append(taskLink(x), el("span","note", pp ? (pp.done ? "done" : "ends " + fmtWhen(pp.e)) : "")); }); d.append(q); }
   const after = tasks.filter(x => depsOf(x).includes(t.id)); if (after.length) { const q = el("div","t-time"); q.append(el("span","note","Then:")); after.forEach(x => q.append(taskLink(x.id))); d.append(q); }
@@ -1992,9 +2003,10 @@ function timeEdit(t){
     const all = planWith(t, pa), me = all.find(x => x.t.id === t.id), c = all.filter(x => x.t.id !== t.id), mv = c.filter(x => x.d >= 6e4), bk = c.filter(x => x.d <= -6e4);   // the task itself isn't one of the "others" it moves
     pv.className = "mt-cost" + (c.some(x => x.late) ? " t-warn" : ""); pv.textContent = (me ? `Ends ${fmtWhen(me.e)} (was ${fmtWhen(me.was)})${me.late ? ", late" : me.ok ? ", on time again" : ""}. ` : "") + (!c.length ? "Moves nothing else." : [mv.length ? `Moves ${mv.slice(0, 3).map(x => x.t.id).join(", ")}${mv.length > 3 ? ` and ${mv.length - 3} more` : ""} later` : "", bk.length ? `${bk.slice(0, 3).map(x => x.t.id).join(", ")}${bk.length > 3 ? ` and ${bk.length - 3} more` : ""} earlier` : "", c.filter(x => x.late).map(x => `${x.t.id} now late`).join(", "), c.filter(x => x.ok).map(x => `${x.t.id} back on time`).join(", ")].filter(Boolean).join("; ") + "."); pv.title = c.map(x => `${x.t.id} ${x.d >= 0 ? "+" : "−"}${fmtDur(Math.round(Math.abs(x.d) / 6e4))}`).join("\n"); }
   ok.onclick = async () => { const pa = patch(); if (!Object.keys(pa).length) return; ok.disabled = true; const parts = [..."estimate_min" in pa ? [`takes ${fmtDur(pa.estimate_min)}`] : [], ..."due_at" in pa ? [pa.due_at ? `due ${fmtWhen(Date.parse(pa.due_at))}` : "no deadline"] : [], ..."depends_on" in pa ? [deps.length ? `needs ${deps.join(", ")} first` : "needs nothing first"] : []];
-    try { await db.doc("tasks/" + t.id).update({...pa, updated_at:new Date().toISOString(), plan_changed_by:"owner"});
+    const os = {...(t.owner_set || {})}; Object.keys(pa).forEach(k => { if (k !== "due") os[k] = pa[k]; });   // remember what the owner set, to notice if an agent changes it
+    try { await db.doc("tasks/" + t.id).update({...pa, owner_set:os, updated_at:new Date().toISOString(), plan_changed_by:"owner"});
       if (t.session) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:t.session, task:t.id, kind:"update", text:`Plan change for ${t.id}: ${parts.join("; ")}.`, author_id:me, relayed:false});
-      Object.assign(t, pa); planDirty = false; buildSchedule(); renderAll(false); announce(`Saved. ${nameOf(t.session)} was told.`); openTask(t.id); } catch (err) { nt.textContent = writeError(err); ok.disabled = false; } };
+      Object.assign(t, pa, {owner_set:os}); planDirty = false; buildSchedule(); renderAll(false); announce(`Saved. ${nameOf(t.session)} was told.`); openTask(t.id); } catch (err) { nt.textContent = writeError(err); ok.disabled = false; } };
   no.onclick = () => openTask(t.id);
   d.addEventListener("keydown", e => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); no.onclick(); } });   // Escape leaves the editor, not the whole dialog
   const btns = el("div","row-wrap"); btns.append(ok, no, nt); d.append(er, dr, pr, pv, btns); prev(); requestAnimationFrame(() => er.querySelector("[aria-pressed=true]")?.focus() || er.querySelector(".chip-btn")?.focus()); return d; }
@@ -2095,6 +2107,21 @@ function weekGrid(evs){
     if (!list.length) col.append(el("span","note", wd.days.includes(d.getDay()) ? "Free" : "Day off"));
     g.append(col); }
   return g; }
+/* last 7 days (council round 12, from round 10): one card, open on Mondays */
+let lwOpen = new Date().getDay() === 1;
+function lastWeek(){
+  const from = Date.now() - 7 * DAY, T = v => Date.parse(v || "") || 0, d = el("details","lw"), sm = el("summary");
+  const done = tasks.filter(t => isClosed(t) && T(t.done_at) > from), decs = msgs.filter(m => m.from === "owner" && m.kind === "decision" && T(m.at) > from).length;
+  const mins = sessions.filter(x => isMeeting(x) && x.state === "closed" && !x.cancelled && !x.missed && T(x.closed_at) > from).reduce((m, x) => m + Math.max(0, (T(x.closed_at) - T(x.opened_at || x.at)) / 6e4 || +x.duration_min || 0), 0);
+  const back = new Map(); reviews.filter(r => r.outcome === "changes" && T(r.at) > from).forEach(r => back.set(r.task, (back.get(r.task) || 0) + 1));
+  const dr = drift(), held = agents.filter(a => (a.state === "waiting" || a.state === "blocked") && T(a.waiting_since || a.updated_at)).reduce((m, a) => m + Math.max(0, Date.now() - Math.max(from, T(a.waiting_since || a.updated_at))) / 36e5, 0);
+  sm.append(el("b", null, "Last 7 days"), el("span","note", `${done.length} task${done.length === 1 ? "" : "s"} done · ${decs} decision${decs === 1 ? "" : "s"} · ${fmtDur(Math.round(mins))} in meetings`)); d.append(sm);
+  const ul = el("ul","walk-day");
+  ul.append(el("li", null, done.length ? `Done: ${done.slice(0, 8).map(t => t.id).join(", ")}${done.length > 8 ? ` and ${done.length - 8} more` : ""}` : "Nothing finished this week."));
+  if (dr) ul.append(el("li", dr.slipped ? "t-warn" : null, `Against today's locked plan: ${dr.slipped} slipped, ${dr.added} added`));
+  if (held >= .1) ul.append(el("li", null, `Agents waiting on you right now have waited ${Math.round(held * 10) / 10} h in all`));
+  if (back.size) ul.append(el("li", null, "Sent back most in Reviews: " + [...back].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, n]) => `${id} (${n}×)`).join(", ")));
+  d.append(ul); d.open = lwOpen; d.ontoggle = () => { lwOpen = d.open; }; return d; }
 function renderCalendar(){
   const sel = $("calWho"); if (!sel) return;
   const people = agents.filter(a => a.id !== "owner").sort((a, b) => nameOf(a.id).localeCompare(nameOf(b.id)));
@@ -2106,7 +2133,7 @@ function renderCalendar(){
   $("calNote").textContent = `${d0.toLocaleDateString("en-GB", {day:"numeric", month:"short"})} – ${d6.toLocaleDateString("en-GB", {day:"numeric", month:"short"})}` + (lateN ? ` · ${lateN} late` : "");
   if (calWho === "@rooms") { box.append(roomsWeek()); return; }
   if (calWho) { box.append(weekGrid(sched.byAgent[calWho] || [])); return; }
-  box.append(planHealth());
+  box.append(planHealth(), lastWeek());
   const now = Date.now(), all = el("div","cal-all");
   people.map(a => ({a, l:(sched.byAgent[a.id] || []).filter(x => !x.done && x.e > now)})).filter(x => x.l.length)
     .sort((x, y) => (y.l.some(e => sched.byTask[e.t?.id]?.lateBy) - x.l.some(e => sched.byTask[e.t?.id]?.lateBy)) || x.l[0].s - y.l[0].s)
