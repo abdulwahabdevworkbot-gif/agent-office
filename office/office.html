@@ -247,6 +247,9 @@ h2{font-weight:700;font-size:19px;margin:0}
 @media (max-width:760px){.ag-grid{grid-template-columns:minmax(0,1fr)}.ag-head{grid-template-columns:auto minmax(0,1fr)}.ag-head>.btn-lite{grid-column:1 / -1;justify-self:end;grid-row:1}}
 .ag-now{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;margin:4px 0 12px}@media (max-width:700px){.ag-now{grid-template-columns:minmax(0,1fr)}}.an-task{display:grid;gap:6px}.an-task .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}.an-task .bar i{display:block;height:100%;background:var(--accent)}.an-task .bar.est i{background:repeating-linear-gradient(90deg,var(--accent) 0 6px,transparent 6px 9px)}.an-task .bar.over i{background:var(--late)}.an-rel{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px}.an-rel .chip{cursor:pointer}
 .an-log{list-style:none;margin:0;padding:0;display:grid;gap:3px;font-size:12.5px;max-height:260px;overflow:auto}.an-log li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;align-items:baseline}.an-log time{color:var(--muted);font-variant-numeric:tabular-nums}.an-log li.quiet{color:var(--muted);font-style:italic}.an-log a,.an-log button.linkish{text-align:start}
+.handoff-chip{position:fixed;z-index:6000;left:0;top:0;padding:3px 8px;border-radius:999px;background:var(--ok);color:var(--on-c);font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.3);pointer-events:none;transition:transform 1.1s cubic-bezier(.4,0,.2,1),opacity .3s;white-space:nowrap}
+.ag .yt{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--ok);color:var(--on-c);font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;z-index:7;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.ag.handed{filter:drop-shadow(0 0 6px var(--ok))}
 .ag-edit > summary{cursor:pointer;font-weight:600;padding:6px 0}.ag-edit[open] > summary{margin-bottom:8px}
 .ag-box{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px;align-content:start;min-width:0}
 .ag-box h3{margin:0;font-size:15px}
@@ -1678,7 +1681,16 @@ function doneMoment(list){
   t.textContent = list.length === 1 ? `${list[0].id} ${ttl(list[0])} · done by ${nameOf(list[0].session)}` : `${list.length} tasks done: ${list.map(x => x.id).join(", ")}`; t.classList.add("on");
   const ob = el("button","linkish","Open"); ob.type = "button"; ob.onclick = () => { t.classList.remove("on"); openTask(list[0].id); }; t.append(ob);
   const hide = () => { clearTimeout(t._h); t._h = setTimeout(() => { if (!t.matches(":hover, :focus-within")) t.classList.remove("on"); else hide(); }, 5000); }; hide();
-  list.forEach(x => { const f = figs.get(x.session); if (!f) return; f.b.classList.add("cheer"); setTimeout(() => f.b.classList.remove("cheer"), 3000); }); }
+  list.forEach(x => { const f = figs.get(x.session); if (!f) return; f.b.classList.add("cheer"); setTimeout(() => f.b.classList.remove("cheer"), 3000); });
+  /* hand-offs you can see (council round 22): finished work that frees someone else's task glides to them as a chip, and they show "Your turn" */
+  const hand = list.flatMap(x => tasks.filter(t => !isClosed(t) && t.session && t.session !== x.session && depsOf(t).includes(x.id) && depsOf(t).every(d => isClosed(tasks.find(y => y.id === d) || {}))).map(t => [x, t])).slice(0, 3);
+  if (hand.length) { const nx = hand.map(([, t]) => `${nameOf(t.session)} can start ${t.id}`); t.insertBefore(document.createTextNode(` · Now ${nx.join(", ")}`), ob); }
+  hand.forEach(([x, nt], i) => { const from = figs.get(x.session)?.b, to = figs.get(nt.session)?.b; if (!to) return;
+    const mark = () => { to.classList.add("handed"); to.querySelector(".yt")?.remove(); const tag = el("span","yt", `Your turn: ${nt.id}`); to.append(tag); setTimeout(() => { tag.remove(); to.classList.remove("handed"); }, 9000); };
+    const fr = from?.getBoundingClientRect(), tr = to.getBoundingClientRect(), seen = r => r && r.width && r.bottom > 0 && r.top < innerHeight;
+    if (reduce || !seen(fr) || !seen(tr) || document.hidden) { mark(); return; }
+    const chip = el("div","handoff-chip", `${x.id} ✓`); document.body.append(chip); const at = r => `translate(${r.left + r.width / 2 - chip.offsetWidth / 2}px, ${r.top - 8}px)`; chip.style.transform = at(fr);
+    setTimeout(() => { requestAnimationFrame(() => { chip.style.transform = at(tr); }); setTimeout(() => { chip.style.opacity = "0"; mark(); setTimeout(() => chip.remove(), 350); }, 1150); }, 400 + i * 500); }); }
 /* follow a task (council round 10, from round 8): a star in the task dialog; followed tasks sit in a strip above the office (up to 8) */
 const following = () => (Array.isArray(metaOffice?.follow) ? metaOffice.follow : []).filter(id => tasks.some(t => t.id === id));
 let followPend = null;
