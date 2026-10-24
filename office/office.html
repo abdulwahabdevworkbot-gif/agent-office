@@ -693,11 +693,13 @@ dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);c
 dialog::backdrop{background:rgba(10,14,20,.55)}
 .dlg{padding:18px 20px;display:grid;gap:14px;overflow:auto;max-height:88vh}
 #sessDlg:has(.with-room){width:min(1040px,calc(100% - 24px))}.dlg.with-room{grid-template-columns:minmax(220px,300px) minmax(0,1fr);align-items:start}.dlg-main{display:grid;gap:14px;min-width:0}
-.dlg-side{position:sticky;top:0;display:grid;gap:6px}.dlg-room{width:100%;cursor:zoom-in}.dlg-room:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.dlg-room-big{position:fixed;left:50%;top:50%;width:min(900px,92vw);transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;z-index:50;transition:opacity .15s ease,transform .15s ease;box-shadow:0 24px 60px rgba(0,0,0,.5)}
-.dlg-room:hover~.dlg-room-big,.dlg-room:focus-visible~.dlg-room-big{opacity:1;transform:translate(-50%,-50%) scale(1)}
-@media (max-width:720px){.dlg.with-room{grid-template-columns:1fr}.dlg-side{position:static}.dlg-room-big{display:none}}
-@media (prefers-reduced-motion:reduce){.dlg-room-big{transition:none}}
+.dlg-side{position:sticky;top:0;display:grid;gap:6px}.dlg-roomwrap{position:relative;aspect-ratio:1200/896}
+.dlg-room{position:absolute;inset:0 auto auto 0;width:100%;z-index:5;transition:width .2s ease,box-shadow .2s ease}
+.dlg-room.big{width:min(820px,calc(100vw - 80px));z-index:60;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.dlg-room .ag,.dlg-room .tag{transition:left 2.4s ease-in-out,top 2.4s ease-in-out}.dlg-room .ag{cursor:pointer}.dlg-room .ag:hover img,.dlg-room .ag:focus-visible img{filter:drop-shadow(0 0 4px var(--accent))}
+.dlg-pin{position:absolute;top:6px;right:6px;z-index:61;font-size:12px;padding:3px 8px;white-space:nowrap}.dlg-room.big~.dlg-pin{left:calc(min(820px,100vw - 80px) - 90px);right:auto}
+@media (max-width:720px){.dlg.with-room{grid-template-columns:1fr}.dlg-side{position:static}.dlg-room.big{width:100%}.dlg-pin{display:none}}
+@media (prefers-reduced-motion:reduce){.dlg-room,.dlg-room .ag,.dlg-room .tag{transition:none}}
 .dlg h3{font-size:22px;margin:0;line-height:1.3}
 .lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
 .dlg ul,.dlg ol{margin:0;padding-left:20px}
@@ -1090,7 +1092,7 @@ function link(text, href, cls){ const a = el("a", cls || "linkish", text); a.hre
 const taskLink = id => link(id, "#task/" + encodeURIComponent(id));
 const sessLink = (id, text) => link(text || "Session", "#session/" + encodeURIComponent(id));
 const boardLink = (id, text) => link(text || "Board", "#board/" + encodeURIComponent(id));
-function go(href){ try { history.replaceState(null, "", href); } catch {} route(href); }
+function go(href){ try { history.replaceState(null, "", href); } catch {} routed = true; route(href); }   // a link already routed: the next redraw must not route the same hash again (it closed and reopened the window, and lost live replies)
 function route(h){
   const m = /^#(task|session|board|agent)\/(.+)$/.exec(h || location.hash); if (!m) return false;
   const id = decodeURIComponent(m[2]);
@@ -3364,8 +3366,10 @@ function versionKanban(v, vt, np){
   const sc = el("div","rm-scroll"); sc.append(grid); return sc;
 }
 function openSession(id){
+  const same = openSess === id && $("sessDlg").open, oldTa = same && $("sessBody").querySelector(".dlg-main textarea, textarea"), oldThread = same && $("sessBody").querySelector(".sess-msgs");
+  const keep = oldTa ? {v:oldTa.value, f:document.activeElement === oldTa, a:oldTa.selectionStart, b:oldTa.selectionEnd} : null, oldN = oldThread ? oldThread.childElementCount : 0, oldMain = same && $("sessBody").querySelector(".dlg-main"), oldTop = oldMain ? $("sessBody").scrollTop : 0;
   openSess = id; const s = sessions.find(x => x.id === id); if (!s) return;
-  const body = $("sessBody"); body.replaceChildren();
+  const body = $("sessBody"); body.replaceChildren(); body.classList.remove("with-room");
   const top = el("div"); top.append(el("span","mono", isMeeting(s) ? "Meeting" + (s.task ? ` · ${s.task}` : "") : `Task session · ${s.task || ""}`), el("h3", null, s.title_en || "Question")); body.append(top);
   const t = tasks.find(x => x.id === s.task);
   const row = el("div","row-wrap");
@@ -3397,9 +3401,9 @@ function openSession(id){
     solve.onclick = () => {
       const res = el("textarea"); res.placeholder = "What solved it? (one line, optional)"; res.setAttribute("aria-label","What solved it");
       const ok = el("button","btn", isMeeting(s) ? "End the meeting" : "Close the session"); ok.type = "button";
-      const w = el("div","compose"); w.style.padding = "0"; w.style.border = "0"; w.append(res, ok); solve.replaceWith(); f.after(w); solve.disabled = true;
+      const w = el("div","compose solve-box"); w.style.padding = "0"; w.style.border = "0"; w.append(res, ok); solve.replaceWith(); f.after(w); solve.disabled = true;
       ok.onclick = async () => { ok.disabled = true;
-        try { await db.doc("sessions/" + s.id).update({state:"closed", closed_at:new Date().toISOString(), closed_by:"owner", resolution_en:res.value.trim() || null, relayed:false}); }
+        try { await db.doc("sessions/" + s.id).update({state:"closed", closed_at:new Date().toISOString(), closed_by:"owner", resolution_en:res.value.trim() || null, relayed:false}); w.remove(); openSession(s.id); }
         catch (err) { note.textContent = writeError(err); ok.disabled = false; } };
     };
   } else {
@@ -3409,15 +3413,29 @@ function openSession(id){
   }
   const c = el("button","btn-lite","Close"); c.type = "button"; c.onclick = () => $("sessDlg").close(); body.append(c);
   /* the owner's ask (2026-10-24): the meeting window shows its room beside the talk; point at it to see it bigger */
-  { const pic = el("div","room dlg-room"), big = el("div","room dlg-room-big"); pic.tabIndex = 0; pic.setAttribute("role","img");
-    const r = drawRoom(pic, s), lbl = r.booked === "huddle" ? "Huddle table" : "Meeting room";
-    pic.setAttribute("aria-label", `${lbl}: ${r.inRoom ? r.ids.map(nameOf).join(", ") : "nobody in it right now"}. Point at it to see it bigger.`);
-    pic.append(el("span","label", lbl)); drawRoom(big, s); big.append(el("span","label", lbl)); big.setAttribute("aria-hidden","true");
-    const side = el("div","dlg-side"); side.append(el("div","lbl","Room"), pic, el("div","note", r.inRoom ? "Point at the picture to see it bigger." : s.state === "scheduled" ? "Booked; people arrive when it starts." : "Nobody is in the room right now."), big);
+  /* a live room (owner, 2026-10-24): small beside the talk, bigger while you point at it, Pin keeps it big. People move about and each one opens their details. */
+  { const pic = el("div","room dlg-room"), r = drawRoom(pic, s), lbl = r.booked === "huddle" ? "Huddle table" : "Meeting room";
+    pic.setAttribute("aria-label", `${lbl}: ${r.inRoom ? r.ids.map(nameOf).join(", ") : "nobody in it right now"}`);
+    pic.append(el("span","label", lbl));
+    pic.querySelectorAll(".ag").forEach(b => { const id = b.getAttribute("aria-label"), real = r.ids.find(x => nameOf(x) === id);
+      b.title = real === "owner" ? "You" : `${id}: open their details`; b.onclick = e => { e.stopPropagation(); if (real && real !== "owner") openAgent(baseId(real)); };
+      b.dataset.x = parseFloat(b.style.left); b.dataset.y = parseFloat(b.style.top); });
+    const pin = el("button","btn-lite dlg-pin", roomPinned ? "Unpin" : "Pin big"); pin.type = "button"; pin.setAttribute("aria-pressed", String(roomPinned));
+    pin.title = "Keep the room big, or let it shrink back when you move away";
+    const wrap = el("div","dlg-roomwrap"); wrap.append(pic, pin);
+    const grow = on => pic.classList.toggle("big", on || roomPinned);
+    wrap.addEventListener("mouseenter", () => { roomHover = true; grow(true); }); wrap.addEventListener("mouseleave", () => { roomHover = false; grow(false); });   /* the wrap holds the Pin button too, so reaching for it keeps the room big */
+    wrap.addEventListener("focusin", () => grow(true)); wrap.addEventListener("focusout", e => { if (!wrap.contains(e.relatedTarget)) grow(roomHover); });
+    pin.onclick = () => { roomPinned = !roomPinned; pin.textContent = roomPinned ? "Unpin" : "Pin big"; pin.setAttribute("aria-pressed", String(roomPinned)); grow(roomPinned); };
+    grow(roomHover);
+    const side = el("div","dlg-side"); side.append(el("div","lbl","Room"), wrap, el("div","note", r.inRoom ? "Point at the room to see it bigger. Click anyone for their details." : s.state === "scheduled" ? "Booked; people arrive when it starts." : "Nobody is in the room right now."));
     const main = el("div","dlg-main"); main.append(...body.childNodes); body.append(side, main); body.classList.add("with-room"); }
+  /* replies arrive while the window is open: the window redraws, keeping what you were typing, and shows the new messages */
+  if (keep) { const ta = body.querySelector("textarea"); if (ta) { ta.value = keep.v; if (keep.f) { ta.focus(); try { ta.setSelectionRange(keep.a, keep.b); } catch {} } } }
+  if (same) { const th = body.querySelector(".sess-msgs"); body.scrollTop = oldTop; if (th && th.childElementCount > oldN) th.lastElementChild?.scrollIntoView({block:"nearest"}); }
   if (!$("sessDlg").open) $("sessDlg").showModal();
 }
-$("sessDlg").addEventListener("close", () => { openSess = null; });
+$("sessDlg").addEventListener("close", () => { if (!$("sessDlg").open) openSess = null; });
 function askForm(t, host){
   const w = el("div","ask");
   const ml = el("div","who-list"); membersFor(t).forEach(m => { const sp = el("span"); sp.append(avatar(m, 22), el("span", null, nameOf(m))); ml.append(sp); });
@@ -3439,7 +3457,12 @@ function askForm(t, host){
     } catch (err) { note.textContent = writeError(err); go.disabled = false; }
   };
 }
-let openSessAfter = null;
+let openSessAfter = null, roomPinned = false, roomHover = false;
+/* people in the meeting window's room wander a little around their seat; nobody moves for reduced motion */
+setInterval(() => { if (!$("sessDlg").open || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.querySelectorAll("#sessBody .dlg-room .ag").forEach(b => { if (Math.random() < .5) return; const x = +b.dataset.x, y = +b.dataset.y; if (!isFinite(x)) return;
+    const nx = (x + (Math.random() * 6 - 3)).toFixed(1) + "%", ny = (y + (Math.random() * 3 - 1.5)).toFixed(1) + "%"; b.style.left = nx; b.style.top = ny;
+    const tag = b.nextElementSibling; if (tag?.classList.contains("tag")) { tag.style.left = nx; tag.style.top = ny; } }); }, 2600);
 /* Call a meeting (journey review + council, 2026-10-23): topic first, then the people it needs (suggested ones ticked, Everyone one
    click away), when (now or later, with a free-time finder), how long, and the room it will take. A later meeting is a
    session with state "scheduled": it sits in its members' calendars and opens by itself at its time. */
@@ -3812,7 +3835,7 @@ const boardVer = () => { const v = bf.ver ?? currentVer(); return v === "*" || v
 const KINDS = {meeting:"Meeting", question:"Quick question", consult:"Consultation", chat:"Chat"};
 const convKind = s => KINDS[s?.kind] || (s?.task ? "Task session" : "Session");
 const convTask = s => tasks.find(t => t.id === s.task);
-const convState = s => s.state === "open" ? "doing" : "done";
+const convState = s => s.state === "open" ? "doing" : s.state === "scheduled" ? "todo" : "done";   // a booked meeting waits in To do
 const convVer = s => s.version || verOf(convTask(s) || {}) || "";
 const convFeat = s => convTask(s)?.feature || "";
 const DEFAULT_STATES = ["todo","doing","review","blocked"];
@@ -4381,7 +4404,7 @@ function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } 
   Object.keys(TAB_DRAW).forEach(t => staleTabs.add(t)); drawTab(curTab || "office");
   if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route();
   renderSummary(); calBadge(); renderSelects(); renderSessions(); renderCompose(); renderInbox(); renderReviews();
-  if (openSess && $("sessDlg").open && !document.activeElement?.matches("textarea, input, select")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); }
+  if (openSess && $("sessDlg").open && !$("sessBody").querySelector(".solve-box")) openSession(openSess); if (openSessAfter && sessions.some(x => x.id === openSessAfter)) { const id = openSessAfter; openSessAfter = null; openSession(id); } if (agentOpen && $("agentDlg").open) renderAgentWork(); }
 
 /* ---------- data ---------- */
 /* warm start (council round 14, Engineer): the last known office shows at once from this browser's own copy, marked "As of", until live data arrives; automatic writes wait (live.stale) */
