@@ -67,6 +67,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .tabbar .find-btn{font-size:13px;font-weight:500;align-self:center;padding:4px 10px;border:1px solid var(--line);border-radius:8px}
 .find input{width:100%;box-sizing:border-box;font-size:16px}.find-list{display:grid;gap:2px;margin-top:10px;max-height:60vh;overflow:auto}.find-row{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:baseline;padding:7px 8px;border-radius:6px;cursor:pointer}
 .find-row:hover,.find-row:focus-visible,.find-row.on{background:var(--chip, rgba(127,127,127,.12))}.find-row .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:88px}.find-row .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.set-tabs{border-radius:10px 10px 0 0}
 .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .tabs .count{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-left:6px}
 .tabs .count:not(:empty){color:var(--warn);font-weight:700;font-family:var(--font)}#chatCount:not(:empty){color:var(--accent)}#taskCount:not(:empty){color:var(--bad)}#calCount:not(:empty){color:var(--late)}
@@ -423,7 +424,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ib-a button{font-size:12.5px;padding:3px 10px}.ib-a input{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 8px;min-width:0}.ib-a{align-items:center}
 .ib.wide{grid-column:1 / -1}
 .ib.away{--c:var(--accent);background:var(--panel)}.mb-first{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;padding:8px 10px;border-radius:8px;border:1px solid var(--line);border-left:4px solid var(--warn);background:var(--bg);font-size:13.5px}.mb-first .lbl{font-weight:700}.mb-first > span:not(.lbl){min-width:0;overflow-wrap:anywhere}.mb-first button{margin-inline-start:auto}
-#panel-settings{grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));align-items:start}#panel-settings > .panel:first-child,#dataSet{grid-column:1 / -1}#mtSave,#whSave,#ritSave{display:none}
+#panel-settings{gap:0}#panel-settings > .panel{border-top-left-radius:0;border-top-right-radius:0}.set-tabs{margin-bottom:0;border:1px solid var(--line);border-bottom:0;background:var(--panel)}#mtSave,#whSave,#ritSave{display:none}
 .calls{--c:var(--warn);background:var(--panel)}.calls .cq{grid-column:2;display:grid;gap:4px;padding:6px 0;border-top:1px solid var(--line)}.calls .cq:first-of-type{border-top:0}.calls .cq b{font-size:13.5px}.calls .cq .row-wrap{gap:6px}.calls .cq .chip-btn[aria-pressed="true"]{font-weight:700}.calls .cq small{color:var(--muted)}
 .mb-tiles{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:6px 0 2px}.mb-tile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-width:0}.mb-tile b{font-size:22px;line-height:1.1;color:var(--ink)}.mb-tile span{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.mb-tile.warn b{color:var(--late)}.mb-tile.good b{color:var(--ok)}.mb-tile:hover{border-color:var(--accent)}.mb-tile:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 .away .night-strip{grid-column:1 / -1;margin:4px 0 0;background:var(--bg);padding:4px 8px;gap:2px}.away .ns-cap:empty{display:none}#callsBox:empty{display:none}#callsBox{margin-top:10px}.mb-tile:disabled{cursor:default}.mb-tile:disabled:hover{border-color:var(--line)}@media (max-width:520px){.mb-tile{padding:6px 8px}.mb-tile b{font-size:19px}.mb-tile span{font-size:11.5px}.chrome .ttl{letter-spacing:.08em;font-size:11px;line-height:1.25;min-width:0}}.away ul[hidden]{display:none}.away .ns-track{overflow:hidden}@media (max-width:520px){.away .ns-tick:nth-of-type(even){visibility:hidden}}.away > ul{grid-column:2}
@@ -691,6 +692,12 @@ form.compose{grid-template-columns:minmax(0,1fr)}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:0;width:min(720px,calc(100% - 24px));max-height:88vh;direction:ltr;text-align:left}
 dialog::backdrop{background:rgba(10,14,20,.55)}
 .dlg{padding:18px 20px;display:grid;gap:14px;overflow:auto;max-height:88vh}
+#sessDlg:has(.with-room){width:min(1040px,calc(100% - 24px))}.dlg.with-room{grid-template-columns:minmax(220px,300px) minmax(0,1fr);align-items:start}.dlg-main{display:grid;gap:14px;min-width:0}
+.dlg-side{position:sticky;top:0;display:grid;gap:6px}.dlg-room{width:100%;cursor:zoom-in}.dlg-room:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dlg-room-big{position:fixed;left:50%;top:50%;width:min(900px,92vw);transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;z-index:50;transition:opacity .15s ease,transform .15s ease;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.dlg-room:hover~.dlg-room-big,.dlg-room:focus-visible~.dlg-room-big{opacity:1;transform:translate(-50%,-50%) scale(1)}
+@media (max-width:720px){.dlg.with-room{grid-template-columns:1fr}.dlg-side{position:static}.dlg-room-big{display:none}}
+@media (prefers-reduced-motion:reduce){.dlg-room-big{transition:none}}
 .dlg h3{font-size:22px;margin:0;line-height:1.3}
 .lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
 .dlg ul,.dlg ol{margin:0;padding-left:20px}
@@ -862,7 +869,8 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   </section>
 
   <section role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" class="stack" hidden>
-    <div class="panel">
+    <div class="tabs sub set-tabs" id="setTabs" role="tablist" aria-label="Settings"></div>
+    <div class="panel" id="roomSet">
       <h2>Room sizes</h2>
       <p class="note">For each room: the most people it holds, and how full it gets before an exact copy opens for the next person. When fewer people need the room, the extra copy closes again.</p>
       <div class="rs-wrap"><table class="rs" id="roomRules"></table></div>
@@ -1041,10 +1049,25 @@ function syncGroups(name){
   const bar = document.querySelector(".tabs"); bar.classList.toggle("single", g[2].length < 2); bar.classList.add("sub");
   TABS.forEach(t => { $("tab-" + t).hidden = !g[2].includes(t); });
 }
+/* Settings sub-tabs: one card per tab (owner, 2026-10-24) */
+const SET_TABS = [["roomSet","Room sizes"],["langSet","Language"],["mtSet","Meetings"],["ritSet","Standing meetings"],["whSet","Working hours"],["paceSet","Estimates"],["dataSet","Data check"]];
+function showSet(id, focus){
+  if (!SET_TABS.some(x => x[0] === id)) id = SET_TABS[0][0];
+  try { localStorage.setItem("office.setTab", id); } catch {}
+  SET_TABS.forEach(([k]) => { const b = $("st-" + k), on = k === id; if (b) { b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; } if ($(k)) $(k).hidden = !on; });
+  if (focus) $("st-" + id)?.focus(); }
+function buildSetTabs(){
+  const bar = $("setTabs"); if (!bar || bar.childElementCount) return;
+  SET_TABS.forEach(([k, n], i) => { const b = el("button", null, n); b.type = "button"; b.id = "st-" + k; b.setAttribute("role", "tab"); b.setAttribute("aria-controls", k); $(k)?.setAttribute("role", "tabpanel"); $(k)?.setAttribute("aria-labelledby", b.id);
+    b.onclick = () => showSet(k);
+    b.onkeydown = e => { const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0; if (d) { e.preventDefault(); showSet(SET_TABS[(i + d + SET_TABS.length) % SET_TABS.length][0], true); } };
+    bar.append(b); });
+  let last = ""; try { last = localStorage.getItem("office.setTab") || ""; } catch {}
+  showSet(last); }
 function showTab(name, focus, byTab){
   if (curTab && name !== curTab && !restoring && !byTab) { navBack.push(snapshot()); if (navBack.length > 12) navBack.shift(); }
   if (curTab === "team" && name !== "team") teamState = "";   // a chip's Team filter ends when you leave Team
-  curTab = name; document.body.dataset.tab = name; syncGroups(name);
+  curTab = name; document.body.dataset.tab = name; syncGroups(name); if (name === "settings") buildSetTabs();
   TABS.forEach(t => { const on = t === name; $("tab-"+t).setAttribute("aria-selected", String(on)); $("tab-"+t).tabIndex = on ? 0 : -1; $("panel-"+t).hidden = !on; });
   { const tb = $("tab-"+name), st = tb.parentElement, end = st.querySelector(".tab-end"), room = st.clientWidth - (end ? end.offsetWidth : 0); if (tb.offsetLeft < st.scrollLeft) st.scrollLeft = tb.offsetLeft - 8; else if (tb.offsetLeft + tb.offsetWidth > st.scrollLeft + room) st.scrollLeft = tb.offsetLeft + tb.offsetWidth - room + 8; }
   if (focus) (groupOf(name)[2].length > 1 ? $("tab-"+name) : document.querySelector(`#tabGroups [data-group="${groupOf(name)[0]}"]`)).focus();
@@ -2383,7 +2406,7 @@ function planHealth(){
   const box = el("div","health"), last = open.reduce((a, t) => Math.max(a, P(t).e || 0), 0);
   box.append(el("b", null, "Plan health"), el("span","note", last ? `All open work done by ${fmtWhen(last)}` : "No open work"));
   const lastT = open.find(t => (P(t).e || 0) === last), lc = lastT && chainEl(lastT.id); if (lc) { lc.firstChild.textContent = "The finish date is set by:"; box.append(lc); }
-  const bad = dataCheck(); if (bad.length) { const c = el("button","chip go h-warn", `Data problems: ${bad.length}`); c.type = "button"; c.title = "Agent data the page had to ignore"; c.onclick = () => { showTab("settings"); $("dataSet").scrollIntoView({block:"start"}); }; box.append(c); }
+  const bad = dataCheck(); if (bad.length) { const c = el("button","chip go h-warn", `Data problems: ${bad.length}`); c.type = "button"; c.title = "Agent data the page had to ignore"; c.onclick = () => { showTab("settings"); showSet("dataSet"); }; box.append(c); }
   let rows = [];
   kinds.forEach(K => { const l = open.filter(K.f); if (!l.length) return; const c = el("button", "chip go" + (K.warn ? " h-warn" : "")); c.type = "button";
     c.textContent = `${K.en}: ${l.length}`; c.setAttribute("aria-pressed", String(calHealth === K.k)); c.onclick = () => { calHealth = calHealth === K.k ? "" : K.k; renderCalendar(); }; box.append(c);
@@ -3385,6 +3408,13 @@ function openSession(id){
     body.append(d);
   }
   const c = el("button","btn-lite","Close"); c.type = "button"; c.onclick = () => $("sessDlg").close(); body.append(c);
+  /* the owner's ask (2026-10-24): the meeting window shows its room beside the talk; point at it to see it bigger */
+  { const pic = el("div","room dlg-room"), big = el("div","room dlg-room-big"); pic.tabIndex = 0; pic.setAttribute("role","img");
+    const r = drawRoom(pic, s), lbl = r.booked === "huddle" ? "Huddle table" : "Meeting room";
+    pic.setAttribute("aria-label", `${lbl}: ${r.inRoom ? r.ids.map(nameOf).join(", ") : "nobody in it right now"}. Point at it to see it bigger.`);
+    pic.append(el("span","label", lbl)); drawRoom(big, s); big.append(el("span","label", lbl)); big.setAttribute("aria-hidden","true");
+    const side = el("div","dlg-side"); side.append(el("div","lbl","Room"), pic, el("div","note", r.inRoom ? "Point at the picture to see it bigger." : s.state === "scheduled" ? "Booked; people arrive when it starts." : "Nobody is in the room right now."), big);
+    const main = el("div","dlg-main"); main.append(...body.childNodes); body.append(side, main); body.classList.add("with-room"); }
   if (!$("sessDlg").open) $("sessDlg").showModal();
 }
 $("sessDlg").addEventListener("close", () => { openSess = null; });
@@ -3583,15 +3613,7 @@ function renderTalkRoom(){
   const room = $("talkRoom"); if (!room) return;
   if (!talkBuilt) { talkBuilt = true;
   }
-  room.querySelectorAll(".ag,.tag").forEach(x => x.remove());
-  const s = chatSess && sessions.find(x => x.id === chatSess);
-  let ids = [], title = "", key = "";
-  if (s) { ids = (s.members || []).filter(m => m === "owner" || agentById(m)); title = s.title_en || convKind(s); key = "s:" + s.id; }
-  else if (chatPair) { ids = chatPair.split("|"); title = ids.map(nameOf).join(" & "); key = "p:" + chatPair; if (msgs.some(m => m.pair === chatPair && m.from === "owner")) ids.unshift("owner"); }
-  const g = lastGroups.find(x => x.key === key);
-  /* people stand in the picture only while the conversation really is in a room; otherwise the picture is the room it booked, empty */
-  const inRoom = !!g && !(s && isDone(s)), booked = s?.room === "huddle" || (g && g.where !== "meet") ? "huddle" : "meet";
-  room.style.backgroundImage = `url(${A}rooms/${inRoom || booked === "meet" ? meetBg(ids.length) : "huddle"}.webp)`;
+  const r = drawRoom(room, chatSess && sessions.find(x => x.id === chatSess), chatPair), {s, ids, title, key, inRoom, booked, g} = r;
   const where = !key ? "" : s?.state === "scheduled" ? `Booked: ${booked === "huddle" ? "Huddle table" : "Meeting room"} at ${fmtWhen(Date.parse(s.at))}` : !inRoom ? (s && isDone(s) ? "Closed: everyone went back to work" : "Not in a room right now")
     : g.where === "meet" ? "In the meeting room" : `${ROOM_NAME.huddle}${g.where.includes("-") ? " " + g.where.split("-").pop() : ""} · Table ${g.table + 1}`;
   $("talkTitle").textContent = key ? "Room" : "Rooms";
@@ -3599,7 +3621,19 @@ function renderTalkRoom(){
   room.querySelector(".label small").textContent = title;
   const top = navBack[navBack.length - 1], back = top && top.tab !== "chat" ? ` Click outside the chat to go back to ${TAB_NAME[top.tab]}.` : "";
   $("talkHint").textContent = (key ? where + (ids.length ? ` · ${ids.length} ${ids.length === 1 ? "person" : "people"}.` : ".") : "Pick a conversation to see who is in it.") + back;
-  if (key && !inRoom) return;
+}
+/* the room picture of one conversation: its booked room, with the people in it while it really is in a room. Used by the chat side and the meeting window. */
+function drawRoom(room, s, pair){
+  room.querySelectorAll(".ag,.tag").forEach(x => x.remove());
+  let ids = [], title = "", key = "";
+  if (s) { ids = (s.members || []).filter(m => m === "owner" || agentById(m)); title = s.title_en || convKind(s); key = "s:" + s.id; }
+  else if (pair) { ids = pair.split("|"); title = ids.map(nameOf).join(" & "); key = "p:" + pair; if (msgs.some(m => m.pair === pair && m.from === "owner")) ids.unshift("owner"); }
+  const g = lastGroups.find(x => x.key === key);
+  /* people stand in the picture only while the conversation really is in a room; otherwise the picture is the room it booked, empty */
+  const inRoom = !!g && !(s && isDone(s)), booked = s?.room === "huddle" || (g && g.where !== "meet") ? "huddle" : "meet";
+  room.style.backgroundImage = `url(${A}rooms/${inRoom || booked === "meet" ? meetBg(ids.length) : "huddle"}.webp)`;
+  const res = {s, ids, title, key, inRoom, booked, g};
+  if (key && !inRoom) return res;
   ids.sort((a, b) => (b === "owner") - (a === "owner")).slice(0, MEET_SETS[meetBg(ids.length)].seats.length).forEach((id, i) => {
     const sp = MEET_SETS[meetBg(ids.length)].seats[i], P = null, b = el("button", "ag"); b.type = "button";
     const img = el("img", "body"); img.alt = ""; b.append(img);
@@ -3610,6 +3644,7 @@ function renderTalkRoom(){
     const tag = el("span", "tag", nameOf(id)); tag.style.cssText = `left:${sp.x}%;top:${sp.y}%`;
     room.append(b, tag);
   });
+  return res;
 }
 /* the owner's rule: when a link brought you to the chat, a click outside the chat and its room takes you back */
 let downTab = null; document.addEventListener("pointerdown", () => { downTab = curTab; }, true);
@@ -4009,7 +4044,7 @@ ${hist}
 OWNER (latest${ctx.decision ? ", marked as a decision" : ""}): ${ctx.text}
 
 Rules:
-- Each agent answers only from its own role. For a greeting or a question to everyone, every agent answers briefly. Otherwise only the agents with something useful to add. The coordinator answers first.
+- Who answers depends on how the owner words the line. If it names an agent (by name or id), or a task, or a topic that one agent owns (check each agent's task titles and role), only that agent answers; the others stay quiet unless they must add a fact. If it is a greeting or a question to everyone ("all of you", "كلكم", "how many are we", "وش تسوون"), every agent answers briefly from its own task. Otherwise the coordinator answers and the agent whose task fits the topic adds one line. Each agent answers only from its own role, and the conversation should feel live: answer the actual question, not a generic "noted".
 - 1 to 3 short, friendly sentences each. Start with the answer itself: no greeting (no "Hi", "هلا", "أهلاً") and never introduce yourself or say your name or role ("I'm the Backend", "أنا الـBackend"); each reply already shows who wrote it. Example: asked "what are you doing here?", Backend answers "I said I'd fix the wrong-code response to 401 with an error code and send it to you. Nothing else is logged as in progress."
 - Language: the conversation language is now "${lang}" (an ISO code; the office default is "${officeLang()}"). ${lang === "ar" ? LANG_RULE[langFor("owner") === "ar" ? "ar" : "mix"] : lang === "en" ? LANG_RULE.en : ""} Agent names always stay in English. Proposed task titles and summaries follow the owner's task language: ${LANG_RULE[langFor("tasks")]} Answer in that language. Understand the owner in any language, but writing in Arabic is NOT a request to switch. Switch only when the owner explicitly asks (e.g. "reply in Arabic", "رد بالعربي", "كلموني عربي", "back to English"); then answer in the new language and keep it for the rest of this conversation. In Arabic, use simple Gulf-friendly Arabic and keep technical names (Render, API, task ids) in English.
 - Use only the facts above. Never claim work is done or started unless the data says so. Never invent numbers, links or dates.

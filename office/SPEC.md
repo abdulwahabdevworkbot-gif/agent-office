@@ -285,3 +285,6 @@ General rules: every time is ISO 8601 with a time zone (`2026-10-24T09:00:00Z`);
 | sessions | room | meet or huddle |
 | sessions | duration_min | minutes above 0 |
 | messages | at | required, ISO time with a time zone |
+- **Settings sub-tabs** (owner, 2026-10-24): Settings has its own row of tabs, one per card: Room sizes, Language, Meetings, Standing meetings, Working hours, Estimates, Data check. One card shows at a time; the last one picked is remembered on this device.
+- **Meeting window shows its room** (owner, 2026-10-24): a session or meeting opened as a window has its room picture on the left, drawn the same way as the Chat side panel (`drawRoom`). Pointing at it, or focusing it with the keyboard, shows it large in the middle of the screen. On phones the picture sits on top and does not enlarge.
+- **Who answers in a talk** (owner, 2026-10-24): the agents' prompt picks who replies from how the owner words the line. A line that names an agent, a task, or a topic one agent owns gets an answer from that agent only; a greeting or a line to everyone gets a short answer from each; otherwise the Coordinator answers and the agent whose task fits adds a line.
