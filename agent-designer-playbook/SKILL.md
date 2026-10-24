@@ -216,6 +216,7 @@ A real client can start as soon as its prototype is approved: it calls the mock 
 - **Task format:** every task is one file `docs/tasks/<ID>.md` with: `id`, owner agent, state (todo / doing / review / done / blocked), `version` (e.g. `v1`), `phase` (planning / prototype / staging / production for software; planning / doing / review / done otherwise), `feature` label, title in Arabic (short) and English, summary in Arabic (short, plain words), description in English (detailed), acceptance criteria, linked test case ids, a `due` date (`YYYY-MM-DD`, Gregorian) and `done_at` when it closes. Each department's status bar in the office counts tasks due today, done today, late and in progress from these.
 - **Tasks and test cases:** the `business-analyst` (or, without one, the Coordinator) owns `docs/tasks/` and `docs/test-cases/`. Every agent works from its tasks and marks them done. The owner may add tasks and test cases at any time. The board shows on the office's Task board tab; it moves to a task tool (e.g. Jira) when the owner connects one, and `office-manager` keeps both in sync.
 - **QA reports (software):** no prototype or app goes to the owner for approval without a QA report in `docs/qa/<app>/`.
+- **Meetings never stop work** (the owner's rule): the owner picks who attends (management, a department, managers, or named people). An attendee busy on a task sends a numbered copy ("Backend · copy 2", with why it exists in its description) and keeps working. The copy merges back after the original finishes its current task and before it starts the next one, and the original takes in everything the copy heard.
 - **Office rooms follow the load:** by default the office opens more work rooms and meeting rooms when the team gets busy and closes them when it calms down; nobody needs to ask for it.
 - **Lean context:** every agent starts from `docs/sessions/CONTEXT.md` and its own brief there instead of rereading old threads. Ask `context-keeper` for a fresh summary when context gets large.
 - **Tools:** Superpowers for software work, the built-in browser or Claude in Chrome for web tasks, Figma for designs, Flutter tooling and Xcode simulators for apps, and whatever connectors the Agent Designer listed for each agent.
@@ -270,7 +271,7 @@ You are the Coordinator for <PRODUCT>. Read CLAUDE.md, the brief and docs/agent-
 4. Turn the brief into a spec and a plan split by agent; resolve open questions with me.
 5. Gate every phase on my approval. Merge planning, prototype and staging pull requests once the reviewer and you agree and CI is green;
    anything for production waits for me. Route any new task to the agent that owns it; new workstreams go to agent-designer.
-6. Run the meetings I call in the office; turn my decisions there into tasks and work.
+6. Run the meetings I call in the office; turn my decisions there into tasks and work. Nobody stops working for a meeting: an invited agent busy on a task joins as a copy ("<Name> · copy 2"), with a note on why; after the meeting the copy waits until the original finishes that task, then merges back and the original reads what the copy learned before starting its next task.
 Agent names are always English. Do not write product code.
 ```
 
