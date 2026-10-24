@@ -720,6 +720,13 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <div class="set-grid" id="whBox"><label>From <select id="whStart"></select></label><label>To <select id="whEnd"></select></label><span class="mt-chips" id="whDays" role="group" aria-label="Working days"></span></div>
       <div class="row-wrap"><button class="btn" type="button" id="whSave">Save</button><span class="note" id="whNote"></span></div>
     </div>
+    <div class="panel" id="ritSet">
+      <h2>Standing meetings</h2>
+      <p class="note">They book themselves. The agenda comes from the plan: late tasks, blocked agents and decisions waiting for you. The people are the ones on that agenda, plus the Coordinator. Their minutes reach every task on the agenda.</p>
+      <div class="set-grid"><label class="set-chk"><input type="checkbox" id="ritSu"> Daily stand-up</label><label>at <select id="ritSuT"></select></label><label>for <select id="ritSuL"></select></label></div>
+      <div class="set-grid"><label class="set-chk"><input type="checkbox" id="ritRv"> Weekly review</label><label>on <select id="ritRvD"></select></label><label>at <select id="ritRvT"></select></label><label>for <select id="ritRvL"></select></label></div>
+      <div class="row-wrap"><button class="btn" type="button" id="ritSave">Save</button><span class="note" id="ritNote"></span></div>
+    </div>
   </section>
 
   <section role="tabpanel" id="panel-board" aria-labelledby="tab-board" class="stack" hidden>
@@ -1901,7 +1908,7 @@ function openTask(id){
     d.append(box);
   });
   body.append(d);
-  const ts = sessions.filter(x => x.task === t.id), op = openSessionFor(t.id);
+  const ts = sessions.filter(x => x.task === t.id || (Array.isArray(x.tasks) && x.tasks.includes(t.id))), op = openSessionFor(t.id);
   if (op) { const d2 = el("div","ask"); const b2 = el("button","btn","Go to the open session"); b2.type = "button"; b2.onclick = () => { $("taskDlg").close(); openSession(op.id); }; d2.append(el("div","lbl","Question open"), el("div", null, op.title_en || ""), b2); body.append(d2); }
   else askForm(t, body);
   /* minutes (council round 3, C4): every meeting and session on this task, with its outcome and the decisions made in it */
@@ -2517,12 +2524,13 @@ function callMeeting(opts){
 function openDueMeetings(){
   if (!db || !canWrite) return;
   sessions.filter(s => s.state === "scheduled" && Date.parse(s.at || "") <= Date.now()).forEach(s => {
-    db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at}).catch(() => {});
+    const fresh = s.ritual ? ritualPlan(s.ritual) : null;   // a standing meeting takes today's agenda and people when it opens
+    db.doc("sessions/" + s.id).update({state:"open", opened_at:s.at, ...(fresh ? {agenda:fresh.agenda, tasks:fresh.tasks, members:fresh.members, agenda_done:[]} : {})}).catch(() => {});
     if (s.repeat) { const series = s.series || s.id, next = new Date(Date.parse(s.at) + (s.repeat === "week" ? 7 : 1) * DAY).toISOString();   // a repeating meeting books its next time
       if (!sessions.some(x => (x.series || x.id) === series && x.at === next)) { const {id, ...rest} = s; db.collection("sessions").add({...rest, series, at:next, state:"scheduled", scheduled_at:new Date().toISOString(), opened_at:null}).catch(() => {}); } }
   });
 }   // the snapshot that follows moves people into the room
-setInterval(openDueMeetings, 30000); setTimeout(openDueMeetings, 5000);
+setInterval(() => { openDueMeetings(); ensureRituals(); }, 30000); setTimeout(() => { openDueMeetings(); ensureRituals(); }, 5000);
 $("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
 function writeError(err){
   if (err && err.code === "quota_exceeded") return "The office data is full. Ask the Office Manager to archive old messages.";
@@ -3058,7 +3066,42 @@ $("rsReset").onclick = async () => { $("rsNote").textContent = "Saving…";
 /* meetings and rooms (council round 2, the owner's "link meetings to the rooms") */
 const meetCfg = () => { const m = metaOffice?.meetings || {}; return {huddle_max:Math.min(8, Math.max(2, +m.huddle_max || 4)), default_min:[15,30,45,60].includes(+m.default_min) ? +m.default_min : 30}; };
 const DAYN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+/* standing meetings (council round 5, S3): a daily stand-up and a weekly review that book themselves, with the agenda pulled from the plan */
+const RITUALS = {standup:{title:"Daily stand-up", purpose:"discuss"}, review:{title:"Weekly review", purpose:"decide"}};
+const ritCfg = () => { const r = metaOffice?.rituals || {}, su = r.standup || {}, rv = r.review || {};
+  return {standup:{on:!!su.on, time:su.time || "09:00", min:+su.min || 15}, review:{on:!!rv.on, day:Number.isFinite(+rv.day) ? +rv.day : 0, time:rv.time || "10:00", min:+rv.min || 30}}; };
+function ritualPlan(kind){
+  const lines = [], taskIds = new Set(), people = new Set(["coordinator"]), now = Date.now();
+  tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.lateBy).forEach(t => { lines.push(`Late: ${t.id} ${t.title_en || ""} (${lateText(sched.byTask[t.id])})`); taskIds.add(t.id); people.add(t.session); });
+  agents.filter(a => a.state === "blocked").forEach(a => { const t = tasks.find(x => x.session === a.id && !isClosed(x)); const bi = blockInfo(a, t); lines.push(`Blocked: ${nameOf(a.id)}${bi.why ? ", " + bi.why.replace(/\.$/, "") : ""}`); if (t) taskIds.add(t.id); people.add(a.id); });
+  agents.filter(a => a.state === "waiting" && a.id !== ASSISTANT).forEach(a => { lines.push(`Decision for you: ${nameOf(a.id)}${a.doing_en ? ", " + a.doing_en : ""}`); people.add(a.id); });
+  if (kind === "review") { const wk = now - 7 * DAY, done = tasks.filter(t => isClosed(t) && (Date.parse(t.done_at || t.updated_at || "") || 0) > wk).length, last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
+    lines.unshift(`This week: ${done} task${done === 1 ? "" : "s"} done${last ? `; open work planned to finish by ${fmtWhen(last)}` : ""}`); }
+  if (!lines.length) lines.push("Nothing late or blocked: quick round of what's next");
+  return {agenda:lines.slice(0, 12), tasks:[...taskIds], members:["owner", ...[...people].filter(id => id && agentById(id))].slice(0, 30)}; }
+const nextAt = (time, day) => { const [h, m] = String(time).split(":").map(Number), d = new Date(); d.setSeconds(0, 0); d.setHours(h || 0, m || 0);
+  if (day == null) { if (+d <= Date.now()) d.setDate(d.getDate() + 1); } else { d.setDate(d.getDate() + ((day - d.getDay() + 7) % 7)); if (+d <= Date.now()) d.setDate(d.getDate() + 7); } return d; };
+function ensureRituals(){
+  if (!db || !canWrite) return; const c = ritCfg();
+  Object.keys(RITUALS).forEach(k => { if (!c[k].on) return; const at = nextAt(c[k].time, k === "review" ? c[k].day : null), id = `ritual-${k}-${localDay(at)}`;
+    if (sessions.some(x => x.id === id) || sessions.some(x => x.ritual === k && x.state === "scheduled")) return;   // one id per date, so two open tabs can't book it twice
+    const pl = ritualPlan(k);
+    db.doc("sessions/" + id).set({kind:"meeting", ritual:k, title_en:RITUALS[k].title, purpose:RITUALS[k].purpose, opened_by:"owner", author_id:me, members:pl.members, agenda:pl.agenda, tasks:pl.tasks,
+      relayed:false, duration_min:c[k].min, room:roomForCount(pl.members.length).key, at:at.toISOString(), state:"scheduled", scheduled_at:new Date().toISOString()}).catch(() => {}); });
+}
+function renderRitSettings(){
+  const p = $("ritSet"); if (!p || p.contains(document.activeElement)) return; const c = ritCfg();
+  const times = sel => { sel.replaceChildren(); for (let i = 0; i < 48; i++) { const v = `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`; sel.append(new Option(v, v)); } };
+  times($("ritSuT")); times($("ritRvT")); $("ritSuT").value = c.standup.time; $("ritRvT").value = c.review.time;
+  $("ritSuL").replaceChildren(...[10, 15, 30].map(m => new Option(m + " min", m, false, m === c.standup.min))); $("ritRvL").replaceChildren(...[30, 45, 60].map(m => new Option(m + " min", m, false, m === c.review.min)));
+  $("ritRvD").replaceChildren(...DAYN.map((d, i) => new Option(d, i, false, i === c.review.day))); $("ritSu").checked = c.standup.on; $("ritRv").checked = c.review.on; }
+$("ritSave").onclick = async () => { $("ritNote").textContent = "Saving…";
+  const v = {standup:{on:$("ritSu").checked, time:$("ritSuT").value, min:+$("ritSuL").value}, review:{on:$("ritRv").checked, day:+$("ritRvD").value, time:$("ritRvT").value, min:+$("ritRvL").value}};
+  try { await db.doc("meta/office").update({rituals:v});
+    for (const k of Object.keys(RITUALS)) for (const x of sessions.filter(x => x.ritual === k && x.state === "scheduled")) await db.doc("sessions/" + x.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), resolution_en:"Rebooked after a settings change."});   // the next one is booked with the new time
+    document.activeElement.blur(); $("ritNote").textContent = "Saved. The next ones are booked."; setTimeout(ensureRituals, 300); } catch (err) { $("ritNote").textContent = writeError(err); } };
 function renderMeetSettings(){
+  renderRitSettings();
   const p1 = $("mtSet"), p2 = $("whSet"); if (!p1) return;
   if (!p1.contains(document.activeElement)) { const c = meetCfg(), h = $("mtHuddle"), l = $("mtLen"); h.replaceChildren(); l.replaceChildren();
     for (let i = 2; i <= 8; i++) h.append(new Option(String(i), String(i), false, i === c.huddle_max)); [15,30,45,60].forEach(m => l.append(new Option(m + " min", String(m), false, m === c.default_min))); }
