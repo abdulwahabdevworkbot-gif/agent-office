@@ -43,7 +43,7 @@ header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-be
 h1{font-weight:700;font-size:30px;margin:0;line-height:1.15;text-wrap:balance}
 .sub{color:var(--muted);margin:2px 0 0}
 h2{font-weight:700;font-size:19px;margin:0}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}@media (max-width:520px){#summary{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent);padding-right:24px}#summary::-webkit-scrollbar{display:none}#summary > *{flex:0 0 auto}}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 11px;font-size:13px;font-weight:500;background:var(--idle-bg);color:var(--ink);white-space:nowrap}
 .chip .dot{width:8px;height:8px;border-radius:2px;background:var(--idle)}
 .st-working .dot{background:var(--accent)} .st-waiting .dot{background:var(--warn)} .st-blocked .dot{background:var(--bad)} .st-done .dot{background:var(--ok)}
@@ -56,6 +56,8 @@ h2{font-weight:700;font-size:19px;margin:0}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .tabs .tab-end{margin-left:auto;display:flex;gap:8px;align-items:center;position:sticky;right:0;background:linear-gradient(90deg,transparent,var(--bg) 18px);padding-left:22px;flex:0 0 auto}
 .tabs .need-pill{align-self:center;flex:0 0 auto;border:0;border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--warn);color:var(--bg)}
+.card.held{box-shadow:inset 3px 0 0 var(--bad)}.grid .hd:has(.hd-held){flex-wrap:wrap}.hd .hd-held{order:3;flex-basis:100%;text-align:left;display:block;font-size:11.5px;font-weight:500;text-transform:none;letter-spacing:0;margin-top:2px}
+@media (max-width:520px){.tabs .tab-end{padding-left:10px;gap:5px;background:var(--bg);box-shadow:-14px 0 12px -4px var(--bg)}.tabs .find-btn{padding:3px 7px}.tabs .need-pill{padding:3px 8px}.tabs button{padding:8px 10px}}
 .tabs .find-btn{font-size:13px;font-weight:500;align-self:center;padding:4px 10px;border:1px solid var(--line);border-radius:8px}
 .find input{width:100%;box-sizing:border-box;font-size:16px}.find-list{display:grid;gap:2px;margin-top:10px;max-height:60vh;overflow:auto}.find-row{all:unset;box-sizing:border-box;display:flex;gap:10px;align-items:baseline;padding:7px 8px;border-radius:6px;cursor:pointer}
 .find-row:hover,.find-row:focus-visible,.find-row.on{background:var(--chip, rgba(127,127,127,.12))}.find-row .k{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-width:88px}.find-row .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -951,6 +953,7 @@ function showTab(name, focus, byTab){
   if (curTab && name !== curTab && !restoring && !byTab) { navBack.push(snapshot()); if (navBack.length > 12) navBack.shift(); }
   curTab = name;
   TABS.forEach(t => { const on = t === name; $("tab-"+t).setAttribute("aria-selected", String(on)); $("tab-"+t).tabIndex = on ? 0 : -1; $("panel-"+t).hidden = !on; });
+  { const tb = $("tab-"+name), st = tb.parentElement, end = st.querySelector(".tab-end"), room = st.clientWidth - (end ? end.offsetWidth : 0); if (tb.offsetLeft < st.scrollLeft) st.scrollLeft = tb.offsetLeft - 8; else if (tb.offsetLeft + tb.offsetWidth > st.scrollLeft + room) st.scrollLeft = tb.offsetLeft + tb.offsetWidth - room + 8; }
   if (focus) $("tab-"+name).focus();
   try { history.replaceState(null, "", "#" + name); } catch {}
   backBar();
@@ -2459,8 +2462,8 @@ function renderSummary(){
   const goChip = (c, fn, tip) => { const b = el("button", c.className + " go"); b.type = "button"; b.append(...c.childNodes); b.title = tip; b.onclick = fn; return b; };
   const toInbox = () => { showTab("office"); $("inbox").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"start"}); };
   box.append(el("span","sum-lbl","Agents"));
-  ["waiting","working","blocked","done","idle"].forEach(k => { if (counts[k]) { const c = stateChip(k); c.lastChild.textContent = `${AGENT_STATE[k].en}: ${counts[k]}`;
-    box.append(k === "waiting" || k === "blocked" ? goChip(c, toInbox, "Show them in Needs you") : c); } });
+  ["waiting","working","blocked","done","idle"].forEach(k => { if (counts[k]) { const c = stateChip(k); c.lastChild.textContent = `${k === "blocked" ? "Blocked agents" : AGENT_STATE[k].en}: ${counts[k]}`;
+    box.append(k === "waiting" || k === "blocked" ? goChip(c, toInbox, "Show them in Needs you") : goChip(c, () => showTab("team"), "See them on the Team tab")); } });   // every chip goes somewhere (council round 32)
   const open = tasks.filter(t => t.state !== "done").length;
   box.append(el("span","sum-lbl","Work"));
   box.append(goChip(el("span","chip", `Open tasks: ${open}`), () => showTab("board"), "Open the task board"));
@@ -2532,7 +2535,9 @@ function renderBoard(){
   if (!cols.length) { const e = el("div","empty","Tick at least one stage to see tasks."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
   grid.append(Object.assign(el("div","hd hd0"), {textContent:"Agent"}));
   const convs = items(true).filter(it => it.type === "conv" && itemIn(it, bf) && (!filter || it.members.includes(filter))).map(it => it.s);
-  cols.forEach(s => { const h = el("div","hd"); h.append(s.en, el("span", null, String(tasks.filter(t => (t.state||"todo") === s.k && shown(t)).length + convs.filter(c => convState(c) === s.k).length))); grid.append(h); });
+  cols.forEach(s => { const h = el("div","hd"); h.append(s.en, el("span", null, String(tasks.filter(t => (t.state||"todo") === s.k && shown(t)).length + convs.filter(c => convState(c) === s.k).length)));
+    if (s.k === "blocked") { const held = tasks.filter(t => !isClosed(t) && t.state !== "blocked" && agentById(t.session)?.state === "blocked" && inVer(t, boardVer())); if (held.length) { const hb = el("button","linkish hd-held", `+${held.length} held by a blocked agent`); hb.type = "button"; hb.title = "Their tasks sit in other columns; show only those"; hb.onclick = () => { bf.tasks = new Set(held.map(t => t.id)); bf.feats.clear(); bf.states = new Set(["todo","doing","review","blocked","done"]); renderBoard(); }; h.append(hb); } }
+    grid.append(h); });
   const lanes = laneIds().filter(id => (!filter || id === filter) && tasks.some(t => t.session === id && shown(t)));
   if (!lanes.length && !convs.length) { const e = tasks.length ? emptyState("coordinator", "No task matches these filters.", "Change the version, stage or feature, or use Find.", "Show everything", () => { bf.ver = null; bf.feats.clear(); bf.tasks.clear(); bf.phases.clear(); bf.states = new Set(["todo","doing","review","blocked"]); renderBoard(); }) : emptyState("business-analyst", "No tasks yet.", "The Business Analyst adds them here."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
   if (convs.length) {
@@ -2552,7 +2557,7 @@ function renderBoard(){
         if (t.feature) b.append(flabel(t.feature));
         b.append(el("span","t", ttl(t)), el("span","ph-tag ph-" + phaseOf(t), phaseName(phaseOf(t))));
         const ab = !isClosed(t) && agentById(t.session)?.state === "blocked";
-        if (t.state !== "blocked" && ab) b.append(el("span","blk-tag", "Agent blocked"));
+        if (t.state !== "blocked" && ab) { b.append(el("span","blk-tag", "Agent blocked")); b.classList.add("held"); }
         if (t.state === "blocked" || ab) { const bi = blockInfo(ab ? agentById(t.session) : null, t); if (bi.why) b.append(el("span","blk-why", bi.why)); if (bi.needs) b.append(el("span","blk-why need", "Needs from you: " + bi.needs)); }
         const os = openSessionFor(t.id);
         if (os) { const q = el("span","qbadge go","Question open"); q.title = "Go to the session"; q.dataset.session = os.id; b.append(q); }
