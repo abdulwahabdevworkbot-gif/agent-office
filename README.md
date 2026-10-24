@@ -6,6 +6,8 @@
 
 سكل لـ Claude يبني لك فريق وكلاء لأي فكرة، ويعطيك مكتب تشوفهم فيه يشتغلون.
 
+**جديد هنا؟ ابدأ بالجولة:** [جولة خطوة بخطوة على السكل كامل](TOUR.md) ([النسخة التفاعلية](https://abdulwahabdevworkbot-gif.github.io/agent-office/tour/))
+
 ![المكتب](docs/images/office.webp)
 
 ## وش يسوي؟
@@ -117,6 +119,8 @@ Intern ← Developer / Analyst ← Senior ← Consultant ← Senior Consultant �
 # Agent Office
 
 A Claude skill that builds an AI agent team for any idea, with an office page where you watch them work.
+
+**New here? Start with the tour:** [a step-by-step tour of the whole skill](TOUR.md#agent-office-tour) ([interactive version](https://abdulwahabdevworkbot-gif.github.io/agent-office/tour/))
 
 ![The office](docs/images/office.webp)
 

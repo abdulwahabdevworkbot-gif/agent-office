@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8">
+<title>Agent Office Tour</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A guided tour of the Agent Office skill for Claude">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@500;600;700&display=swap">
+<style>
+:root{
+  --bg:#f6f1e8; --paper:#fffdf8; --ink:#1d2233; --mute:#5d6170; --line:#e3dacb;
+  --wood:#d99a4a; --wood-2:#f3dcb4; --accent:#3b55e6; --accent-ink:#fff; --glow:rgba(59,85,230,.35);
+  --shade:rgba(16,20,36,.62); --chip:#efe6d6; --ok:#1f8a4c;
+  --f-body:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+  --f-head:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11141f; --paper:#191d2b; --ink:#eef0f6; --mute:#a3a8b8; --line:#2b3043;
+  --wood:#e7ae5f; --wood-2:#3a2f20; --accent:#7d93ff; --accent-ink:#0d1020; --glow:rgba(125,147,255,.4);
+  --shade:rgba(4,6,14,.7); --chip:#232839; --ok:#5fd08f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11141f; --paper:#191d2b; --ink:#eef0f6; --mute:#a3a8b8; --line:#2b3043;
+  --wood:#e7ae5f; --wood-2:#3a2f20; --accent:#7d93ff; --accent-ink:#0d1020; --glow:rgba(125,147,255,.4);
+  --shade:rgba(4,6,14,.7); --chip:#232839; --ok:#5fd08f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.7 var(--f-body);margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+h1,h2,h3{font-family:var(--f-head);text-wrap:balance;margin:0;line-height:1.3}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--wood),var(--wood-2));display:grid;place-items:center;font-weight:700;color:var(--ink);font-family:var(--f-head)}
+.brand h1{font-size:1.25rem}
+.brand small{display:block;color:var(--mute);font-size:.82rem;line-height:1.3}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper)}
+.lang button{border:0;background:none;color:var(--mute);padding:6px 14px;font-size:.88rem}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* stepper */
+.stepper{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:12px 14px 10px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.chapters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chapters button{border:1px solid var(--line);background:none;color:var(--mute);border-radius:999px;padding:3px 12px;font-size:.82rem}
+.chapters button.on{background:var(--chip);color:var(--ink);border-color:transparent;font-weight:600}
+.dots{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 4px}
+.dots::-webkit-scrollbar{display:none}
+.dot{flex:1 0 30px;height:30px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--mute);font-size:.78rem;font-weight:600;font-variant-numeric:tabular-nums;position:relative}
+.dot.done{background:var(--wood-2);border-color:transparent;color:var(--ink)}
+.dot.cur{background:var(--accent);color:var(--accent-ink);border-color:transparent;box-shadow:0 0 0 4px var(--glow)}
+.dot.gap{margin-inline-start:10px}
+.prog{height:3px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s}
+
+/* stage */
+.stage{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:18px;margin-top:16px;align-items:start}
+.shot{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--paper);box-shadow:0 18px 40px -24px rgba(0,0,0,.35)}
+.shot img{display:block;width:100%;height:auto}
+.shot.phone{max-width:300px;margin-inline:auto;border-radius:30px;border:8px solid #0b0d14}
+.spot{position:absolute;border-radius:10px;box-shadow:0 0 0 2px var(--accent),0 0 0 9999px var(--shade);transition:all .5s cubic-bezier(.3,.7,.2,1);pointer-events:none}
+.spot.none{box-shadow:0 0 0 0 transparent,0 0 0 9999px transparent}
+.spot::after{content:"";position:absolute;inset:-6px;border-radius:14px;border:2px solid var(--accent);opacity:0;animation:ring 1.8s ease-out infinite}
+@keyframes ring{0%{opacity:.7;transform:scale(.97)}100%{opacity:0;transform:scale(1.06)}}
+.cursor{position:absolute;width:26px;height:26px;transition:all .55s cubic-bezier(.3,.7,.2,1);pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.cursor::before{content:"";position:absolute;left:-10px;top:-10px;width:20px;height:20px;border-radius:50%;background:var(--glow);animation:tap 1.6s ease-out infinite}
+@keyframes tap{0%{transform:scale(.4);opacity:1}100%{transform:scale(2);opacity:0}}
+.cursor[hidden]{display:none}
+
+/* mock screens for the first chapter */
+.mock{padding:22px;min-height:420px;display:flex;flex-direction:column;gap:12px;background:
+  linear-gradient(180deg,var(--paper),var(--bg))}
+.msg{max-width:88%;padding:10px 14px;border-radius:14px;background:var(--chip);font-size:.95rem}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink)}
+.msg b{font-weight:600}
+.composer{margin-top:auto;display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 14px;background:var(--paper)}
+.composer span{flex:1;color:var(--mute);font-size:.9rem;min-width:0}
+.send{border:0;background:var(--accent);color:var(--accent-ink);border-radius:9px;padding:6px 14px;font-weight:600}
+.qs{display:grid;gap:8px}
+.q{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--paper);flex-wrap:wrap}
+.q em{font-style:normal;color:var(--mute);font-size:.88rem}
+.q b{font-weight:600}
+.pill{border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.82rem;background:var(--chip)}
+.agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.ag{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--paper);font-size:.85rem}
+.ag b{display:block;font-family:var(--f-head);font-size:.92rem}
+.ag span{color:var(--mute)}
+.acts{display:flex;gap:8px;margin-top:auto;justify-content:flex-end}
+.acts button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:9px;padding:6px 14px}
+.acts .yes{background:var(--ok);color:#fff;border-color:transparent;font-weight:600}
+.env{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.env div{border:1px dashed var(--line);border-radius:12px;padding:12px;background:var(--paper);font-size:.88rem}
+.env b{display:block;font-family:var(--f-head)}
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}
+.gal img{border-radius:8px}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;background:var(--chip);padding:1px 6px;border-radius:5px;direction:ltr;unicode-bidi:isolate}
+
+/* callout */
+.callout{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px;position:sticky;top:150px;min-width:0}
+.callout .kick{display:flex;gap:8px;align-items:center;color:var(--mute);font-size:.82rem;letter-spacing:.02em}
+.callout .num{background:var(--accent);color:var(--accent-ink);border-radius:7px;padding:0 8px;font-weight:700;font-variant-numeric:tabular-nums}
+.callout h2{font-size:1.45rem;margin:8px 0 6px}
+.callout p{margin:0 0 10px;color:var(--ink)}
+.do{display:flex;gap:10px;align-items:flex-start;background:var(--chip);border-radius:12px;padding:10px 12px;margin:12px 0}
+.do .ic{flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:.8rem;font-weight:700;margin-top:3px}
+.do div{min-width:0}
+.do b{display:block;font-size:.78rem;color:var(--mute);font-weight:600;letter-spacing:.03em}
+.why{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px}
+.why li{padding-inline-start:20px;position:relative;font-size:.94rem;color:var(--mute)}
+.why li::before{content:"";position:absolute;inset-inline-start:2px;top:.62em;width:8px;height:8px;border-radius:2px;background:var(--wood)}
+.nav{display:flex;gap:8px;margin-top:18px;align-items:center}
+.nav button{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:8px 16px}
+.nav .next{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:600;margin-inline-start:auto}
+.nav button:disabled{opacity:.4;cursor:default}
+.hint{color:var(--mute);font-size:.8rem;margin-top:10px}
+.foot{margin-top:28px;color:var(--mute);font-size:.85rem;display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px}
+.foot a{color:var(--accent)}
+
+@media (max-width:860px){
+  .stage{grid-template-columns:1fr}
+  .callout{position:static}
+  .stepper{position:static}
+  .mock{min-height:0;padding:14px}
+}
+@media (prefers-reduced-motion:reduce){
+  .spot,.cursor,.prog i{transition:none}
+  .spot::after,.cursor::before{animation:none}
+}
+img{max-width:100%}[hidden]{display:none!important}</style>
+
+</head><body>
+<div class="wrap" id="app">
+  <div class="bar">
+    <div class="brand"><div class="mark">AO</div><div><h1 data-t="title"></h1><small data-t="sub"></small></div></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-lang="ar" aria-pressed="true">العربية</button><button data-lang="en" aria-pressed="false">English</button>
+    </div>
+  </div>
+
+  <nav class="stepper" aria-label="Tour steps">
+    <div class="chapters" id="chapters"></div>
+    <div class="dots" id="dots"></div>
+    <div class="prog"><i id="prog"></i></div>
+  </nav>
+
+  <section class="stage">
+    <div class="shot" id="shot" aria-live="off"></div>
+    <aside class="callout" aria-live="polite">
+      <div class="kick"><span class="num" id="num"></span><span id="chap"></span></div>
+      <h2 id="h"></h2>
+      <p id="p"></p>
+      <div class="do"><span class="ic">↖</span><div><b data-t="look"></b><span id="do"></span></div></div>
+      <ul class="why" id="why"></ul>
+      <div class="nav">
+        <button id="prev" data-t="prev"></button>
+        <button class="next" id="next" data-t="next"></button>
+      </div>
+      <div class="hint" data-t="keys"></div>
+    </aside>
+  </section>
+
+  <div class="foot">
+    <span data-t="credit"></span>
+    <a href="https://github.com/abdulwahabdevworkbot-gif/agent-office" target="_blank" rel="noopener">github.com/abdulwahabdevworkbot-gif/agent-office</a>
+  </div>
+</div>
+
+<script>
+const IMG = {"office": "../images/office.webp", "top": "../images/tour/top.webp", "morning": "../images/tour/morning.webp", "needs": "../images/tour/needs.webp", "scene": "../images/tour/scene.webp", "walk": "../images/tour/walk.webp", "agent": "../images/tour/agent.webp", "cal": "../images/tour/cal.webp", "calrooms": "../images/tour/calrooms.webp", "meet": "../images/tour/meet.webp", "chat": "../images/tour/chat.webp", "board": "../images/tour/board.webp", "roadmap": "../images/tour/roadmap.webp", "signoff": "../images/tour/signoff.webp", "reviews": "../images/tour/reviews.webp", "team": "../images/tour/team.webp", "settings": "../images/tour/settings.webp", "new": "../images/tour/new.webp", "phone": "../images/tour/phone.webp", "rooms": "../images/rooms.webp", "characters": "../images/characters.webp", "department": "../images/department.webp", "moves": "../images/moves.webp"};
+const UI = {
+  ar:{title:"مكتب الوكلاء", sub:"جولة على السكل من أول فكرة لين المكتب", look:"وين تطالع", prev:"السابق", next:"التالي", done:"من البداية", keys:"تقدر تتنقل بالأسهم في الكيبورد.", credit:"الرسومات والشخصيات: @Abdulwahabdev · كل الرسومات مقصوصة من لوحاته الأصلية", of:"من"},
+  en:{title:"Agent Office", sub:"A tour of the skill, from the first idea to the office", look:"Where to look", prev:"Back", next:"Next", done:"Start over", keys:"Use the arrow keys to move between steps.", credit:"Art and characters: @Abdulwahabdev · every piece is cut from the original sheets", of:"of"}
+};
+const CH = {
+  start:{ar:"البداية", en:"Getting started"},
+  office:{ar:"المكتب", en:"The office"},
+  plan:{ar:"الخطة والمتابعة", en:"Plan and follow up"},
+  art:{ar:"الرسومات والتثبيت", en:"Art and install"}
+};
+/* t: spotlight [x,y,w,h] in % of the picture, c: cursor [x,y] in %. Mock steps use data-spot instead. */
+const S = [
+ {ch:"start", img:"office", t:null,
+  ar:{h:"وش هو السكل؟", p:"سكل لـ Claude يبني لك فريق وكلاء لأي فكرة، ويعطيك مكتب مرسوم تشوفهم فيه يشتغلون: مين شغال، مين ينتظرك، ومين خلص.", d:"هذا المكتب. كل شخصية وكيل، وكل غرفة حالة.", w:["يناسب أي مشروع: برنامج، متجر، تسويق، بحث، محتوى","كل شي تشوفه بمكان واحد بدل ما تسأل كل وكيل","القرارات الحساسة ترجع لك دايماً"]},
+  en:{h:"What is it?", p:"A Claude skill that builds an agent team for any idea, and gives you a drawn office where you watch them work: who is busy, who is waiting on you, and who is done.", d:"This is the office. Each character is an agent, each room is a state.", w:["Fits any project: software, a store, marketing, research, content","See everything in one place instead of asking each agent","Sensitive calls always come back to you"]}},
+ {ch:"start", mock:"idea",
+  ar:{h:"قل فكرتك", p:"ترفع مجلد السكل في Claude، وبعدين تكتب فكرتك بجملة. السكل يبدأ يمشي معك خطوة خطوة.", d:"زر الإرسال بعد ما تكتب: «ابدأ فكرتي مع مصمم الوكلاء».", w:["ما تحتاج تعرف شي تقني","تقدر تبدأ من فكرة بسيطة وتكبر بعدين"]},
+  en:{h:"Say your idea", p:"Upload the skill folder to Claude, then describe your idea in one sentence. The skill walks you through the rest.", d:"The send button, after typing “start my idea with the agent designer”.", w:["No technical knowledge needed","Start small and grow later"]}},
+ {ch:"start", mock:"env",
+  ar:{h:"البيئة والأسئلة", p:"قبل أي شغل، يجهّز بيئة خاصة للمشروع (مفاتيح الـ API تنحط فيها)، ويسألك أسئلة قليلة عن النطاق: مين يستخدمه، وش أول نسخة، ووش الممنوع.", d:"الأسئلة: كل وحدة لها جواب مقترح تقدر تقبله بضغطة.", w:["ما يلمس جهازك إلا بإذنك، وبالمجلدات اللي تحددها","الخدمات المقترحة اختيارية، مو إجبارية"]},
+  en:{h:"Environment and questions", p:"Before any work it sets up a private environment for the project (API keys live there) and asks a few scope questions: who uses it, what the first version is, and what is off limits.", d:"The questions: each has a suggested answer you can accept in one tap.", w:["It never touches your computer without permission, and only in folders you choose","Suggested services are optional"]}},
+ {ch:"start", mock:"team",
+  ar:{h:"وافق على الفريق", p:"مصمم الوكلاء (Agent Designer) يقترح الفريق: كل وكيل بدوره ومهاراته. أنت توافق أو ترفض أو تعدّل، وبعدها المنسق يوزع المهام.", d:"زر «وافق»: بعده يفتح المكتب ويبدأ الشغل.", w:["أسماء الوكلاء بالإنقليزي دايماً","لما يكبر المشروع ينقسم لأقسام بمدراء"]},
+  en:{h:"Approve the team", p:"The Agent Designer proposes the team, each agent with a role and skills. You approve, reject or edit, then the Coordinator hands out tasks.", d:"The Approve button: the office opens and work starts.", w:["Agent names are always in English","Bigger projects split into departments with managers"]}},
+ {ch:"office", img:"top", t:[2.6,17.6,53,5.6], c:[5.5,19.7],
+  ar:{h:"المكتب يفتح", p:"فوق: سطر يقول لك الوضع بكلمة، وأرقام سريعة، وبعدها التبويبات. أي رقم تضغطه يوديك للي وراه.", d:"التبويبات: المكتب، الخريطة، المحادثة، اللوحة، المراجعات، الفريق، التقويم، الإعدادات.", w:["الرقم جنب التبويب يقول كم شي ينتظرك فيه","زر «يحتاجونك» يوديك مباشرة للي يبون ردك"]},
+  en:{h:"The office opens", p:"At the top: one line on how things stand, quick counts, then the tabs. Any count you tap takes you to what is behind it.", d:"The tabs: Office, Roadmap, Chat, Task board, Reviews, Team, Calendar, Settings.", w:["The number by a tab is what waits for you there","“need you” jumps straight to the ones waiting on you"]}},
+ {ch:"office", img:"morning", t:[2.6,21,95,6.8], c:[94.5,24.4],
+  ar:{h:"موجز الصباح", p:"لو غبت ساعات، أول ما ترجع يطلع لك موجز: وش خلص، وش تأخر، ووش «أول شي» تسويه، مع زر «روح» يوديك له.", d:"سطر «أول شي» وزر «روح» على يمينه.", w:["ما تضيع وقت تدور من وين تبدأ","يطلع بس إذا فيه شي يحتاجك فعلاً"]},
+  en:{h:"Morning brief", p:"After hours away, a brief greets you: what finished, what slipped, and the “first thing” to do, with a Go button that takes you there.", d:"The “First thing” line and its Go button.", w:["No hunting for where to start","Shows only when something really needs you"]}},
+ {ch:"office", img:"needs", t:[1.4,15.4,32,21], c:[11,33.5],
+  ar:{h:"يحتاجونك", p:"بطاقة لكل وكيل ينتظرك: سؤال، موافقة، أو قرار. الزر الأساسي بالبطاقة هو الجواب المقترح.", d:"البطاقة الأولى وزر «رد».", w:["المحظور يقول لك السبب ووش المطلوب منك بالضبط","«لاحقاً» يخفيها لين وقت تختاره"]},
+  en:{h:"Needs you", p:"One card per agent waiting on you: a question, an approval or a decision. The main button is the suggested answer.", d:"The first card and its Reply button.", w:["Blocked cards say why and exactly what they need from you","“Later” hides it until a time you pick"]}},
+ {ch:"office", img:"scene", t:[50.3,0,49.6,56], c:[77,22],
+  ar:{h:"الغرف والشخصيات", p:"كل وكيل يقعد بالغرفة اللي تناسب حالته: اللي يشتغلون بالمكتب الرئيسي، اللي ينتظرونك بمكتب المدير، واللي خلصوا بغرفة الألعاب. الفقاعة فوق الراس تعني إنه يتكلم.", d:"المكتب المفتوح: هنا اللي شغالين الحين.", w:["الغرف تتكرر لما تمتلي وتختفي لما تفضى","اضغط أي شخصية تفتح صفحتها"]},
+  en:{h:"Rooms and characters", p:"Each agent sits in the room that matches their state: working in the open office, waiting on you in the manager's office, done in the games room. A bubble means they are talking.", d:"The open office: everyone working right now.", w:["Rooms copy themselves when full and vanish when empty","Tap any character to open their page"]}},
+ {ch:"office", img:"walk", t:[2.9,66.6,9.5,7.8], c:[7.6,70.5],
+  ar:{h:"جولة على المكتب", p:"«امشِ بالمكتب» يمرّك على اللي يحتاجونك واحد واحد، مثل مدير يمر على المكاتب.", d:"زر البداية بأسفل النافذة.", w:["ترد على الكل بدقايق","ما يفوتك أحد"]},
+  en:{h:"Walk the floor", p:"“Walk the floor” takes you past everyone who needs you, one by one, like a manager walking the desks.", d:"The start button at the bottom of the window.", w:["Answer everyone in minutes","Nobody gets missed"]}},
+ {ch:"office", img:"agent", t:[3.5,80.6,93,19], c:[57,89.4],
+  ar:{h:"صفحة الوكيل", p:"كل شي عن وكيل واحد: وش يسوي الحين، وش بعده، ساعاته بالأسبوع على خط زمني، ومهامه بالترتيب.", d:"خط اليوم: كل مستطيل مهمة أو اجتماع بوقته.", w:["تشوف متى يفضى قبل لا تعطيه شي جديد","تختار شكله وطوله من نفس الصفحة"]},
+  en:{h:"Agent page", p:"Everything about one agent: what they do now, what is next, their week on a timeline, and their tasks in order.", d:"The day lane: each bar is a task or meeting at its time.", w:["See when they are free before giving more","Pick their look and height from the same page"]}},
+ {ch:"plan", img:"cal", t:[1.4,16,97.2,17.6], c:[44,26.6],
+  ar:{h:"التقويم", p:"كل مهمة تاخذ مدتها بعد المهام اللي تعتمد عليها. لو وحدة تأخرت، كل اللي بعدها يتحرك، والتقويم يقول لك ليه.", d:"«صحة الخطة»: متى يخلص كل شي، ومين يحدد الموعد.", w:["تعرف موعد النهاية الحقيقي","تقفل الخطة وتشوف وش انزاح من بعدها"]},
+  en:{h:"Calendar", p:"Each task takes its estimate after the tasks it depends on. When one runs late, everything after it moves, and the calendar says why.", d:"“Plan health”: when everything finishes, and which chain sets the date.", w:["Know the real finish date","Lock the plan and see what moved since"]}},
+ {ch:"plan", img:"calrooms", t:[1.4,16,97.2,60], c:[50,40],
+  ar:{h:"حجز الغرف", p:"نفس التقويم بس للغرف: كل غرفة اجتماع ومتى محجوزة، عشان ما يتضارب اجتماعين.", d:"صفوف الغرف وأوقات الحجز.", w:["الاجتماع ياخذ أصغر غرفة تكفي الحضور"]},
+  en:{h:"Room bookings", p:"The same calendar for rooms: each meeting room and when it is booked, so two meetings never clash.", d:"The room rows and their bookings.", w:["A meeting takes the smallest room that fits"]}},
+ {ch:"plan", img:"meet", t:[2.4,8.1,95.2,8.9], c:[50,12.5],
+  ar:{h:"ادعُ لاجتماع", p:"تكتب الموضوع، وهو يقترح الحضور المناسبين، ويختار الغرفة حسب العدد (١٠ أو ٢٠ أو ٣٠).", d:"خانة الموضوع فوق.", w:["الشخصيات تمشي للغرفة وتقعد","الملخص يرجع لك بعد الاجتماع"]},
+  en:{h:"Call a meeting", p:"Type the topic; it suggests who should attend and picks a room by size (10, 20 or 30).", d:"The topic box at the top.", w:["Characters walk to the room and sit","A summary comes back afterwards"]}},
+ {ch:"plan", img:"chat", t:[27.6,42.5,41.6,8.4], c:[48.3,46.7],
+  ar:{h:"المحادثة", p:"تكلم أي وكيل أو مجموعة، والغرفة اللي هم فيها تبان جنب المحادثة.", d:"خانة الكتابة.", w:["كل محادثة مربوطة بمهمتها"]},
+  en:{h:"Chat", p:"Talk to any agent or group, with the room they are in shown beside the chat.", d:"The message box.", w:["Each conversation is tied to its task"]}},
+ {ch:"plan", img:"board", t:[94.9,16,4.4,7], c:[97,19.6],
+  ar:{h:"لوحة المهام", p:"أعمدة المهام من «ما بدأ» لين «خلص». المهام المتوقفة بسبب وكيل محظور تتعلّم، وتقدر تصفّيها بضغطة.", d:"«+N متوقفة»: يعرض بس المهام اللي ماسكها وكيل محظور.", w:["تعرف وش اللي يعطّل الشغل كله","كل رقم زر يصفي اللوحة"]},
+  en:{h:"Task board", p:"Columns from not started to done. Tasks held up by a blocked agent are marked and can be filtered in one tap.", d:"“+N held”: shows only tasks held by a blocked agent.", w:["See what is holding everything up","Every count is a filter button"]}},
+ {ch:"plan", img:"roadmap", t:[1.2,11.6,97.6,3.7], c:[3.4,13.5],
+  ar:{h:"الخريطة", p:"كل نسخة تمشي بأربع مراحل: تخطيط، نموذج، تجريبي، إنتاج. وفوق توقع متى توصل كل مرحلة.", d:"سطر التوقع.", w:["تشوف المشروع كله بنظرة","المراحل الطويلة تنطوي وتفتح"]},
+  en:{h:"Roadmap", p:"Each version moves through four stages: planning, prototype, beta, production, with a forecast of when each lands.", d:"The forecast line.", w:["The whole project at a glance","Long stages fold and unfold"]}},
+ {ch:"plan", img:"signoff", t:[1.2,19.6,97.6,4.6], c:[49,22.3],
+  ar:{h:"التوقيع على المرحلة", p:"المرحلة ما تنقفل إلا بتوقيعك. لو فيه شي ناقص يقول لك، وتقدر توقّع على مسؤوليتك بضغطتين.", d:"سطر التوقيع وزره.", w:["ما ينتقل شي للإنتاج بدون موافقتك"]},
+  en:{h:"Stage sign-off", p:"A stage closes only with your sign-off. If something is missing it says so, and you can sign anyway with two taps.", d:"The sign-off line and its button.", w:["Nothing reaches production without you"]}},
+ {ch:"plan", img:"reviews", t:[1.4,23.3,97.2,6], c:[71.5,26.3],
+  ar:{h:"المراجعات", p:"قبول، قبول بملاحظات، أو رفض مع التعديلات المطلوبة. سطر الصحة يقول كم تنتظر المراجعة بالمتوسط.", d:"سطر صحة المراجعات.", w:["المراجع وكيل مستقل، مو نفس اللي سوّى الشغل"]},
+  en:{h:"Reviews", p:"Accept, accept with notes, or send back with the changes needed. The health line shows how long reviews wait.", d:"The review health line.", w:["The reviewer is a separate agent, not the author"]}},
+ {ch:"plan", img:"team", t:[9.2,21,10.1,13.4], c:[14.2,27.7],
+  ar:{h:"الفريق", p:"الهيكل: أنت فوق، بعدين المدراء، وتحتهم فرقهم. الشرائح فوق تبرز المحظورين أو الهاديين.", d:"Agent Designer: اللي صمم الفريق.", w:["المسميات من Intern لين Director"]},
+  en:{h:"Team", p:"The structure: you on top, then managers, then their teams. The chips at the top highlight who is blocked or quiet.", d:"Agent Designer: the one who designed the team.", w:["Titles run from Intern to Director"]}},
+ {ch:"plan", img:"settings", t:[1.4,15.1,97.2,25.8], c:[29.6,23.5],
+  ar:{h:"الإعدادات", p:"ساعات العمل، قواعد الغرف وأحجامها، ومين يقدر يعدّل. التغيير ينحفظ لحاله.", d:"قواعد الغرف.", w:["اللي يشوف بس ما يقدر يغيّر"]},
+  en:{h:"Settings", p:"Work hours, room rules and sizes, and who can edit. Changes save on their own.", d:"The room rules.", w:["Viewers can look but not change"]}},
+ {ch:"plan", img:"new", t:[5.7,13.5,91.4,11.6], c:[90.4,19.3],
+  ar:{h:"وش الجديد", p:"كل ما تغير شي بالصفحة يطلع هنا بسطر، مع زر يوديك له مباشرة.", d:"أول سطر وزره.", w:["تعرف التحديثات بدون ما تقرا ملفات"]},
+  en:{h:"What's new", p:"Every change to the page shows up here as one line, with a button that takes you to it.", d:"The first line and its button.", w:["Learn about updates without reading files"]}},
+ {ch:"plan", img:"phone", phone:true, t:[14,53.7,72.8,9.2],
+  ar:{h:"على الجوال", p:"نفس المكتب على الجوال وبالوضع الداكن: البطاقات تتكدس، والتبويبات تنسحب، وزر الرجوع تحت.", d:"«أول شي» واضح من أول شاشة.", w:["تتابع وأنت برا"]},
+  en:{h:"On your phone", p:"The same office on a phone, in dark mode: cards stack, tabs scroll, and the back button sits at the bottom.", d:"“First thing” is visible on the first screen.", w:["Follow along when you are out"]}},
+ {ch:"art", gal:["rooms","characters","department","moves"], t:null,
+  ar:{h:"الرسومات", p:"كل الغرف والشخصيات (٤١ شخصية من ثقافات مختلفة) والحركات مقصوصة من لوحات @Abdulwahabdev الأصلية، وما فيه شي معاد رسمه.", d:"الغرف، الشخصيات، القسم، والحركات.", w:["الجلسة تتغير حسب اللبس والكرسي","الشخصية تلف حول الأثاث لما تمشي"]},
+  en:{h:"The art", p:"Every room, character (41, from many cultures) and move is cut from @Abdulwahabdev's original sheets. Nothing is redrawn.", d:"Rooms, characters, a department, and moves.", w:["The seated pose follows the outfit and chair","Characters walk around furniture"]}},
+ {ch:"art", mock:"install",
+  ar:{h:"التثبيت", p:"ثلاث خطوات وتبدأ.", d:"الخطوة الثالثة: الجملة اللي تبدأ فيها.", w:["الرسومات للسكل بشرط ذكر @Abdulwahabdev (شوف LICENSE)"]},
+  en:{h:"Install", p:"Three steps and you are in.", d:"Step three: the sentence that starts it all.", w:["Art may be used with credit to @Abdulwahabdev (see LICENSE)"]}}
+];
+const MOCK = {
+ idea:{ar:`<div class="msg"><b>Claude</b><br>وش فكرتك؟ قلها بجملة.</div><div class="msg me">أبي تطبيق توصيل أكل للمطاعم الصغيرة</div><div class="composer"><span>ابدأ فكرتي مع مصمم الوكلاء</span><button class="send" data-spot tabindex="-1">إرسال</button></div>`,
+       en:`<div class="msg"><b>Claude</b><br>What's your idea? One sentence is enough.</div><div class="msg me">A food delivery app for small restaurants</div><div class="composer"><span>start my idea with the agent designer</span><button class="send" data-spot tabindex="-1">Send</button></div>`},
+ env:{ar:`<div class="env"><div><b>بيئة المشروع</b>خاصة بهالمشروع بس</div><div><b>مفاتيح الـ API</b>تنحط بالبيئة، مو بالشات</div><div><b>مجلدات جهازك</b>بإذنك فقط</div></div><div class="qs" data-spot><div class="q"><b>مين يستخدمه؟</b><span class="pill">المطاعم والزباين</span></div><div class="q"><b>وش أول نسخة؟</b><span class="pill">طلب وتتبع</span></div><div class="q"><b>وش الممنوع؟</b><em>الدفع يرجع لك</em></div></div>`,
+      en:`<div class="env"><div><b>Project environment</b>Private to this project</div><div><b>API keys</b>Stored there, never in chat</div><div><b>Your folders</b>Only with permission</div></div><div class="qs" data-spot><div class="q"><b>Who uses it?</b><span class="pill">Restaurants and customers</span></div><div class="q"><b>First version?</b><span class="pill">Order and track</span></div><div class="q"><b>Off limits?</b><em>Payments come back to you</em></div></div>`},
+ team:{ar:`<div class="msg"><b>Agent Designer</b><br>هذا الفريق المقترح لأول نسخة:</div><div class="agents"><div class="ag"><b>Coordinator</b><span>يوزع المهام</span></div><div class="ag"><b>Backend</b><span>الطلبات والدفع</span></div><div class="ag"><b>Mobile App</b><span>تطبيق الزبون</span></div><div class="ag"><b>Reviewer</b><span>يراجع كل شي</span></div><div class="ag"><b>Office Manager</b><span>يرتب المكتب</span></div><div class="ag"><b>QA Mobile</b><span>يختبر</span></div></div><div class="acts"><button tabindex="-1">عدّل</button><button tabindex="-1">ارفض</button><button class="yes" data-spot tabindex="-1">وافق</button></div>`,
+       en:`<div class="msg"><b>Agent Designer</b><br>Here is the proposed team for version one:</div><div class="agents"><div class="ag"><b>Coordinator</b><span>Hands out tasks</span></div><div class="ag"><b>Backend</b><span>Orders and payments</span></div><div class="ag"><b>Mobile App</b><span>Customer app</span></div><div class="ag"><b>Reviewer</b><span>Reviews everything</span></div><div class="ag"><b>Office Manager</b><span>Keeps the office</span></div><div class="ag"><b>QA Mobile</b><span>Tests</span></div></div><div class="acts"><button tabindex="-1">Edit</button><button tabindex="-1">Reject</button><button class="yes" data-spot tabindex="-1">Approve</button></div>`},
+ install:{ar:`<div class="qs"><div class="q"><b>١. ارفع المجلد</b><em>Settings ← Capabilities ← Skills</em><span class="code">agent-designer-playbook</span></div><div class="q"><b>٢. احفظ رابط المستودع</b><em>بذاكرة مشروعك في Claude</em></div><div class="q" data-spot><b>٣. قل لـ Claude</b><span class="pill">ابدأ فكرتي مع مصمم الوكلاء</span></div></div><div class="msg"><b>بالمستودع</b><br><span class="code">agent-designer-playbook/SKILL.md</span> السكل · <span class="code">office/office.html</span> صفحة المكتب · <span class="code">office/assets/</span> الرسومات</div>`,
+          en:`<div class="qs"><div class="q"><b>1. Upload the folder</b><em>Settings › Capabilities › Skills</em><span class="code">agent-designer-playbook</span></div><div class="q"><b>2. Save the repo link</b><em>In your Claude project memory</em></div><div class="q" data-spot><b>3. Tell Claude</b><span class="pill">start my idea with the agent designer</span></div></div><div class="msg"><b>In the repo</b><br><span class="code">agent-designer-playbook/SKILL.md</span> the skill · <span class="code">office/office.html</span> the office page · <span class="code">office/assets/</span> the art</div>`}
+};
+const CUR = '<svg class="cursor" id="cur" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2l15 9-6.5 1.6L9.5 19z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+let lang = 'ar', i = 0;
+try { lang = localStorage.getItem('tour.lang') || 'ar'; } catch {}
+const $ = id => document.getElementById(id);
+const shot = $('shot');
+const firstOf = {}; S.forEach((s, k) => { if (!(s.ch in firstOf)) firstOf[s.ch] = k; });
+
+function drawStepper(){
+  $('chapters').innerHTML = Object.keys(CH).map(c => `<button data-go="${firstOf[c]}" class="${S[i].ch===c?'on':''}">${CH[c][lang]}</button>`).join('');
+  $('dots').innerHTML = S.map((s, k) => `<button class="dot ${k<i?'done':''} ${k===i?'cur':''} ${k&&S[k-1].ch!==s.ch?'gap':''}" data-go="${k}" aria-label="${s[lang].h}" ${k===i?'aria-current="step"':''}>${k+1}</button>`).join('');
+  $('prog').style.width = (i/(S.length-1)*100)+'%';
+  const cur = $('dots').querySelector('.cur'); if (cur) cur.scrollIntoView({block:'nearest', inline:'center'});
+}
+function place(rect, cpt){
+  const spot = shot.querySelector('.spot'), cur = $('cur');
+  if (!rect){ spot.classList.add('none'); spot.style.cssText = 'left:50%;top:50%;width:0;height:0'; cur.hidden = true; return; }
+  spot.classList.remove('none');
+  const [x,y,w,h] = rect, pad = .6;
+  const L = Math.max(0, x-pad), T = Math.max(0, y-pad), R = Math.min(100, x+w+pad), B = Math.min(100, y+h+pad);
+  spot.style.cssText = `left:${L}%;top:${T}%;width:${R-L}%;height:${B-T}%`;
+  const [cx,cy] = cpt || [x+w/2, y+h/2];
+  cur.hidden = false; cur.style.left = `calc(${cx}% - 4px)`; cur.style.top = `calc(${cy}% - 2px)`;
+}
+function rectOf(el){
+  const a = shot.getBoundingClientRect(), b = el.getBoundingClientRect();
+  return [(b.left-a.left)/a.width*100, (b.top-a.top)/a.height*100, b.width/a.width*100, b.height/a.height*100];
+}
+function draw(){
+  const s = S[i], t = s[lang];
+  document.documentElement.lang = lang; document.documentElement.dir = lang==='ar' ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-t]').forEach(e => e.textContent = UI[lang][e.dataset.t]);
+  document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang===lang));
+  let inner;
+  if (s.img) inner = `<img src="${IMG[s.img]}" alt="${t.h}" width="${s.phone?400:1100}">`;
+  else if (s.gal) inner = `<div class="gal">${s.gal.map(g => `<img src="${IMG[g]}" alt="${g}" loading="lazy">`).join('')}</div>`;
+  else inner = `<div class="mock">${MOCK[s.mock][lang]}</div>`;
+  shot.className = 'shot' + (s.phone ? ' phone' : '');
+  shot.innerHTML = inner + '<div class="spot none"></div>' + CUR;
+  $('num').textContent = `${i+1} ${UI[lang].of} ${S.length}`;
+  $('chap').textContent = CH[s.ch][lang];
+  $('h').textContent = t.h; $('p').textContent = t.p; $('do').textContent = t.d;
+  $('why').innerHTML = t.w.map(x => `<li>${x}</li>`).join('');
+  $('prev').disabled = i===0;
+  $('next').textContent = i===S.length-1 ? UI[lang].done : UI[lang].next;
+  drawStepper();
+  const go = () => { const m = shot.querySelector('[data-spot]'); place(m ? rectOf(m) : s.t, m ? null : s.c); };
+  const img = shot.querySelector('img');
+  if (img && !img.complete) img.onload = go; else requestAnimationFrame(go);
+  try { history.replaceState(null, '', '#s'+(i+1)); } catch {}
+}
+function goTo(k){ i = (k + S.length) % S.length; draw(); }
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) goTo(+g.dataset.go);
+  const l = e.target.closest('[data-lang]'); if (l){ lang = l.dataset.lang; try { localStorage.setItem('tour.lang', lang); } catch {} draw(); }
+});
+$('next').onclick = () => goTo(i===S.length-1 ? 0 : i+1);
+$('prev').onclick = () => goTo(i-1);
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea')) return;
+  const fwd = lang==='ar' ? 'ArrowLeft' : 'ArrowRight', back = lang==='ar' ? 'ArrowRight' : 'ArrowLeft';
+  if (e.key===fwd && i<S.length-1) goTo(i+1);
+  if (e.key===back && i>0) goTo(i-1);
+});
+addEventListener('resize', () => { const m = shot.querySelector('[data-spot]'); if (m) place(rectOf(m)); });
+function fromHash(){ const h = /^#s(\d+)$/.exec(location.hash); if (h) i = Math.min(S.length-1, Math.max(0, h[1]-1)); }
+addEventListener('hashchange', () => { const k = i; fromHash(); if (k !== i) draw(); });
+fromHash(); draw();
+</script>
+</body></html>
