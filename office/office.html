@@ -3564,7 +3564,8 @@ function callMeeting(opts){
   function upd(){ const n = picked.size + 1, r = roomNow(); cnt.textContent = `${picked.size} invited + you`; markGroups();
     thumb.style.backgroundImage = `url(${A}rooms/${r.bg}.webp)`; info.children[1].textContent = `${n} people in all · ${r.name}`;
     start.textContent = when === "later" ? "Schedule meeting" : "Start meeting";
-    const big = n > 30; start.disabled = big; if (big) note.textContent = `${n} people won't fit: the biggest meeting room seats 30.`; else if (note.textContent.includes("won't fit")) note.textContent = "";
+    /* the owner's exception (2026-10-24): more people than the biggest room still meet there; the page only says so */
+    const big = n > 30; if (big) note.textContent = `More than 30 seats: the biggest meeting room is suggested, and everyone still joins.`; else if (note.textContent.includes("More than 30")) note.textContent = "";
     warn.replaceChildren();
     clearTimeout(costT); costT = setTimeout(() => { const t0 = when === "later" ? Date.parse(at.value) : Date.now(); if (!t0) return; const c = meetCost(["owner", ...picked], t0, dur); cost.replaceChildren(); cost.className = "mt-cost";
       if (!c.length) { cost.append(el("span","mt-ok","Pushes no task back: anyone busy sends a copy and keeps working.")); return; }
@@ -3647,7 +3648,7 @@ function renderTalkRoom(){
 }
 /* the room picture of one conversation: its booked room, with the people in it while it really is in a room. Used by the chat side and the meeting window. */
 function drawRoom(room, s, pair){
-  room.querySelectorAll(".ag,.tag").forEach(x => x.remove());
+  room.querySelectorAll(".ag,.tag,.room-more").forEach(x => x.remove());
   let ids = [], title = "", key = "";
   if (s) { ids = (s.members || []).filter(m => m === "owner" || agentById(m)); title = s.title_en || convKind(s); key = "s:" + s.id; }
   else if (pair) { ids = pair.split("|"); title = ids.map(nameOf).join(" & "); key = "p:" + pair; if (msgs.some(m => m.pair === pair && m.from === "owner")) ids.unshift("owner"); }
@@ -3657,7 +3658,9 @@ function drawRoom(room, s, pair){
   room.style.backgroundImage = `url(${A}rooms/${inRoom || booked === "meet" ? meetBg(ids.length) : "huddle"}.webp)`;
   const res = {s, ids, title, key, inRoom, booked, g};
   if (key && !inRoom) return res;
-  ids.sort((a, b) => (b === "owner") - (a === "owner")).slice(0, MEET_SETS[meetBg(ids.length)].seats.length).forEach((id, i) => {
+  const seatsN = MEET_SETS[meetBg(ids.length)].seats.length;
+  if (ids.length > seatsN) { const more = el("span","label room-more", `+${ids.length - seatsN} more standing`); more.style.cssText = "top:auto;bottom:8px;left:auto;right:8px"; room.append(more); }
+  ids.sort((a, b) => (b === "owner") - (a === "owner")).slice(0, seatsN).forEach((id, i) => {
     const sp = MEET_SETS[meetBg(ids.length)].seats[i], P = null, b = el("button", "ag"); b.type = "button";
     const img = el("img", "body"); img.alt = ""; b.append(img);
     if (P) { const q = poseBox(sp, P); img.style.display = "none"; b.append(poseEl(P, q.clip));
