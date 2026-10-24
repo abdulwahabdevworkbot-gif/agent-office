@@ -367,6 +367,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .mt-cost{font-size:12.5px;font-weight:500}
 .snz-list{grid-column:1/-1;display:grid;gap:4px;padding:8px 10px;border:1px dashed var(--line);border-radius:8px}.snz-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
 #byeBody input{flex:1;min-width:0}
+.next3{display:flex;gap:6px 16px;flex-wrap:wrap;align-items:baseline;font-size:13px;padding:6px 10px;margin:0 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.n3 b{font-variant-numeric:tabular-nums;margin-inline-end:2px}.n3.late{color:var(--late)}
 .follow-strip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.fl-chip{all:unset;box-sizing:border-box;display:flex;gap:6px;align-items:center;max-width:100%;padding:5px 10px;border:1px solid var(--line);border-inline-start:3px solid var(--accent);border-radius:8px;background:var(--panel);cursor:pointer;font-size:13px}
 .fl-chip span:not(.note){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}.fl-chip.late{border-inline-start-color:var(--late)}.fl-chip.blk{border-inline-start-color:var(--bad)}.fl-chip.done{border-inline-start-color:var(--ok);opacity:.75}.fl-chip:focus-visible{outline:2px solid var(--accent)}
 .fl-star{margin-inline-start:8px;font-size:13px}
@@ -625,6 +626,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
       <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
+      <div class="next3" id="next3" hidden></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
     <div class="follow-strip" id="followStrip" hidden></div>
@@ -755,6 +757,12 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
       <label class="set-chk"><input type="checkbox" id="whAll"> Around the clock</label>
       <div class="set-grid" id="whBox"><label>From <select id="whStart"></select></label><label>To <select id="whEnd"></select></label><span class="mt-chips" id="whDays" role="group" aria-label="Working days"></span></div>
       <div class="row-wrap"><button class="btn" type="button" id="whSave">Save</button><span class="note" id="whNote"></span></div>
+    </div>
+    <div class="panel" id="paceSet">
+      <h2>Estimates that learn</h2>
+      <p class="note">When on, the plan stretches or shrinks each agent's estimates by how long their last 10 finished tasks really took (from 3 tasks on, between 0.5× and 3×). The estimates themselves don't change.</p>
+      <label class="set-chk"><input type="checkbox" id="paceOn"> Learn from each agent's past tasks</label>
+      <div class="note" id="paceList"></div>
     </div>
     <div class="panel" id="dataSet">
       <h2>Data check</h2>
@@ -1433,7 +1441,8 @@ function drawScene(){
   /* people still walking out keep a closing room open; look again once they have left */
   if (!pruneLater) pruneLater = setInterval(() => { const o = new Map(); figs.forEach((r, id) => { if (r.plan) o.set(id, r.plan); }); pruneRooms(o); sizeRooms(o); }, 5000);
   const big = groups.filter(g => g.where === "meet");
-  const roomLabel = (room, list, empty) => { const sm = ROOMS[room].querySelector(".label small"); sm.replaceChildren();   // each title isolated, so Arabic and English don't mix up
+  const roomLabel = (room, list, empty) => { const sm = ROOMS[room].querySelector(".label small"); sm.replaceChildren(); sm.title = list.map(([pre, t]) => (pre || "") + t).join("\n");   // one line per room: the first group, "+N more", the rest on hover (council round 10, UX)
+    if (list.length > 1) list = [...list.slice(0, 1), ["", `+${list.length - 1} more`]];   // each title isolated, so Arabic and English don't mix up
     if (!list.length) { sm.textContent = empty; return; }
     list.forEach(([pre, t], i) => { if (i) sm.append(" · "); if (pre) sm.append(pre); sm.append(el("bdi", null, t)); }); };
   const nextUp = sessions.filter(s => s.state === "scheduled" && s.room !== "huddle").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0];
@@ -1548,6 +1557,16 @@ function laterPick(row, key){
   row.replaceChildren(el("span","note","Snooze until"), ...opts, back); opts[0].focus(); }
 const outbox = () => { if (!msgs.some(m => m.relayed === true) && !sessions.some(x => x.relayed === true)) return [];
   const cut = Date.now() - 10 * 6e4; return msgs.filter(m => m.from === "owner" && m.relayed === false && (Date.parse(m.at || "") || Infinity) < cut); };
+/* next 3 hours (council round 10, Product Lead): the owner's next meeting, the next deadline, and work coming up for review */
+function renderNext3(){
+  const box = $("next3"); if (!box) return; const now = Date.now(), end = now + 3 * 36e5, parts = [];
+  const mt = sessions.filter(x => isMeeting(x) && (x.members || []).includes("owner") && (x.state === "open" || (x.state === "scheduled" && Date.parse(x.at || "") <= end))).sort((a, b) => (meetSpan(a)?.s || 0) - (meetSpan(b)?.s || 0))[0];
+  if (mt) { const live = mt.state === "open", w = el("span","n3"); w.append(el("b", null, live ? "Now" : fmtHM(Date.parse(mt.at))), ` ${mt.title_en || "Meeting"} `); const j = el("button","linkish", live ? "Join" : "Open"); j.type = "button"; j.onclick = () => viewSession(mt.id); w.append(j); w.dataset.t = live ? 0 : Date.parse(mt.at); parts.push(w); }
+  const due = tasks.filter(t => !isClosed(t) && sched.byTask[t.id]?.due > now && sched.byTask[t.id].due <= end).sort((a, b) => sched.byTask[a.id].due - sched.byTask[b.id].due)[0];
+  if (due) { const p = sched.byTask[due.id], w = el("span","n3" + (p.lateBy ? " late" : "")); w.append(el("b", null, fmtHM(p.due)), " ", taskLink(due.id), ` due · ${p.lateBy ? "will be late" : "on time"}`); w.dataset.t = p.due; parts.push(w); }
+  const rv = tasks.filter(t => t.state === "doing" && (sched.byTask[t.id]?.e || 0) > now + 6 * 6e4 && sched.byTask[t.id].e <= end).sort((a, b) => sched.byTask[a.id].e - sched.byTask[b.id].e);
+  if (rv.length) { const w = el("span","n3"); w.append(el("b", null, fmtHM(sched.byTask[rv[0].id].e)), " ready for review: "); rv.slice(0, 3).forEach((t, i) => { if (i) w.append(", "); w.append(taskLink(t.id)); }); if (rv.length > 3) w.append(` +${rv.length - 3}`); w.dataset.t = sched.byTask[rv[0].id].e; parts.push(w); }
+  box.hidden = !parts.length; box.replaceChildren(); if (!parts.length) return; box.append(el("span","lbl","Next 3 hours")); parts.sort((x, y) => x.dataset.t - y.dataset.t).forEach(x => box.append(x)); }
 /* follow a task (council round 10, from round 8): a star in the task dialog; followed tasks sit in a strip above the office (up to 8) */
 const following = () => (Array.isArray(metaOffice?.follow) ? metaOffice.follow : []).filter(id => tasks.some(t => t.id === id));
 async function toggleFollow(id){ if (!db) return; const f = following(), on = f.includes(id), next = on ? f.filter(x => x !== id) : [...f, id].slice(-8);
@@ -1753,7 +1772,7 @@ function renderInbox(){
   inboxItems = items;
   if ($("walkDlg").open && !($("walkBody").contains(document.activeElement) && document.activeElement.matches("textarea, input"))) drawWalk();
   const wb = $("walkBtn"); wb.hidden = !todo; wb.textContent = `Walk the floor (${todo})`;
-  $("officeCount").textContent = todo || ""; renderFollow();
+  $("officeCount").textContent = todo || ""; renderFollow(); renderNext3();
   $("byeBtn").classList.toggle("btn", new Date().getHours() >= 17); $("byeBtn").classList.toggle("btn-lite", new Date().getHours() < 17);   // the end-of-day check stands out after 17:00
   /* outbox (council round 10, Engineer): what the owner wrote that no agent has picked up after 10 minutes; shown only once agents mark pick-ups (relayed:true) */
   const ob = outbox(); if (ob.length) { const o = el("button","linkish ob-link", `${ob.length} not picked up yet`); o.type = "button"; o.title = ob.map(m => `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 80)}`).join("\n"); o.onclick = () => { inboxShowOb = !inboxShowOb; renderInbox(); }; $("inboxSum").append(" · ", o);
@@ -1804,6 +1823,10 @@ const meetSpan = s => { const dur = (Number(s.duration_min) || 30) * 6e4;
   if (s.state === "open") { if (!isMeeting(s)) return null; const st = Date.parse(s.opened_at || s.at || ""); if (!st) return null; return {s:st, e:Math.max(st + dur, Date.now() + 5 * 6e4)}; }
   const st = Date.parse((s.state === "scheduled" ? s.at : s.opened_at || s.at) || ""); if (!st) return null; const end = Date.parse(s.closed_at || "") || st + dur; return {s:st, e:Math.max(end, st + 5 * 6e4)}; };
 let sched = {byTask:{}, byAgent:{}};
+/* estimates that learn (council round 10, from round 8): each agent's median of actual / estimate over its last 10 done tasks (3 or more), kept between 0.5 and 3 */
+function paceOf(){ const by = {};
+  tasks.filter(t => isClosed(t) && +t.estimate_min > 0 && Date.parse(t.started_at || "") && Date.parse(t.done_at || "")).sort((a, b) => String(b.done_at).localeCompare(String(a.done_at))).forEach(t => { const l = by[t.session || "-"] ||= []; if (l.length < 10) l.push((Date.parse(t.done_at) - Date.parse(t.started_at)) / 6e4 / +t.estimate_min); });
+  const out = {}; Object.entries(by).forEach(([who, l]) => { if (l.length < 3) return; l.sort((a, b) => a - b); const m = l[Math.floor(l.length / 2)]; out[who] = {f:Math.min(3, Math.max(.5, Math.round(m * 10) / 10)), n:l.length}; }); return out; }
 /* what a meeting costs (council round 8, Owner Advocate): plan once with the meeting and once without, and list the tasks it pushes */
 function meetCost(members, at, min){
   const keepS = sessions, keepP = sched; let out = [];
@@ -1819,7 +1842,7 @@ function buildSchedule(){
   const queue = {}; tasks.forEach(t => (queue[t.session || "-"] ||= []).push(t));
   const rank = t => t.state === "doing" || t.state === "review" ? 0 : t.state === "blocked" ? 1 : 2;
   Object.values(queue).forEach(q => q.sort((a, b) => rank(a) - rank(b) || byOrder(a, b)));
-  const free = {}, prevOf = {}, done = t => isClosed(t);
+  const free = {}, prevOf = {}, done = t => isClosed(t), learn = metaOffice?.learn_estimates ? paceOf() : {};
   tasks.filter(done).forEach(t => { const e = Date.parse(t.done_at || t.updated_at || "") || now; byTask[t.id] = {s:e - estOf(t) * 6e4, e, done:true}; });
   let left = tasks.filter(t => !done(t)), guard = 0;
   while (left.length && guard++ < 500) {
@@ -1835,7 +1858,7 @@ function buildSchedule(){
       const b = busy[who] || [];
       /* an agent's own "time left" report wins over the estimate while it is fresh (council round 8, Engineer) */
       const pa = Date.parse(t.progress_at || ""), rep = started && Number.isFinite(+t.remaining_min) && t.remaining_min !== null && t.remaining_min !== "" && pa > Math.max(now - 6 * 36e5, started - 6e4);
-      let e = rep ? addWork(Math.max(s, Math.min(pa, now)), +t.remaining_min, wd, b) : addWork(s, estOf(t), wd, b); if (started && e < now + 5 * 6e4) e = now + 5 * 6e4;   // still open: it ends no sooner than now
+      let e = rep ? addWork(Math.max(s, Math.min(pa, now)), +t.remaining_min, wd, b) : addWork(s, Math.round(estOf(t) * (learn[who]?.f || 1)), wd, b); if (started && e < now + 5 * 6e4) e = now + 5 * 6e4;   // still open: it ends no sooner than now
       const after = deps.reduce((m, d) => (byTask[d]?.e || 0) > (byTask[m]?.e || 0) ? d : m, deps[0]), why = rep ? "report" : depEnd > (started || base) ? "dep" : started ? "started" : (free[who] || 0) > now ? "queue" : "now";
       const late = deps.filter(d => { const x = tasks.find(y => y.id === d), due = Date.parse(x?.due_at || (x?.due ? x.due + "T23:59:00" : "")); return byTask[d] && !byTask[d].done && due && byTask[d].e > due; });
       const due = Date.parse(t.due_at || (t.due ? t.due + "T23:59:00" : ""));
@@ -1860,7 +1883,7 @@ function whyTime(t){
   else if (p.why === "dep") out.push(p.s - p.depEnd > 6e4 ? `${p.after} ends ${fmtWhen(p.depEnd)}; it starts at the next working time, ${fmtWhen(p.s)}` : `Starts ${fmtWhen(p.s)} because ${p.after} ends then`);
   else if (p.why === "queue") out.push(`Starts ${fmtWhen(p.s)} after ${p.prev || "earlier work"} in ${nameOf(t.session)}'s queue`);
   else out.push(`Starts ${fmtWhen(p.s)}, the next free time`);
-  if (p.why !== "started" && p.why !== "report") out.push(`${fmtDur(estOf(t))} estimate${t.estimate_min ? "" : " (default)"}`);
+  if (p.why !== "started" && p.why !== "report") { const pc = metaOffice?.learn_estimates && paceOf()[t.session]; out.push(`${fmtDur(estOf(t))} estimate${t.estimate_min ? "" : " (default)"}` + (pc && pc.f !== 1 ? `, planned × ${pc.f} from ${nameOf(t.session)}'s last ${pc.n} tasks` : "")); }
   const mt = (sched.byAgent[t.session] || []).filter(x => x.kind === "meet" && x.s < p.e && x.e > p.s); if (mt.length) out.push(`${mt.length} meeting${mt.length === 1 ? "" : "s"} in between (${fmtDur(Math.round(mt.reduce((m, x) => m + Math.min(x.e, p.e) - Math.max(x.s, p.s), 0) / 6e4))})`);
   if (p.lateDeps?.length) out.push(`moved by ${p.lateDeps.join(", ")} running late`);
   return out.join("; ") + "."; }
@@ -1948,6 +1971,13 @@ function planHealth(){
     c.textContent = `${K.en}: ${l.length}`; c.setAttribute("aria-pressed", String(calHealth === K.k)); c.onclick = () => { calHealth = calHealth === K.k ? "" : K.k; renderCalendar(); }; box.append(c);
     if (calHealth === K.k) rows = l.map(t => [t, K.why(t)]); });
   if (!box.querySelector("button")) box.append(el("span","chip","All clear"));
+  /* ask for estimates (council round 10, Owner Advocate): one tap, 5 seconds to Undo, one message per agent; never sent by itself */
+  const miss = open.filter(t => t.session && (!t.estimate_min || (!t.due_at && !t.due))), whoM = [...new Set(miss.map(t => t.session))];
+  if (canWrite && whoM.length) { const ask = el("button","linkish", `Ask ${whoM.length} agent${whoM.length === 1 ? "" : "s"} for estimates`); ask.type = "button"; ask.title = "Asks each agent to add an estimate and a deadline to their tasks that lack one";
+    let tm = 0; ask.onclick = () => { if (tm) { clearTimeout(tm); tm = 0; ask.textContent = `Ask ${whoM.length} agent${whoM.length === 1 ? "" : "s"} for estimates`; return; }
+      ask.textContent = `Asking ${whoM.length} in 5 s · Undo`; tm = setTimeout(async () => { tm = 0; try { for (const who of whoM) { const ids = miss.filter(t => t.session === who).map(t => t.id);
+        await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:who, task:ids.length === 1 ? ids[0] : null, kind:"question", text:`Please add an estimate (estimate_min) and a deadline (due_at) to: ${ids.join(", ")}.`, author_id:me, relayed:false}); }
+        ask.textContent = `Asked ${whoM.length}`; ask.disabled = true; } catch (err) { ask.textContent = writeError(err); } }, 5000); }; box.append(ask); }
   const dr = drift();
   if (dr) { const line = el("div","drift"), moved = dr.now && dr.was ? Math.round((dr.now - dr.was) / 6e4) : 0;
     const t0 = Date.parse(dr.at); line.append(el("b", null, `Since the plan was locked, ${localDay(t0) === localDay(Date.now()) ? fmtHM(t0) : fmtWhen(t0)}:`), el("span","note", moved > 15 ? `done-by moved ${fmtDur(moved)} later` : moved < -15 ? `done-by moved ${fmtDur(-moved)} earlier` : "done-by holds"));
@@ -3348,6 +3378,9 @@ function dataCheck(){
     if (v == null || v === "") { if (r.req) out.push({col, id:d.id, k, v, en:r.en}); return; }
     if (r.time ? !isTime(v) : r.ok && !r.ok(v)) out.push({col, id:d.id, k, v, en:r.en}); })));
   return out; }
+function renderPace(){ const on = $("paceOn"); if (!on) return; on.checked = !!metaOffice?.learn_estimates; const pc = paceOf(), l = Object.entries(pc);
+  $("paceList").textContent = l.length ? l.map(([who, x]) => `${nameOf(who)} × ${x.f} (${x.n} tasks)`).join(" · ") : "No agent has 3 finished tasks with start and done times yet.";
+  on.onchange = async () => { try { await db.doc("meta/office").update({learn_estimates:on.checked}); } catch (err) { $("paceList").textContent = writeError(err); on.checked = !on.checked; } }; }
 function renderDataCheck(){
   const p = $("dataSet"); if (!p) return; const bad = dataCheck(), list = $("dataList"); list.replaceChildren();
   $("dataNote").textContent = bad.length ? `${bad.length} value${bad.length === 1 ? "" : "s"} the page had to ignore or guess. Nothing is fixed by itself.` : "Everything the agents wrote matches the contract.";
@@ -3486,7 +3519,7 @@ let renderQueued = false, planDirty = true;
 function renderAll(plan = true){ if (plan) planDirty = true; if (renderQueued) return; renderQueued = true; const go = () => { renderQueued = false; renderAllNow(); }; if (document.hidden) setTimeout(go, 0); else requestAnimationFrame(go); }
 /* only the tab on screen is redrawn; the others are marked and drawn when opened (council round 4, E9). Badges, Needs you and dialogs stay live. */
 const TAB_DRAW = {office:() => { drawScene(); renderDepts(); renderStats(); renderAssistant(); renderRoster(); }, chat:() => { drawScene(); renderMsgs(); renderDecisions(); },
-  board:() => renderBoard(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); renderDataCheck(); }};
+  board:() => renderBoard(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); renderDataCheck(); renderPace(); }};
 function drawTab(t){ staleTabs.delete(t); TAB_DRAW[t]?.(); }
 function calBadge(){ const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? `${lateN} late` : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : ""; }
 function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } watchBaseline();
