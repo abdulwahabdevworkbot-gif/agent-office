@@ -237,6 +237,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .rm-pill .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;unicode-bidi:plaintext}
 .rm-pill.blocked{border-left:3px solid var(--bad)}.rm-pill .mono{white-space:nowrap;flex:none}
 .ag.copy .body{opacity:.82;filter:saturate(.8)}.mt-copy{font-size:10px;color:var(--muted);border:1px dashed var(--line);border-radius:4px;padding:0 4px;margin-left:4px}
+.conv-keep{display:flex;gap:5px;align-items:center;font-size:11px;color:var(--muted);margin:-2px 0 6px 4px;cursor:pointer}.conv-keep input{margin:0}
 .ph-tag{justify-self:start;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px}
 /* Arabic replies: English and task ids on their own lines */
 .bidi{text-align:right}
@@ -2555,6 +2556,14 @@ function convCard(s){
   if (s.task) { const tl = el("span","mono", s.task); b.append(tl); }
   b.onclick = () => go("#session/" + encodeURIComponent(s.id)); return b;
 }
+/* the owner's call (2026-10-24): the lane stays folded (short) by default and opens for the details; a "Keep open" box makes
+   one task's conversations stay open even while the lane is folded (kept per viewer, by task id, or by conversation id without a task) */
+const keepKey = c => c.task || c.id;
+const convKeep = () => { try { return new Set(JSON.parse(localStorage.getItem("office.convKeep") || "[]")); } catch { return new Set(); } };
+const setConvKeep = (k, on) => { const st = convKeep(); on ? st.add(k) : st.delete(k); try { localStorage.setItem("office.convKeep", JSON.stringify([...st])); } catch {} };
+function keepBox(c){ const lab = el("label","conv-keep"), cb = el("input"); cb.type = "checkbox"; cb.checked = convKeep().has(keepKey(c));
+  lab.title = c.task ? `Keep ${c.task}'s conversations open, even when the lane is folded` : "Keep this conversation open, even when the lane is folded";
+  cb.onchange = () => { setConvKeep(keepKey(c), cb.checked); announce(cb.checked ? "Kept open" : "Folds with the lane"); renderBoard(); }; lab.append(cb, el("span", null, "Keep open")); return lab; }
 const convFolded = () => { try { return localStorage.getItem("office.convFold") !== "0"; } catch { return true; } };
 const setConvFolded = v => { try { localStorage.setItem("office.convFold", v ? "1" : "0"); } catch {} };
 function renderBfSum(){ const box = $("bfSum"); if (!box) return; box.replaceChildren();
@@ -2584,10 +2593,12 @@ function renderBoard(){
   if (!lanes.length && !convs.length) { const e = tasks.length ? emptyState("coordinator", "No task matches these filters.", "Change the version, stage or feature, or use Find.", "Show everything", () => { bf.ver = null; bf.feats.clear(); bf.tasks.clear(); bf.phases.clear(); bf.states = new Set(["todo","doing","review","blocked"]); renderBoard(); }) : emptyState("business-analyst", "No tasks yet.", "The Business Analyst adds them here."); e.style.gridColumn = "1 / -1"; grid.append(e); return; }
   if (convs.length) {
     const folded = convFolded(), ln = el("div","lane-name"); const fb = el("button","conv-fold"); fb.type = "button"; fb.setAttribute("aria-expanded", String(!folded));
-    fb.append(folded ? "▸" : "▾", "Conversations", el("small", null, `${convs.filter(c => c.state === "open").length} open`)); fb.onclick = () => { setConvFolded(!folded); renderBoard(); }; ln.append(fb); grid.append(ln);
+    const nKept = convs.filter(c => convKeep().has(keepKey(c))).length; fb.append(folded ? "▸" : "▾", "Conversations", el("small", null, `${convs.filter(c => c.state === "open").length} open${nKept ? ` · ${nKept} kept open` : ""}`)); fb.onclick = () => { setConvFolded(!folded); renderBoard(); }; ln.append(fb); grid.append(ln);
     cols.forEach(s => { const cell = el("div","cell"), cs = convs.filter(c => convState(c) === s.k).sort((a, b) => String(b.opened_at).localeCompare(String(a.opened_at)));
-      if (folded) { if (cs.length) { const n = el("button","linkish conv-n", `${cs.length} conversation${cs.length === 1 ? "" : "s"}`); n.type = "button"; n.onclick = () => { setConvFolded(false); renderBoard(); }; cell.append(n); } }
-      else cs.forEach(c => cell.append(convCard(c)));
+      const keep = convKeep(), kept = cs.filter(c => keep.has(keepKey(c))), rest = folded ? cs.filter(c => !keep.has(keepKey(c))) : cs;
+      if (folded) kept.forEach(c => cell.append(convCard(c), keepBox(c)));
+      if (folded) { if (rest.length) { const n = el("button","linkish conv-n", `${kept.length ? "+" : ""}${rest.length} conversation${rest.length === 1 ? "" : "s"}`); n.type = "button"; n.onclick = () => { setConvFolded(false); renderBoard(); }; cell.append(n); } }
+      else rest.forEach(c => cell.append(convCard(c), keepBox(c)));
       grid.append(cell); });
   }
   lanes.forEach(id => {
