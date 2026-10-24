@@ -692,6 +692,7 @@ form.compose{grid-template-columns:minmax(0,1fr)}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:0;width:min(720px,calc(100% - 24px));max-height:88vh;direction:ltr;text-align:left}
 dialog::backdrop{background:rgba(10,14,20,.55)}
 .dlg{padding:18px 20px;display:grid;gap:14px;overflow:auto;max-height:88vh}
+.dlg-back{display:block;margin:12px 20px 0;font-weight:600}
 #sessDlg:has(.with-room){width:min(1040px,calc(100% - 24px))}.dlg.with-room{grid-template-columns:minmax(220px,300px) minmax(0,1fr);align-items:start}.dlg-main{display:grid;gap:14px;min-width:0}
 .dlg-side{position:sticky;top:0;display:grid;gap:6px}.dlg-roomwrap{position:relative;aspect-ratio:1200/896}
 .dlg-room{position:absolute;inset:0 auto auto 0;width:100%;z-index:5;transition:width .2s ease,box-shadow .2s ease}
@@ -1005,7 +1006,7 @@ const navBack = [];
 const cloneF = f => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, v instanceof Set ? new Set(v) : v]));
 function snapshot(){
   const bs = document.querySelector(".board-scroll");
-  return {tab:curTab, y:scrollY, chat:{chatSess, chatTask, chatPair, composeTask, ms:$("msgs").scrollTop}, board:{bf:cloneF(bf), filter, sl:bs ? bs.scrollLeft : 0}};
+  return {tab:curTab, dlg:curDlgHref() || shownDlg, y:scrollY, chat:{chatSess, chatTask, chatPair, composeTask, ms:$("msgs").scrollTop}, board:{bf:cloneF(bf), filter, sl:bs ? bs.scrollLeft : 0}};
 }
 function backBar(){
   let b = $("navBack");
@@ -1014,7 +1015,8 @@ function backBar(){
   b.hidden = !top || top.tab === curTab; document.body.classList.toggle("has-back", !b.hidden);
   if (top) { let what = "";
     if (top.tab === "chat") { const s = top.chat.chatSess && sessions.find(x => x.id === top.chat.chatSess); what = s ? s.title_en || "" : top.chat.chatTask || (top.chat.chatPair ? top.chat.chatPair.split("|").map(nameOf).join(" & ") : ""); }
-    b.replaceChildren(el("span", null, "\u2190 Back to " + TAB_NAME[top.tab]), ...(what ? [el("bdi", null, what)] : [])); }
+    if (top.dlg) what = dlgLabel(top.dlg);
+    b.replaceChildren(el("span", null, "\u2190 Back to " + (top.dlg ? "" : TAB_NAME[top.tab])), ...(what ? [el("bdi", null, what)] : [])); }
 }
 function goBack(){
   const sn = navBack.pop(); if (!sn) return;
@@ -1023,6 +1025,7 @@ function goBack(){
     if (sn.tab === "chat") { ({chatSess, chatTask, chatPair, composeTask} = sn.chat); pickers.forEach(p => p.refresh()); renderMsgs(); renderCompose(); renderSessions(); }
     if (sn.tab === "board") { Object.assign(bf, sn.board.bf); filter = sn.board.filter; renderBoard(); }
     closeDialogs(); showTab(sn.tab);
+    if (sn.dlg) { dlgBacking = true; try { go(sn.dlg); } finally { dlgBacking = false; } }
   } finally { restoring = false; }
   requestAnimationFrame(() => {
     if (sn.tab === "chat") $("msgs").scrollTop = sn.chat.ms;
@@ -1093,9 +1096,22 @@ const taskLink = id => link(id, "#task/" + encodeURIComponent(id));
 const sessLink = (id, text) => link(text || "Session", "#session/" + encodeURIComponent(id));
 const boardLink = (id, text) => link(text || "Board", "#board/" + encodeURIComponent(id));
 function go(href){ try { history.replaceState(null, "", href); } catch {} routed = true; route(href); }   // a link already routed: the next redraw must not route the same hash again (it closed and reopened the window, and lost live replies)
+/* the owner's ask (2026-10-24): moving from one window to another (agent to agent, task to talk...) keeps a way back */
+let dlgBack = [], dlgNav = false, dlgBacking = false, taskDlgId = null, shownDlg = "", closedDlg = null;
+const curDlgHref = () => $("agentDlg").open && agentOpen ? "#agent/" + encodeURIComponent(agentOpen) : $("sessDlg").open && openSess ? "#session/" + encodeURIComponent(openSess) : $("taskDlg").open && taskDlgId ? "#task/" + encodeURIComponent(taskDlgId) : "";
+function dlgLabel(href){ const m = /^#(task|session|agent)\/(.+)$/.exec(href || ""); if (!m) return ""; const id = decodeURIComponent(m[2]);
+  return m[1] === "agent" ? nameOf(id) : m[1] === "task" ? `${id}` : (sessions.find(s => s.id === id)?.title_en || "the talk"); }
+/* a window opened straight from another window (not through a link) also leaves a way back; a redraw of the same window does not */
+function dlgHop(next, same){ if (same || dlgBacking) return; const prev = curDlgHref() || shownDlg; /* shownDlg: the window a click just closed before opening this one */ if (prev && prev !== next && dlgBack[dlgBack.length - 1] !== prev) dlgBack.push(prev); setTimeout(() => { shownDlg = curDlgHref(); syncDlgBack(); }, 0); }
+function syncDlgBack(){
+  ["taskDlg","sessDlg","agentDlg"].forEach(d => { const dl = $(d); let b = dl.querySelector(":scope > .dlg-back");
+    if (!b) { b = el("button","linkish dlg-back"); b.type = "button"; b.onclick = () => { const h = dlgBack.pop(); if (!h) return; dlgBacking = true; try { go(h); } finally { dlgBacking = false; } syncDlgBack(); }; dl.prepend(b); }
+    const top = dlgBack[dlgBack.length - 1]; b.hidden = !top; if (top) b.textContent = "← Back to " + dlgLabel(top); }); }
 function route(h){
   const m = /^#(task|session|board|agent)\/(.+)$/.exec(h || location.hash); if (!m) return false;
   const id = decodeURIComponent(m[2]);
+  { const prev = curDlgHref(), next = m[1] === "board" ? "" : `#${m[1]}/${encodeURIComponent(id)}`; if (prev && next && prev !== next && !dlgBacking) dlgBack.push(prev); }
+  dlgNav = true; setTimeout(() => { dlgNav = false; shownDlg = curDlgHref(); syncDlgBack(); }, 0);
   if (m[1] === "task") { if (!tasks.some(t => t.id === id)) return false; closeDialogs(); openTask(id); }
   else if (m[1] === "session") { if (!sessions.some(s => s.id === id)) return false; closeDialogs(); openSession(id); }
   else if (m[1] === "agent") { if (!agentById(id)) return false; if (agentOpen !== id) { closeDialogs(); openAgent(id); } }
@@ -2707,7 +2723,7 @@ function renderBoard(){
   });
 }
 function openTask(id){
-  const t = tasks.find(x => x.id === id); if (!t) return;
+  const t = tasks.find(x => x.id === id); if (!t) return; dlgHop("#task/" + encodeURIComponent(id), $("taskDlg").open && taskDlgId === id); taskDlgId = id;
   const body = $("taskBody"); body.replaceChildren();
   const top = el("div"); top.append(el("span","mono", `${t.id} · ${nameOf(t.session)}`), el("h3", null, ttl(t))); body.append(top);
   if (canWrite && ownerView()) { const on = following().includes(t.id), st = el("button","btn-lite fl-star", on ? "★ Following" : "☆ Follow"); st.type = "button"; st.setAttribute("aria-pressed", String(on)); st.title = "Keep this task in the strip above the office"; st.onclick = async () => { if (await toggleFollow(t.id) === false) return; st.textContent = st.textContent.startsWith("★") ? "☆ Follow" : "★ Following"; }; top.append(st); }
@@ -2852,7 +2868,7 @@ function agentPreview(){
   img.style.height = Math.round(116 * heightOf(agentOpen, agentDraft.look)) + "px";   // 116 leaves room for "Very tall" in the 132px frame
 }
 function openAgent(id){
-  const a = agentById(id); if (!a) return false;
+  const a = agentById(id); if (!a) return false; dlgHop("#agent/" + encodeURIComponent(id), $("agentDlg").open && agentOpen === id);
   agentOpen = id;
   agentDraft = {look:{...(a.look || {})}, hobbies:[...(Array.isArray(a.hobbies) ? a.hobbies : [])]};
   PROFILE.forEach(([k]) => { agentDraft[k] = a[k] || ""; });
@@ -2986,7 +3002,7 @@ function renderAgentWork(){
   if (!shownC.length) cl.append(el("div","note", conv.length ? "None here." : "No conversations yet."));
   box.append(cl);
 }
-$("agentDlg").addEventListener("close", () => { agentOpen = null; agentDraft = null; if (selectedAgent) { selectedAgent = null; drawScene(); renderRoster(); } });
+$("agentDlg").addEventListener("close", () => { if ($("agentDlg").open) return; agentOpen = null; agentDraft = null; if (selectedAgent) { selectedAgent = null; drawScene(); renderRoster(); } });
 (() => { const d = $("agentDlg"); let down = null; d.addEventListener("pointerdown", e => { down = e.target; }); d.addEventListener("click", e => { if (e.target === d && down === d) d.close(); down = null; }); })();
 /* ---------- roadmap: versions, then phases (planning, prototype, staging, production) and their stages ---------- */
 const PHASES = [
@@ -3368,7 +3384,7 @@ function versionKanban(v, vt, np){
 function openSession(id){
   const same = openSess === id && $("sessDlg").open, oldTa = same && $("sessBody").querySelector(".dlg-main textarea, textarea"), oldThread = same && $("sessBody").querySelector(".sess-msgs");
   const keep = oldTa ? {v:oldTa.value, f:document.activeElement === oldTa, a:oldTa.selectionStart, b:oldTa.selectionEnd} : null, oldN = oldThread ? oldThread.childElementCount : 0, oldMain = same && $("sessBody").querySelector(".dlg-main"), oldTop = oldMain ? $("sessBody").scrollTop : 0;
-  openSess = id; const s = sessions.find(x => x.id === id); if (!s) return;
+  dlgHop("#session/" + encodeURIComponent(id), same); openSess = id; const s = sessions.find(x => x.id === id); if (!s) return;
   const body = $("sessBody"); body.replaceChildren(); body.classList.remove("with-room");
   const top = el("div"); top.append(el("span","mono", isMeeting(s) ? "Meeting" + (s.task ? ` · ${s.task}` : "") : `Task session · ${s.task || ""}`), el("h3", null, s.title_en || "Question")); body.append(top);
   const t = tasks.find(x => x.id === s.task);
@@ -3436,6 +3452,7 @@ function openSession(id){
   if (!$("sessDlg").open) $("sessDlg").showModal();
 }
 $("sessDlg").addEventListener("close", () => { if (!$("sessDlg").open) openSess = null; });
+["taskDlg","sessDlg","agentDlg"].forEach(d => $(d).addEventListener("close", () => (closedDlg = {h:shownDlg, t:Date.now()}, setTimeout(() => { if (!dlgNav && !document.querySelector("#taskDlg[open],#sessDlg[open],#agentDlg[open]")) { dlgBack = []; shownDlg = ""; } syncDlgBack(); }, 0))));
 function askForm(t, host){
   const w = el("div","ask");
   const ml = el("div","who-list"); membersFor(t).forEach(m => { const sp = el("span"); sp.append(avatar(m, 22), el("span", null, nameOf(m))); ml.append(sp); });
