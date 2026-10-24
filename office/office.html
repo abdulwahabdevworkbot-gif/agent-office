@@ -370,6 +370,7 @@ h2{font-weight:700;font-size:19px;margin:0}
 .health{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin-bottom:10px}
 .health .chip.go{cursor:pointer}.health .chip[aria-pressed="true"]{outline:2px solid var(--accent)}.health .h-warn{color:var(--bad);font-weight:600}
 .health-list{display:grid;gap:6px;margin-bottom:12px}
+.drift{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;border-top:1px dashed var(--line);padding-top:6px}
 .cal-row{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%;display:grid;grid-template-columns:minmax(160px,220px) minmax(0,1fr) minmax(0,1.3fr) 190px;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--bg)}
 .cal-row:hover{border-color:var(--accent)}.cal-row .who{display:flex;gap:8px;align-items:center}.cal-row .note{overflow-wrap:anywhere}
 @media (max-width:760px){.cal-row{grid-template-columns:1fr}}
@@ -1717,6 +1718,22 @@ function timeBox(t){   // the task dialog's Time row
   return d; }
 let calWho = "", calWeek = 0, calHealth = "";
 // Plan health: what in the computed plan needs a look, above the Everyone list.
+/* plan baseline (council round 5, Engineer): the plan is locked once a day (first visit, or "Lock the plan now"), and the live plan is compared with it */
+let baseline = null, baseDay = "", baseState = "";
+function watchBaseline(){ if (!db) return; const day = localDay(new Date()); if (day === baseDay) { if (baseState === "none") lockPlan("auto"); return; }
+  baseDay = day; baseState = "loading"; db.doc("plans/" + day).onSnapshot(d => { if (baseDay !== day) return; baseline = d && d.exists ? d.data() : null; baseState = baseline ? "ok" : "none"; if (!baseline) lockPlan("auto"); else renderAll(false); }, () => {}); }
+function lockPlan(by){
+  if (!db || !canWrite || !tasks.length || (by === "auto" && baseState !== "none")) return; baseState = "locking";
+  const open = tasks.filter(t => !isClosed(t)), T = {}; open.forEach(t => { const p = sched.byTask[t.id]; if (p) T[t.id] = {e:p.e, est:estOf(t)}; });
+  db.doc("plans/" + baseDay).set({at:new Date().toISOString(), by, done_by:open.reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0), tasks:T}).catch(() => { baseState = "none"; }); }
+function drift(){
+  if (!baseline?.tasks) return null; const B = baseline.tasks, rows = [];
+  tasks.filter(t => !isClosed(t)).forEach(t => { const p = sched.byTask[t.id]; if (!p) return; const b = B[t.id];
+    if (!b) { rows.push([t, "Added after the plan was locked", 0]); return; }
+    const d = p.e - b.e; if (d <= 15 * 6e4) return;
+    rows.push([t, `${fmtWhen(b.e)} → ${fmtWhen(p.e)} (+${fmtDur(Math.round(d / 6e4))}). ` + (estOf(t) !== b.est ? `Re-estimated: ${fmtDur(b.est)} → ${fmtDur(estOf(t))}` : whyText(p) || "Took longer than planned"), d]); });
+  const now = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
+  return {rows, slipped:rows.filter(r => r[2]).length, added:rows.filter(r => !r[2]).length, at:baseline.at, was:baseline.done_by || 0, now}; }
 function planHealth(){
   const open = tasks.filter(t => !isClosed(t)), P = t => sched.byTask[t.id] || {};
   const kinds = [
@@ -1732,6 +1749,13 @@ function planHealth(){
     c.textContent = `${K.en}: ${l.length}`; c.setAttribute("aria-pressed", String(calHealth === K.k)); c.onclick = () => { calHealth = calHealth === K.k ? "" : K.k; renderCalendar(); }; box.append(c);
     if (calHealth === K.k) rows = l.map(t => [t, K.why(t)]); });
   if (!box.querySelector("button")) box.append(el("span","chip","All clear"));
+  const dr = drift();
+  if (dr) { const line = el("div","drift"), moved = dr.now && dr.was ? Math.round((dr.now - dr.was) / 6e4) : 0;
+    const t0 = Date.parse(dr.at); line.append(el("b", null, `Since the plan was locked, ${localDay(t0) === localDay(Date.now()) ? fmtHM(t0) : fmtWhen(t0)}:`), el("span","note", moved > 15 ? `done-by moved ${fmtDur(moved)} later` : moved < -15 ? `done-by moved ${fmtDur(-moved)} earlier` : "done-by holds"));
+    if (dr.rows.length) { const c = el("button","chip go" + (dr.slipped ? " h-warn" : ""), [dr.slipped ? `${dr.slipped} slipped` : "", dr.added ? `${dr.added} added` : ""].filter(Boolean).join(" · ")); c.type = "button"; c.setAttribute("aria-pressed", String(calHealth === "drift"));
+      c.onclick = () => { calHealth = calHealth === "drift" ? "" : "drift"; renderCalendar(); }; line.append(c); if (calHealth === "drift") rows = dr.rows.map(([t, why]) => [t, why]); }
+    if (canWrite) { const lk = el("button","linkish","Lock the plan now"); lk.type = "button"; lk.title = "Compare from now on"; lk.onclick = () => lockPlan("owner"); line.append(lk); }
+    box.append(line); }
   const wrap = el("div","stack"); wrap.append(box);
   if (rows.length) { const list = el("div","health-list"); rows.sort((a, b) => (P(a[0]).e || 0) - (P(b[0]).e || 0)).forEach(([t, why]) => { const r = el("button","cal-row"); r.type = "button";
       const w = el("span","who"); w.append(avatar(t.session || "coordinator", 24), el("b", null, `${t.id} ${t.title_en || ""}`));
@@ -3184,7 +3208,7 @@ const TAB_DRAW = {office:() => { drawScene(); renderDepts(); renderStats(); rend
   board:() => renderBoard(), calendar:() => renderCalendar(), roadmap:() => renderRoadmap(), team:() => renderTeam(), settings:() => { renderSettings(); renderMeetSettings(); }};
 function drawTab(t){ staleTabs.delete(t); TAB_DRAW[t]?.(); }
 function calBadge(){ const lateN = Object.values(sched.byTask).filter(p => p.lateBy).length; $("calCount").textContent = lateN ? String(lateN) : ""; $("tab-calendar").title = lateN ? `${lateN} task${lateN === 1 ? "" : "s"} running late` : ""; }
-function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); }
+function renderAllNow(){ if (planDirty) { planDirty = false; buildSchedule(); } watchBaseline();
   Object.keys(TAB_DRAW).forEach(t => staleTabs.add(t)); drawTab(curTab || "office");
   if (!routed && /^#(task|session|board|agent)\//.test(location.hash)) routed = route();
   renderSummary(); calBadge(); renderSelects(); renderSessions(); renderCompose(); renderInbox(); renderReviews();
