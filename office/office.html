@@ -1232,6 +1232,7 @@ function renderDepts(){
 const IDLE_DAYS = 3, NEVER_IDLE = new Set(["coordinator", "office-manager", "agent-designer"]);
 const IDLE_SEATS = [{"x": 38, "y": 60, "f": "front-left", "seat": true}, {"x": 44, "y": 51, "f": "front-left", "seat": true}, {"x": 55, "y": 50, "f": "front-left", "seat": true}, {"x": 64, "y": 57, "f": "front-left", "seat": true}, {"x": 60, "y": 68, "f": "front-left", "seat": true}, {"x": 48, "y": 70, "f": "front-left", "seat": true}, {"x": 36, "y": 66, "f": "front-left", "seat": true}, {"x": 68, "y": 62, "f": "front-left", "seat": true}, {"x": 25, "y": 55, "f": "front-left", "seat": true}, {"x": 30, "y": 46, "f": "front-left", "seat": true}, {"x": 74, "y": 52, "f": "front-left", "seat": true}, {"x": 80, "y": 60, "f": "front-left", "seat": true}, {"x": 20, "y": 64, "f": "front-left", "seat": true}, {"x": 70, "y": 72, "f": "front-left", "seat": true}, {"x": 30, "y": 74, "f": "front-left", "seat": true}, {"x": 50, "y": 80, "f": "front-left", "seat": true}, {"x": 78, "y": 66, "f": "front-left", "seat": true}, {"x": 60, "y": 82, "f": "front-left", "seat": true}];
 let lastSaid = {};
+const quietMs = a => { if (!a || a.state !== "working" || NEVER_IDLE.has(a.id) || a.id === ASSISTANT) return 0; const la = lastActive(a), t = tasks.find(x => x.session === a.id && x.state === "doing"), lim = Math.max(2 * 36e5, 1.5 * (t ? estOf(t) : 0) * 6e4), q = la ? Date.now() - la : 0; return q > lim ? q : 0; };   // one rule for the floor, the hover card and the Quiet card (council round 30)
 const lastActive = a => {
   let t = 0; const lim = Date.now() + 6e4, bump = v => { const n = Date.parse(v || ""); if (n > t && n <= lim) t = n; };   // a time in the future is a clock error, not activity
   bump(a.last_active_at); bump(a.updated_at); bump(a.profile_updated_at);
@@ -1494,6 +1495,7 @@ function hoverCard(id){
   if (a) { const w = waitsOf(id); if (w.on.length) rows.push(el("div","note", "Waiting on: " + w.on.map(([who, why]) => `${nameOf(who)} (${why[0]}${why.length > 1 ? ` +${why.length - 1}` : ""})`).join(", "))); if (w.me.length) rows.push(el("div","note", "Waiting on them: " + w.me.map(([who]) => nameOf(who)).join(", "))); }
   if (a?.state === "blocked") { const bi = blockInfo(a, l.find(x => x.kind === "task")?.t); if (bi.why) rows.push(el("div","blk-why", bi.why)); if (bi.needs) rows.push(el("div","blk-why need", "Needs from you: " + bi.needs)); }
   else if (a?.doing_en) rows.push(el("div", null, a.doing_en));
+  { const q = quietMs(a); if (q) rows.push(el("div","t-warn", `Quiet: no sign of life for ${fmtDur(Math.round(q / 6e4))}`)); }
   if (cur) rows.push(el("div","note", "Now: " + lab(cur) + " · until " + fmtHM(cur.e)));
   if (nx) rows.push(el("div","note", "Next: " + fmtWhen(nx.s) + " · " + lab(nx)));
   const late = l.filter(x => x.kind === "task" && sched.byTask[x.t.id]?.lateBy).length; if (late) rows.push(el("div","t-warn", `${late} task${late === 1 ? "" : "s"} running late`));
@@ -1595,7 +1597,7 @@ function takeTurns(){
   turn++;
   figs.forEach(r => r.b.classList.remove("speaking"));
   lastGroups.forEach(g => { const here = g.ids.map(id => figs.get(id)).filter(r => r && (r.room === "meet" || typeOf(r.room) === "huddle") && !r.busy); if (here.length) here[turn % here.length].b.classList.add("speaking"); });
-  const byRoom = new Map(); figs.forEach(r => { r.b.classList.remove("turn"); const ag = agentById(r.id), la = ag && lastActive(ag); r.b.classList.toggle("quiet", !!(ag && ag.state === "working" && la && Date.now() - la > 2 * 36e5)); if (r.b.classList.contains("working") && !r.b.classList.contains("meeting") && r.fx.classList.contains("typing")) byRoom.set(r.room, [...(byRoom.get(r.room) || []), r]); });
+  const byRoom = new Map(); figs.forEach(r => { r.b.classList.remove("turn"); const ag = agentById(r.id); r.b.classList.toggle("quiet", !!quietMs(ag)); if (r.b.classList.contains("working") && !r.b.classList.contains("meeting") && r.fx.classList.contains("typing")) byRoom.set(r.room, [...(byRoom.get(r.room) || []), r]); });
   byRoom.forEach(l => l[reduce ? 0 : turn % l.length].b.classList.add("turn"));   // one typing bubble per room, taking turns
   /* progress at the desk (council round 22): a ring at a working agent's feet; full where they reported progress, faint where it is the plan's guess, orange past the estimate, grey when quiet */
   const now = Date.now(); figs.forEach(r => { const t = r.b.classList.contains("working") && tasks.find(x => x.session === r.id && x.state === "doing"), p = t && sched.byTask[t.id];
@@ -1711,6 +1713,7 @@ const NEW_VER = "2026-10-24", NEW_LIST = [
   ["Review queue", "Reviews opens with what is waiting for review and for how long.", "reviews"],
   ["First thing", "After a night away, the morning card names the one answer that frees the most work, with Go.", "office"],
   ["Review health", "Reviews shows the last 14 days in one line: first-try pass rate, rounds, waits, sent back most.", "reviews"],
+  ["Agent hours", "An agent's page shows their day in hours, like Calendar; the card week folds under In order.", "agent"],
   ["Team side by side", "Departments as cards next to each other.", "team"],
   ["Settings save themselves", "Meetings, working hours and standing meetings keep a change on their own (standing meetings rebook after a short pause); Room sizes still has Save.", "settings"],
   ["Light through the day", "The office follows the clock: dawn, day, dusk and night.", "office"]];
@@ -1974,8 +1977,7 @@ function renderInbox(){
       acts:[["Keep mine", () => delaySend(key, "Putting your values back", async () => { await db.doc("tasks/" + t.id).update({...Object.fromEntries(diff), updated_at:new Date().toISOString(), plan_changed_by:"owner"}); if (t.session) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:t.session, task:t.id, kind:"update", text:`I set these for ${t.id} and I'm keeping them: ${diff.map(([k, v]) => show(k, v)).join("; ")}.`, author_id:me, relayed:false}); return "Kept yours"; }), true],
         ["Accept", async () => { const os = {...t.owner_set}; diff.forEach(([k]) => delete os[k]); try { await db.doc("tasks/" + t.id).update({owner_set:os}); inboxSent.set(key, "Accepted"); renderInbox(); } catch (err) { inboxSent.set(key, "Not sent: " + writeError(err)); renderInbox(); } }], ["Task", () => openTask(t.id)]]}); });
   /* quiet agents (council round 8, Engineer): "working" but no sign of life for max(2 h, 1.5 x the task's estimate) */
-  const quiet = agents.filter(a => a.state === "working" && !NEVER_IDLE.has(a.id) && a.id !== ASSISTANT).map(a => { const t = tasks.find(x => x.session === a.id && x.state === "doing"), la = lastActive(a), lim = Math.max(2 * 36e5, 1.5 * (t ? estOf(t) : 0) * 6e4);
-    return la && Date.now() - la > lim ? {a, t, la} : null; }).filter(Boolean).sort((x, y) => x.la - y.la);
+  const quiet = agents.filter(a => quietMs(a)).map(a => ({a, t:tasks.find(x => x.session === a.id && x.state === "doing"), la:lastActive(a)})).filter(Boolean).sort((x, y) => x.la - y.la);
   const ask = q => quickSend("q:" + q.a.id, q.a.id, q.t?.id, `Status check: how is ${q.t ? q.t.id : "your work"} going, and what is left?`, "question");
   if (quiet.length && quiet.length <= 2) quiet.forEach(q => items.push({k:"Quiet", c:"var(--idle)", who:q.a.id, t:nameOf(q.a.id), s:`${q.t ? `Working on ${q.t.id} · ${ttl(q.t)}, but` : "Working, but"} no sign of life for ${fmtDur(Math.round((Date.now() - q.la) / 6e4))}.`, at:new Date(q.la).toISOString(),
     key:"q:" + q.a.id, acts:[["Ask for status", () => ask(q), true], ["Their page", () => go("#agent/" + encodeURIComponent(q.a.id))]]}));
@@ -2827,7 +2829,8 @@ function renderAgentWork(){
   box.append(tl);
   const cw = el("div","ag-wh"); cw.append(el("h3", null, "Calendar"));
   const cb = el("button","btn-lite","Open in Calendar"); cb.type = "button"; cb.onclick = () => { $("agentDlg").close(); calWho = id; calWeek = 0; renderCalendar(); showTab("calendar"); }; cw.append(cb);
-  box.append(cw, weekGrid(sched.byAgent[id] || []));
+  const io = el("details","ag-io"), ios = el("summary", null, "In order"); io.append(ios, weekGrid(sched.byAgent[id] || []));
+  box.append(cw, personHours(sched.byAgent[id] || [], id), io);
   const conv = sessions.filter(s => (s.members || []).includes(id)).sort(sortByLast), openC = conv.filter(s => s.state === "open");
   const ch = el("div","ag-wh"); ch.append(el("h3", null, `Conversations (${openC.length} open of ${conv.length})`),
     viewChips(agentConvView, [["open","Open"],["done","Archive"],["all","All"]], v => agentConvView = v));
