@@ -355,6 +355,10 @@ h2{font-weight:700;font-size:19px;margin:0}
 .ib-k{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--c);display:flex;gap:8px;justify-content:space-between}
 .ib-k .note{font-weight:400;text-transform:none;letter-spacing:0}
 .ib-t{font-weight:600;overflow-wrap:anywhere}
+/* phones (council round 12, Product Lead): one row per card until tapped; header buttons behind More */
+.ph-more{display:none}
+@media (max-width:520px){.ph-more{display:inline-flex}.inbox-head .row-wrap:not(.more-open) > :is(#goChat2,#callMeet4,#byeBtn){display:none}
+  .ib:not(.open) :is(.ib-s,.ib-need,.ib-a,.ib-x){display:none}.ib:not(.open){cursor:pointer;padding:7px 10px}.ib:not(.open) .av{grid-row:span 2}.ib .ib-k .note{white-space:nowrap}}
 .ib-s{font-size:13px;color:var(--muted);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ib-a{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .ib-a button{font-size:12.5px;padding:3px 10px}.ib-a input{font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 8px;min-width:0}.ib-a{align-items:center}
@@ -367,6 +371,11 @@ h2{font-weight:700;font-size:19px;margin:0}
 .mt-cost{font-size:12.5px;font-weight:500}
 .snz-list{grid-column:1/-1;display:grid;gap:4px;padding:8px 10px;border:1px dashed var(--line);border-radius:8px}.snz-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
 #byeBody input{flex:1;min-width:0}
+.done-toast{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:9500;max-width:min(420px,calc(100vw - 32px));padding:10px 14px;border-radius:10px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-inline-start:4px solid #e0b400;box-shadow:0 10px 30px rgba(0,0,0,.2);font-size:13.5px;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .3s,transform .3s}
+.done-toast.on{opacity:1;transform:none}
+.ag.cheer img.body{filter:drop-shadow(0 0 4px #ffd43b) drop-shadow(0 0 12px rgba(255,212,59,.9));animation:cheer 1s ease-out 2}
+@keyframes cheer{50%{transform:translateY(-4%)}}
+@media (prefers-reduced-motion:reduce){.ag.cheer img.body{animation:none}.done-toast{transition:none}}
 .next3{display:flex;gap:6px 16px;flex-wrap:wrap;align-items:baseline;font-size:13px;padding:6px 10px;margin:0 0 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}.n3 b{font-variant-numeric:tabular-nums;margin-inline-end:2px}.n3.late{color:var(--late)}
 .follow-strip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.fl-chip{all:unset;box-sizing:border-box;display:flex;gap:6px;align-items:center;max-width:100%;padding:5px 10px;border:1px solid var(--line);border-inline-start:3px solid var(--accent);border-radius:8px;background:var(--panel);cursor:pointer;font-size:13px}
 .fl-chip span:not(.note){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}.fl-chip.late{border-inline-start-color:var(--late)}.fl-chip.blk{border-inline-start-color:var(--bad)}.fl-chip.done{border-inline-start-color:var(--ok);opacity:.75}.fl-chip:focus-visible{outline:2px solid var(--accent)}
@@ -625,7 +634,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
 
   <section role="tabpanel" id="panel-office" aria-labelledby="tab-office" class="stack">
     <div class="panel inbox" id="inbox" aria-labelledby="h-inbox">
-      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
+      <div class="inbox-head"><h2 id="h-inbox">Needs you</h2><span class="note" id="inboxSum"></span><span class="since" id="since" hidden></span><span class="row-wrap"><button class="btn-lite" id="walkBtn" type="button" hidden>Walk the floor</button><button class="btn-lite" id="byeBtn" type="button">Before you go</button><button class="btn-lite ph-more" id="moreBtn" type="button" aria-expanded="false">More</button><button class="btn-lite" id="goChat2" type="button">Open the chat</button><button class="btn" id="callMeet4" type="button">Call a meeting</button></span></div>
       <div class="next3" id="next3" hidden></div>
       <div class="inbox-list" id="inboxList"></div>
     </div>
@@ -1535,7 +1544,7 @@ function renderAssistant(){
 const ago = iso => { const t = Date.parse(iso || ""); if (!t) return ""; const m = Math.max(0, Math.round((Date.now() - t) / 6e4)); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
 function replyTo(id){ chatSess = chatPair = chatTask = ""; showTab("chat"); pickers.forEach(p => p.refresh()); renderMsgs(); renderSessions(); renderCompose();
   const s = $("to"); if ([...s.options].some(o => o.value === id)) { s.value = id; s.dispatchEvent(new Event("change")); } $("text").focus(); }
-const cardPoint = {keep:null}; let inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
+const cardPoint = {keep:null}, inboxOpenCard = new Set(); let inboxShowWy = false, inboxShowOb = false, inboxShowSnz = false, inboxAll = false; const inboxOpen = new Map(), inboxSent = new Map();
 /* one-tap answers (council round 4, I1): "Approve X" gets Approve / Not now; "Decide: A, or B" gets A and B. Each tap sends the owner's decision to that agent. */
 function quickAnswers(needs){
   const n = String(needs || "").trim(); let m;
@@ -1555,6 +1564,18 @@ function laterPick(row, key){
   const opts = [["1 hour", Date.now() + 36e5], ["3 hours", Date.now() + 3 * 36e5], ["Tomorrow 09:00", +tm]].map(([l, t]) => { const b = el("button","btn-lite", l); b.type = "button"; b.onclick = () => snooze([key], t); return b; });
   const back = el("button","linkish","Back"); back.type = "button"; back.onclick = () => { row.replaceChildren(...keep); keep.find(n => n.textContent === "Later")?.focus(); };
   row.replaceChildren(el("span","note","Snooze until"), ...opts, back); opts[0].focus(); }
+function withoutYou(){
+  const since = seenAt || Date.now() - DAY, out = [], T = v => Date.parse(v || "") || 0, add = (at, text, href, undo, undoLabel) => { if (at > since && at <= Date.now() + 6e4) out.push({at, text, href, undo, undoLabel}); };
+  sessions.forEach(x => { const sh = "#session/" + encodeURIComponent(x.id);
+    if (x.missed) add(T(x.closed_at), `Missed: ${x.title_en || "a meeting"} (nobody had the page open)`, sh);
+    else if (x.state !== "scheduled" && x.scheduled_at && x.opened_at && x.opened_at === x.at && T(x.opened_at)) add(T(x.opened_at), `Opened on schedule: ${x.title_en || "a meeting"}`, sh);
+    if (x.state === "scheduled" && (x.ritual || x.series) && x.opened_by === "owner") add(T(x.scheduled_at), `Booked by itself: ${x.title_en || "a meeting"}, ${fmtWhen(T(x.at))}`, sh, () => db.doc("sessions/" + x.id).update({state:"closed", cancelled:true, closed_at:new Date().toISOString(), closed_by:"owner", resolution_en:"Cancelled by the owner."}), "Cancel it");
+    if (x.state === "closed" && !x.missed && !x.cancelled && x.closed_by && x.closed_by !== "owner") add(T(x.closed_at), `${nameOf(x.closed_by)} closed: ${x.title_en || x.task || "a conversation"}${x.resolution_en ? " · " + x.resolution_en : ""}`, sh); });
+  tasks.forEach(t => { const th = "#task/" + encodeURIComponent(t.id);
+    if (isClosed(t)) add(T(t.done_at), `${nameOf(t.session)} finished ${t.id} ${ttl(t)}`, th);
+    if (t.due_moved_by && t.due_moved_by !== "owner") add(T(t.updated_at), `${nameOf(t.due_moved_by)} moved the deadline of ${t.id} to ${fmtWhen(T(t.due_at))}`, th); });
+  if (baseline?.by === "auto") add(T(baseline.at), "The day's plan was locked by itself");
+  return out.sort((a, b) => b.at - a.at); }
 const outbox = () => { const firstR = [...msgs, ...sessions].filter(x => x.relayed === true).reduce((m, x) => Math.min(m, Date.parse(x.relayed_at || x.at || x.opened_at || "") || Infinity), Infinity); if (firstR === Infinity) return [];
   const cut = Date.now() - 10 * 6e4; return msgs.filter(m => { const t = Date.parse(m.at || ""); return m.from === "owner" && m.relayed === false && t < cut && t >= firstR; }); };   // only since agents began marking pick-ups
 /* next 3 hours (council round 10, Product Lead): the owner's next meeting, the next deadline, and work coming up for review */
@@ -1567,6 +1588,12 @@ function renderNext3(){
   const rv = tasks.filter(t => t.state === "doing" && agentById(t.session)?.state !== "blocked" && !sched.byTask[t.id]?.lateBy && (sched.byTask[t.id]?.e || 0) > now + 6 * 6e4 && sched.byTask[t.id].e <= end).sort((a, b) => sched.byTask[a.id].e - sched.byTask[b.id].e);
   if (rv.length) { const w = el("span","n3"); w.append(el("b", null, fmtHM(sched.byTask[rv[0].id].e)), " ready for review: "); rv.slice(0, 3).forEach((t, i) => { if (i) w.append(", "); w.append(taskLink(t.id)); }); if (rv.length > 3) w.append(` +${rv.length - 3}`); w.dataset.t = sched.byTask[rv[0].id].e; parts.push(w); }
   box.hidden = !parts.length; box.replaceChildren(); if (!parts.length) return; box.append(el("span","lbl","Next 3 hours")); parts.sort((x, y) => x.dataset.t - y.dataset.t).forEach(x => box.append(x)); }
+/* a "done" moment (council round 12, UX): a short gold glow on the agent and a notice; a still glow with reduced motion */
+function doneMoment(list){
+  let t = $("doneToast"); if (!t) { t = el("div","done-toast"); t.id = "doneToast"; t.setAttribute("role", "status"); document.body.append(t); }
+  t.textContent = list.length === 1 ? `${list[0].id} ${ttl(list[0])} · done by ${nameOf(list[0].session)}` : `${list.length} tasks done: ${list.map(x => x.id).join(", ")}`; t.classList.add("on");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 5000);
+  list.forEach(x => { const f = figs.get(x.session); if (!f) return; f.b.classList.add("cheer"); setTimeout(() => f.b.classList.remove("cheer"), 3000); }); }
 /* follow a task (council round 10, from round 8): a star in the task dialog; followed tasks sit in a strip above the office (up to 8) */
 const following = () => (Array.isArray(metaOffice?.follow) ? metaOffice.follow : []).filter(id => tasks.some(t => t.id === id));
 let followPend = null;
@@ -1781,6 +1808,9 @@ function renderInbox(){
   $("officeCount").textContent = todo || ""; renderFollow(); renderNext3();
   $("byeBtn").classList.toggle("btn", new Date().getHours() >= 17); $("byeBtn").classList.toggle("btn-lite", new Date().getHours() < 17);   // the end-of-day check stands out after 17:00
   /* outbox (council round 10, Engineer): what the owner wrote that no agent has picked up after 10 minutes; shown only once agents mark pick-ups (relayed:true) */
+  /* "without you" (council round 12, Owner Advocate): what changed since the last visit without the owner's tap; the page's own bookings can be cancelled */
+  const wy = withoutYou(); if (wy.length) { const o = el("button","linkish ob-link", `${wy.length} change${wy.length === 1 ? "" : "s"} without you`); o.type = "button"; o.setAttribute("aria-expanded", String(inboxShowWy)); o.onclick = () => { inboxShowWy = !inboxShowWy; renderInbox(); }; $("inboxSum").append(" · ", o);
+    if (inboxShowWy) { const l = el("div","snz-list"); wy.slice(0, 30).forEach(w => { const r = el("div","snz-row"); r.append(el("span","note", ago(new Date(w.at).toISOString())), el("span", null, w.text)); if (w.href) { const g = el("button","linkish","Open"); g.type = "button"; g.onclick = () => go(w.href); r.append(g); } if (w.undo) { const u = el("button","linkish", w.undoLabel); u.type = "button"; u.onclick = async () => { u.disabled = true; try { await w.undo(); u.textContent = "Done"; } catch (err) { u.textContent = writeError(err); } }; r.append(u); } l.append(r); }); box.prepend(l); } }
   const ob = outbox(); if (ob.length) { const o = el("button","linkish ob-link", `${ob.length} not picked up yet`); o.type = "button"; o.title = ob.map(m => `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 80)}`).join("\n"); o.onclick = () => { inboxShowOb = !inboxShowOb; renderInbox(); }; $("inboxSum").append(" · ", o);
     if (inboxShowOb) { const l = el("div","snz-list"); ob.forEach(m => { const r = el("div","snz-row"); r.append(avatar(m.to || "coordinator", 20), el("span", null, `To ${nameOf(m.to)}: ${(m.text_en || m.text || "").slice(0, 120)}`), el("span","note", `sent ${ago(m.at)}`)); l.append(r); }); box.prepend(l); } }
   const np = $("needPill"); np.hidden = !todo; np.textContent = `${todo} need${todo === 1 ? "s" : ""} you`; np.onclick = () => { showTab("office"); $("inboxList").scrollIntoView({block:"start", behavior:reduce ? "auto" : "smooth"}); };
@@ -1788,7 +1818,8 @@ function renderInbox(){
     const nx = sessions.filter(x => x.state === "scheduled").sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")))[0], last = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
     box.append(el("div","inbox-empty", [`All caught up. ${w} agents are working.`, nx ? `Next meeting: ${nx.title_en || "Meeting"}, ${fmtWhen(Date.parse(nx.at))}.` : "", last ? `Open work is planned to finish by ${fmtWhen(last)}.` : ""].filter(Boolean).join(" "))); return; }
   (inboxAll ? items : items.slice(0, 6)).forEach(it => {
-    const c = el("div","ib"); c.style.setProperty("--c", it.c);
+    const c = el("div","ib" + (inboxOpenCard.has(it.key) || (it.key && inboxOpen.has(it.key)) ? " open" : "")); c.style.setProperty("--c", it.c);
+    c.addEventListener("click", e => { if (e.target.closest("button, input, textarea, a, .av") || !matchMedia("(max-width:520px)").matches) return; inboxOpenCard.has(it.key) ? inboxOpenCard.delete(it.key) : inboxOpenCard.add(it.key); c.classList.toggle("open"); });
     if (figs.has(it.who)) { c.onmouseenter = () => { cardPoint.keep ??= [...pointed]; pointAt([it.who]); $("roomsHQ").classList.add("dim"); }; c.onmouseleave = () => { pointAt(cardPoint.keep || []); cardPoint.keep = null; $("roomsHQ").classList.remove("dim"); }; c.addEventListener("focusin", c.onmouseenter); c.addEventListener("focusout", e => { if (!c.contains(e.relatedTarget)) c.onmouseleave(); }); }   // pointing at a card lights its person in the office
     const k = el("div","ib-k"); k.append(el("span", null, it.k), el("span","note", it.rel || ago(it.at)));
     const a = el("div","ib-a"), open = it.key && inboxOpen.has(it.key), sent = it.key && sentEl(it.key);
@@ -1966,7 +1997,7 @@ function drift(){
     rows.push([t, `${fmtWhen(b.e)} → ${fmtWhen(p.e)} (+${fmtDur(Math.round(d / 6e4))}). ` + (estOf(t) !== b.est ? `Re-estimated: ${fmtDur(b.est)} → ${fmtDur(estOf(t))}` : whyText(p) || "Took longer than planned"), d]); });
   const now = tasks.filter(t => !isClosed(t)).reduce((m, t) => Math.max(m, sched.byTask[t.id]?.e || 0), 0);
   return {rows, slipped:rows.filter(r => r[2]).length, added:rows.filter(r => !r[2]).length, at:baseline.at, was:baseline.done_by || 0, now}; }
-const askEst = {state:"", tm:0, n:0};
+const askEst = {state:"", tm:0, n:0}, nudge = {state:"", tm:0};
 function planHealth(){
   const open = tasks.filter(t => !isClosed(t)), P = t => sched.byTask[t.id] || {};
   const kinds = [
@@ -1984,6 +2015,15 @@ function planHealth(){
     c.textContent = `${K.en}: ${l.length}`; c.setAttribute("aria-pressed", String(calHealth === K.k)); c.onclick = () => { calHealth = calHealth === K.k ? "" : K.k; renderCalendar(); }; box.append(c);
     if (calHealth === K.k) rows = l.map(t => [t, K.why(t)]); });
   if (!box.querySelector("button")) box.append(el("span","chip","All clear"));
+  /* dropped baton (council round 12, Engineer): everything it needs is done, 30+ min ago, nobody started it, and its agent has nothing in progress */
+  const idleAg = id => !tasks.some(x => x.session === id && (x.state === "doing" || x.state === "review")), now0 = Date.now();
+  const baton = open.filter(t => t.state === "todo" && !t.started_at && t.session && depsOf(t).length && depsOf(t).every(d => { const x = tasks.find(y => y.id === d); return x && isClosed(x); }) && idleAg(t.session)
+    && depsOf(t).reduce((m, d) => Math.max(m, Date.parse(tasks.find(y => y.id === d)?.done_at || "") || 0), 0) < now0 - 30 * 6e4);
+  if (baton.length) { const c = el("button","chip go h-warn", `Ready but not started: ${baton.length}`); c.type = "button"; c.setAttribute("aria-pressed", String(calHealth === "baton")); c.onclick = () => { calHealth = calHealth === "baton" ? "" : "baton"; renderCalendar(); }; box.append(c);
+    if (calHealth === "baton") rows = baton.map(t => { const d = depsOf(t).map(x => tasks.find(y => y.id === x)), last = d.reduce((m, x) => Math.max(m, Date.parse(x?.done_at || "") || 0), 0); return [t, `Can start now: ${d.map(x => x.id).join(", ")} done${last ? " " + ago(new Date(last).toISOString()) : ""}${d.find(x => x?.handoff_en)?.handoff_en ? ". Hand-off: " + d.find(x => x?.handoff_en).handoff_en : ""}`]; });
+    if (canWrite && ownerView()) { const nb = el("button","linkish", nudge.state === "wait" ? "Nudging in 5 s · Undo" : nudge.state || `Nudge ${new Set(baton.map(t => t.session)).size}`); nb.type = "button"; nb.disabled = !!nudge.state && nudge.state !== "wait";
+      nb.onclick = () => { if (nudge.state === "wait") { clearTimeout(nudge.tm); nudge.state = ""; renderCalendar(); return; } const plan = baton.map(t => [t.session, t.id]); nudge.state = "wait";
+        nudge.tm = setTimeout(async () => { try { for (const [who, id] of plan) await db.collection("messages").add({at:new Date().toISOString(), from:"owner", to:who, task:id, kind:"question", text:`${id} can start now: everything it needs is done. Can you pick it up?`, author_id:me, relayed:false}); nudge.state = `Nudged ${plan.length}`; } catch (err) { nudge.state = ""; announce(writeError(err)); } renderCalendar(); }, 5000); renderCalendar(); }; box.append(nb); } }
   /* ask for estimates (council round 10, Owner Advocate): one tap, 5 seconds to Undo, one message per agent; never sent by itself */
   const miss = open.filter(t => t.session && (!t.estimate_min || (!t.due_at && !t.due))), whoM = [...new Set(miss.map(t => t.session))];
   if (canWrite && ownerView() && (whoM.length || askEst.state)) { const ask = el("button","linkish", askEst.state === "wait" ? `Asking ${askEst.n} in 5 s · Undo` : askEst.state || `Ask ${whoM.length} agent${whoM.length === 1 ? "" : "s"} for estimates`); ask.type = "button"; ask.title = "Asks each agent to add an estimate and a deadline to their tasks that lack one";
@@ -2859,6 +2899,7 @@ function openDueMeetings(){
 }   // the snapshot that follows moves people into the room
 setInterval(() => { openDueMeetings(); ensureRituals(); }, 30000); setTimeout(() => { openDueMeetings(); ensureRituals(); }, 5000);
 $("walkBtn").onclick = openWalk; $("byeBtn").onclick = openBye;
+$("moreBtn").onclick = () => { const r = $("moreBtn").parentElement, on = r.classList.toggle("more-open"); $("moreBtn").setAttribute("aria-expanded", String(on)); $("moreBtn").textContent = on ? "Less" : "More"; };
 $("callMeet").onclick = callMeeting; $("callMeet2").onclick = callMeeting; $("callMeet3").onclick = callMeeting; $("goChat").onclick = () => showTab("chat"); $("callMeet4").onclick = callMeeting; $("goChat2").onclick = () => showTab("chat");
 function writeError(err){
   if (err && err.code === "quota_exceeded") return "The office data is full. Ask the Office Manager to archive old messages.";
@@ -3557,7 +3598,8 @@ renderLegend(); renderAllNow(); setInterval(setRoomBg, 60000); setInterval(() =>
   live.unsubs.forEach(u => { try { u(); } catch {} }); live.unsubs = []; live.got = new Set();
   keep(db.collection("agents").orderBy("desk").onSnapshot(s => { agents = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("agents"); $("conn").textContent = "Connected. Updates appear live."; renderAll(); }, onErr));
   keep(db.doc("meta/office").onSnapshot(d => { metaOffice = d && d.exists ? (d.data() || {}) : {}; const sk = JSON.stringify([metaOffice.workday, metaOffice.learn_estimates]); renderAll(sk !== live.schedKey); live.schedKey = sk; /* stars and snoozes do not replan */ const n = metaOffice.product_en || ""; const t = n ? `${n} Office` : "Product Office"; $("title").textContent = t; $("chromeTitle").textContent = t; document.title = t; }, () => {}));
-  keep(db.collection("tasks").onSnapshot(s => { tasks = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("tasks"); renderAll(); }, onErr));
+  keep(db.collection("tasks").onSnapshot(s => { const was = new Map(tasks.map(t => [t.id, t.state])), first = !tasks.length; tasks = s.docs.map(d => ({id:d.id, ...d.data()})); fresh("tasks"); renderAll();
+    if (!first) { const nowDone = tasks.filter(t => t.state === "done" && was.has(t.id) && was.get(t.id) !== "done"); if (nowDone.length) doneMoment(nowDone); } }, onErr));
   /* the newest 500 messages (an ascending query with a limit would keep the oldest); falls back if the db can't sort descending */
   let msgGot = false;   // the ascending fallback is only for a db that can't sort; a later error reconnects instead
   const subMsgs = desc => { try { keep((desc ? db.collection("messages").orderBy("at", "desc") : db.collection("messages").orderBy("at")).limit(500).onSnapshot(s => { msgGot = true; lastSaid = {};
